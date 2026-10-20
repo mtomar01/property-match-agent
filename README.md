@@ -1,0 +1,22 @@
+# Property Match Agent
+
+A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
+
+**Status:** v0 foundations. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
+
+## Run it on the synthetic data
+
+You need [uv](https://docs.astral.sh/uv/) and Python 3.11 or newer.
+
+```bash
+uv sync                                  # install dependencies
+uv run pytest                            # unit tests
+uv run python -m evals.harness.run       # eval suite, prints a results table
+uv run python -m core.synthetic          # regenerate the synthetic listings
+```
+
+To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
+
+## Data and privacy
+
+The public repo holds made up listings only (`data/synthetic/`). Real listings collected for personal use stay in `data/private/`, which git ignores. No agent or owner names, phone numbers, emails or photo files are ever stored.

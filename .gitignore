@@ -1,0 +1,25 @@
+# Real listing data never leaves this machine (spec section 3, rule 5).
+# Everything under data/private/ is the personal-use snapshot and stays local.
+data/private/
+data/snapshot/
+*.private.jsonl
+*.private.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
