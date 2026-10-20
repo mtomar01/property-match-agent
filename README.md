@@ -17,6 +17,21 @@ uv run python -m core.synthetic          # regenerate the synthetic listings
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
 
+## Results by version
+
+| Version | Eval | Cases | Hard limit breaks | Recall@20 | Precision@10 |
+|---|---|---|---|---|---|
+| v0.1 | Search safety (synthetic) | 20 | **0** | 1.00 | 1.00 |
+
+Results files are in `evals/results/`. A mutation test checks the eval fails when the hard-limit filter is switched off.
+
+## Docs
+
+- `docs/spec.md`: the build spec
+- `docs/decisions.md`: every design choice, the options and why
+- `docs/labelling-guide.md`: rules for labelling listings
+- `docs/next-steps.md`: what's next and open decisions
+
 ## Data and privacy
 
 The public repo holds made up listings only (`data/synthetic/`). Real listings collected for personal use stay in `data/private/`, which git ignores. No agent or owner names, phone numbers, emails or photo files are ever stored.
