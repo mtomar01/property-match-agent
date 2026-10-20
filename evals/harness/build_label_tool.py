@@ -9,7 +9,13 @@ The file holds real listing text, so it lives in data/private/ (git ignores
 it) and is never published as a web page. Contact details are scrubbed before
 collection; this script checks again and refuses to build if any remain.
 
+--hosted N builds the page for extra labellers instead (decision D28): the
+first N listings in the same order, with links and the values code read, but
+no listing text, tick lists or extras. That page can be shared, because it
+passes on no one's writing; labellers read each listing on the portal.
+
 Run: uv run python -m evals.harness.build_label_tool
+     uv run python -m evals.harness.build_label_tool --hosted 20
 """
 
 from __future__ import annotations
@@ -27,7 +33,11 @@ ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "data" / "private" / "spitogatos_details_raw.jsonl"
 SNAPSHOT = ROOT / "data" / "private" / "snapshot.jsonl"
 TEMPLATE = Path(__file__).with_name("label_tool.html")
+HOSTED_TEMPLATE = Path(__file__).with_name("hosted_label_tool.html")
 OUT = ROOT / "data" / "private" / "labels" / "extraction_labeller_round1.html"
+HOSTED_OUT = ROOT / "data" / "private" / "labels" / "hosted" / "property-match-labels.html"
+# The only item keys the hosted page may carry: links and facts, never listing text.
+HOSTED_KEYS = ("listing_id", "url", "title", "area", "prefill")
 
 # Table rows that never help a label and only add noise on screen.
 HIDDEN_ROWS = {"Τιμή ανά τ.μ.", "Κωδικός Συστήματος", "Κωδικός Ακινήτου", "Δημοσίευση αγγελίας", "Τελευταία ενημέρωση"}
@@ -37,7 +47,7 @@ SEED = 2026  # a fixed shuffle mixes the three areas but stays the same on every
 def _json_for_script(payload: dict) -> str:
     """JSON that can't end the <script> element it sits in, whatever the listing says."""
     text = json.dumps(payload, ensure_ascii=False)
-    for char, escape in (("<", "\\u003c"), (">", "\\u003e"), ("&", "\\u0026"), (" ", "\\u2028"), (" ", "\\u2029")):
+    for char, escape in (("<", "\\u003c"), (">", "\\u003e"), ("&", "\\u0026"), ("\u2028", "\\u2028"), ("\u2029", "\\u2029")):
         text = text.replace(char, escape)
     return text
 
@@ -70,24 +80,47 @@ def build_items(raw_records: list[dict], cards: dict[str, dict]) -> list[dict]:
     return items
 
 
-def build(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = OUT, round_no: int = 1) -> int:
+def hosted_items(items: list[dict], count: int) -> list[dict]:
+    """The first `count` listings, cut down to links and code-read facts."""
+    return [{key: item[key] for key in HOSTED_KEYS} for item in items[:count]]
+
+
+def _load(raw_path: Path, snapshot_path: Path) -> list[dict]:
     raw_records = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     cards = {}
     for line in snapshot_path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             card = json.loads(line)
             cards[card["listing_id"]] = card
-    items = build_items(raw_records, cards)
-    html = TEMPLATE.read_text(encoding="utf-8")
+    return build_items(raw_records, cards)
+
+
+def _write(template: Path, payload: dict, out_path: Path) -> None:
+    html = template.read_text(encoding="utf-8")
     if html.count("__DATA_JSON__") != 1:
         raise ValueError("the template must hold exactly one __DATA_JSON__ placeholder")
-    html = html.replace("__DATA_JSON__", _json_for_script({"round": round_no, "items": items}))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding="utf-8")
+    out_path.write_text(html.replace("__DATA_JSON__", _json_for_script(payload)), encoding="utf-8")
+
+
+def build(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = OUT, round_no: int = 1) -> int:
+    items = _load(raw_path, snapshot_path)
+    _write(TEMPLATE, {"round": round_no, "items": items}, out_path)
+    return len(items)
+
+
+def build_hosted(count: int, raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT,
+                 out_path: Path = HOSTED_OUT, round_no: int = 1) -> int:
+    items = hosted_items(_load(raw_path, snapshot_path), count)
+    _write(HOSTED_TEMPLATE, {"round": round_no, "items": items}, out_path)
     return len(items)
 
 
 if __name__ == "__main__":
-    count = build()
-    print(f"Wrote {count} listings to {OUT.relative_to(ROOT)}")
+    if len(sys.argv) == 3 and sys.argv[1] == "--hosted":
+        written = build_hosted(int(sys.argv[2]))
+        print(f"Wrote {written} listings to {HOSTED_OUT.relative_to(ROOT)}")
+    else:
+        written = build()
+        print(f"Wrote {written} listings to {OUT.relative_to(ROOT)}")
     sys.exit(0)

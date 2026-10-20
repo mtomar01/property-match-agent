@@ -1,0 +1,512 @@
+<title>Property Match Labels</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&display=swap">
+<!--
+  Property Match Agent: hosted labelling page for extra labellers (template).
+  evals/harness/build_label_tool.py --hosted fills the data placeholder and
+  writes the page to data/private/labels/hosted/. It holds listing links and
+  the values code read from each page's table, never the listing text:
+  labellers read each listing on the portal itself (decision D28).
+  Labels go to the artifact's db: each labeller writes only under their own
+  labels/<id>/ path; only the owner reads everyone's.
+-->
+<style>
+/* Layout: a labelling desk. The queue of listings on the left, one listing's form on the right. */
+:root {
+  --bg: #f3f4ef;
+  --surface: #ffffff;
+  --ink: #1d231f;
+  --muted: #5b665e;
+  --line: #d6dbd2;
+  --accent: #1f6a58;
+  --accent-ink: #ffffff;
+  --tag: #e6ebe3;
+  --ok: #2c7a4b;
+  --warn: #a14b17;
+  --warn-soft: #f7e6da;
+  --font: "Commissioner", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a17; --surface: #1f2420; --ink: #e8ece6; --muted: #a2ada4; --line: #333b35;
+    --accent: #6cc3a8; --accent-ink: #0f241d; --tag: #2a312c; --ok: #74c793; --warn: #f0a070; --warn-soft: #3a2a20;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a17; --surface: #1f2420; --ink: #e8ece6; --muted: #a2ada4; --line: #333b35;
+  --accent: #6cc3a8; --accent-ink: #0f241d; --tag: #2a312c; --ok: #74c793; --warn: #f0a070; --warn-soft: #3a2a20;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 32px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select, textarea { font: inherit; color: var(--ink); }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px 12px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button:disabled { opacity: .55; cursor: default; }
+input, select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 14px 12px; border-bottom: 1px solid var(--line);
+}
+.top h1 { font-size: 19px; font-weight: 700; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.top .sub { margin: 0; color: var(--muted); font-size: 13px; }
+.spacer { flex: 1; }
+.me { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.me label { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+#initials { width: 64px; text-transform: uppercase; }
+.meter { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter .track { width: 110px; height: 6px; border-radius: 3px; background: var(--tag); overflow: hidden; }
+.meter .fill { height: 100%; width: 0; background: var(--ok); }
+.notice { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--ink); border: 1px solid var(--warn); }
+.desk { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; margin-top: 18px; align-items: start; }
+.queue { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); max-height: calc(100vh - 110px); overflow-y: auto; }
+.queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.queue button { width: 100%; text-align: left; display: grid; grid-template-columns: 12px 1fr; gap: 8px; align-items: center; border: none; background: none; padding: 6px 8px; border-radius: 6px; font-size: 13.5px; }
+.queue button[aria-current="true"] { background: var(--tag); font-weight: 600; }
+.queue .where { color: var(--muted); font-size: 12px; display: block; font-weight: 400; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.dot.saved { background: var(--ok); border-color: var(--ok); }
+.dot.gone { background: var(--muted); }
+#jump { display: none; width: 100%; }
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px 20px; min-width: 0; }
+.sheet-head { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.pos { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.sheet h2 { margin: 0; font-size: 22px; font-weight: 600; text-wrap: balance; }
+.facts { color: var(--muted); font-size: 13px; font-family: var(--mono); overflow-wrap: anywhere; }
+.open { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; }
+.live { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 14px; }
+.live > span { color: var(--muted); }
+.live label { display: inline-flex; gap: 5px; align-items: center; }
+.fields { display: grid; gap: 2px; margin-top: 12px; }
+.row { display: grid; grid-template-columns: 130px minmax(0, 1fr) 64px 30px; gap: 8px; align-items: center; padding-block: 3px; }
+.row > label { color: var(--muted); font-size: 13.5px; }
+.row input[type="text"], .row select { width: 100%; }
+.tag { font-size: 11px; text-align: center; border-radius: 9px; padding: 1px 6px; }
+.tag.table { background: var(--tag); color: var(--muted); }
+.tag.changed { color: var(--warn); border: 1px solid var(--warn); }
+.quote { padding: 2px 0; width: 30px; }
+.evidence { grid-column: 2 / 5; }
+.evidence input { width: 100%; font-size: 13px; }
+.flags { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13.5px; }
+.flags label { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.section-title { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin: 16px 0 4px; }
+textarea { width: 100%; min-height: 70px; resize: vertical; }
+.check { display: flex; gap: 6px; align-items: center; margin-top: 8px; font-size: 13.5px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+.actions .primary { flex: 1; min-width: 180px; padding: 9px 14px; }
+#status { font-size: 13px; color: var(--muted); }
+#status.bad { color: var(--warn); }
+.hint { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+.owner { margin-top: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+.owner h2 { margin: 0 0 4px; font-size: 16px; }
+.owner p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+.owner .wrap { overflow-x: auto; }
+.owner table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+.owner th, .owner td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.owner th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+dialog { max-width: 660px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 20px 22px; }
+dialog::backdrop { background: rgba(0, 0, 0, .4); }
+dialog h2 { margin-top: 0; font-size: 18px; }
+dialog li { margin: 5px 0; }
+.dialog-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+@media (max-width: 860px) {
+  .top { position: static; }
+  .desk { grid-template-columns: 1fr; }
+  .queue { position: static; max-height: none; }
+  .queue ol { display: none; }
+  #jump { display: block; }
+  .row { grid-template-columns: 104px minmax(0, 1fr) 56px 30px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="top">
+  <div>
+    <h1>Property Match Labels</h1>
+    <p class="sub">Round <span id="round"></span> · <span id="total"></span> listings · read each one on Spitogatos, fill in what it says</p>
+  </div>
+  <div class="spacer"></div>
+  <div class="me">
+    <div class="meter"><div class="track"><div class="fill" id="fill"></div></div><span id="count"></span></div>
+    <label for="initials">Your initials <input id="initials" type="text" maxlength="6" autocomplete="off"></label>
+    <button type="button" id="rules-open">Rules</button>
+  </div>
+</header>
+<div class="notice" id="notice" role="status" hidden></div>
+
+<div class="desk">
+  <nav class="queue" aria-label="Listings">
+    <select id="jump" aria-label="Choose a listing"></select>
+    <ol id="queue"></ol>
+  </nav>
+  <section class="sheet" aria-labelledby="title">
+    <div class="sheet-head">
+      <span class="pos" id="pos"></span>
+      <h2 id="title"></h2>
+      <span class="facts" id="facts"></span>
+      <a class="open" id="open" target="_blank" rel="noopener noreferrer">Open the listing on Spitogatos ↗</a>
+      <div class="live" role="radiogroup" aria-label="Does the live page still match?">
+        <span>Live page:</span>
+        <label><input type="radio" name="live" value="matches" id="live-matches"> matches the values below</label>
+        <label><input type="radio" name="live" value="changed" id="live-changed"> changed since 20 October</label>
+        <label><input type="radio" name="live" value="gone" id="live-gone"> gone</label>
+      </div>
+    </div>
+    <div class="fields" id="fields"></div>
+    <div class="section-title">Notes</div>
+    <textarea id="notes" placeholder="Conflicts, doubts, what changed on the live page. Never copy a name, phone or email."></textarea>
+    <label class="check"><input type="checkbox" id="pii"> The listing shows a phone, email or personal name in the text</label>
+    <div class="actions">
+      <button type="button" id="prev">Back</button>
+      <button type="button" class="primary" id="save">Save, next</button>
+      <span id="status" role="status"></span>
+    </div>
+    <p class="hint">Blank means the listing doesn't say. "table" marks a value from our copy of the page's table: check it against the listing's text. Press ❝ to paste the words you read a value from. Ctrl or ⌘ + Enter saves.</p>
+  </section>
+</div>
+
+<section class="owner" id="owner" hidden>
+  <h2>Labellers</h2>
+  <p>Only you see this. Each labeller sees only their own labels.</p>
+  <div class="wrap"><table>
+    <thead><tr><th>Initials</th><th>Saved</th><th>Last saved</th></tr></thead>
+    <tbody id="owner-rows"></tbody>
+  </table></div>
+</section>
+
+<dialog id="rules" aria-labelledby="rules-title">
+  <h2 id="rules-title">How to label</h2>
+  <ol>
+    <li><b>Open the listing</b> with the green button and read the whole page: the table, the ticked features and the description.</li>
+    <li><b>Label what the listing says.</b> Blank means it doesn't say. Never fill a gap with a likely value.</li>
+    <li><b>"table" values</b> come from our copy of the page's table on 20 October. If the live page shows something else because the listing changed (a new price, say), keep our value, pick "changed since 20 October" and note what changed. If the listing is gone, pick "gone" and save.</li>
+    <li><b>When the listing contradicts itself</b> (table against text), leave the field blank and note both values. Except price and size: the table wins.</li>
+    <li><b>A missing tick is not a no.</b> Lift, balcony or storage are "no" only when the text says so.</li>
+    <li><b>Lift</b> is "no" if it stops below the flat's floor, or it's a goods lift (αναβατόριο).</li>
+    <li><b>Floor:</b> υπερυψωμένο ισόγειο is raised ground. A maisonette takes its lowest level. A ρετιρέ with a floor number takes the number.</li>
+    <li><b>Bathrooms</b> are full bathrooms only. A WC is not a bathroom.</li>
+    <li><b>Energy:</b> Γ is C, Ζ is F, Η is G. Α++ is A+. Εξαιρείται is exempt. Υπό έκδοση is pending.</li>
+    <li><b>Under construction:</b> the year built is the delivery year, and the condition is new build.</li>
+    <li><b>Parking:</b> pilotis (πιλοτή), garage (closed or underground), space (an open or covered spot). A tick with no type in the text stays blank.</li>
+    <li><b>Metro minutes</b> only when minutes or metres are stated: metres ÷ 80, rounded up.</li>
+    <li><b>Never</b> copy a name, phone or email into evidence or notes.</li>
+  </ol>
+  <div class="dialog-actions"><button type="button" class="primary" id="rules-close">Close</button></div>
+</dialog>
+
+<script type="application/json" id="data">__DATA_JSON__</script>
+<script>
+"use strict";
+const PAYLOAD = JSON.parse(document.getElementById("data").textContent);
+const ITEMS = PAYLOAD.items;
+const ROUND = PAYLOAD.round;
+const FLOORS = ["basement", "semi_basement", "ground", "raised_ground", "mezzanine"]
+  .concat(Array.from({ length: 12 }, (_, i) => String(i + 1))).concat(["top"]);
+const GREEK = {
+  basement: "υπόγειο", semi_basement: "ημιυπόγειο", ground: "ισόγειο", raised_ground: "υπερυψωμένο",
+  mezzanine: "ημιόροφος", top: "ρετιρέ", "A+": "Α+", A: "Α", "B+": "Β+", B: "Β", C: "Γ", D: "Δ", E: "Ε",
+  F: "Ζ", G: "Η", pending: "υπό έκδοση", exempt: "εξαιρείται", pilotis: "πιλοτή", garage: "κλειστό, υπόγειο",
+  space: "θέση", independent: "αυτόνομη", central: "κεντρική", heat_pump: "αντλία", lpg: "υγραέριο",
+};
+const FIELDS = [
+  { name: "listing_type", label: "Listing type", kind: "select", options: ["sale", "rent"] },
+  { name: "price_eur", label: "Price €", kind: "int" },
+  { name: "old_price_eur", label: "Old price €", kind: "int" },
+  { name: "size_m2", label: "Size m²", kind: "float" },
+  { name: "property_type", label: "Type", kind: "select",
+    options: ["apartment", "studio", "maisonette", "detached_house", "loft", "building", "apartment_complex"] },
+  { name: "bedrooms", label: "Bedrooms", kind: "int" },
+  { name: "bathrooms", label: "Bathrooms", kind: "int" },
+  { name: "floor_class", label: "Floor", kind: "select", options: FLOORS },
+  { name: "year_built", label: "Year built", kind: "int" },
+  { name: "renovated_year", label: "Renovated", kind: "int" },
+  { name: "condition", label: "Condition", kind: "select", options: ["needs_work", "unfinished", "new_build", "renovated", "good"] },
+  { name: "energy_class", label: "Energy", kind: "select", options: ["A+", "A", "B+", "B", "C", "D", "E", "F", "G", "pending", "exempt"] },
+  { name: "heating_type", label: "Heating", kind: "select", options: ["independent", "central", "none"] },
+  { name: "heating_fuel", label: "Fuel", kind: "select", options: ["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"] },
+  { name: "parking", label: "Parking", kind: "select", options: ["pilotis", "space", "garage", "none"] },
+  { name: "lift", label: "Lift", kind: "bool" },
+  { name: "balcony", label: "Balcony", kind: "bool" },
+  { name: "storage", label: "Storage", kind: "bool" },
+  { name: "flags", label: "Flags", kind: "flags", options: ["whole_floor", "dual_aspect", "corner"] },
+  { name: "area", label: "Area", kind: "select", options: ["Egaleo", "Peristeri", "Chaidari"] },
+  { name: "sub_area", label: "Sub-area", kind: "text" },
+  { name: "metro_walk_min", label: "Metro walk min", kind: "int" },
+];
+
+let current = 0;
+const drafts = {};          // listing_id -> what's on screen, edited or not
+const saved = {};           // listing_id -> the stored record
+let db = null, uid = null, isOwner = false;
+let initials = "";
+let readOnly = false;
+let meWrite = Promise.resolve();
+
+const $ = id => document.getElementById(id);
+function el(tag, attrs, text) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+function optionLabel(v) { return GREEK[v] ? v + " · " + GREEK[v] : v.replace(/_/g, " "); }
+function status(text, bad) { const s = $("status"); s.textContent = text; s.className = bad ? "bad" : ""; }
+function notice(text) { const n = $("notice"); n.textContent = text || ""; n.hidden = !text; }
+function today() { return new Date().toISOString().slice(0, 10); }
+
+function asInput(field, v) {
+  if (field.kind === "flags") return Array.isArray(v) ? v.slice() : [];
+  if (field.kind === "bool") return v === true ? "yes" : v === false ? "no" : "";
+  return v === undefined || v === null ? "" : String(v);
+}
+function toValue(field, raw) {
+  if (field.kind === "flags") return (raw || []).slice().sort();
+  if (raw === "" || raw === undefined || raw === null) return null;
+  if (field.kind === "int") { const n = Number(String(raw).replace(/[.\s]/g, "")); return Number.isFinite(n) ? Math.round(n) : null; }
+  if (field.kind === "float") { const n = Number(String(raw).replace(",", ".")); return Number.isFinite(n) ? n : null; }
+  if (field.kind === "bool") return raw === "yes" ? true : raw === "no" ? false : null;
+  return String(raw).trim() || null;
+}
+function sameAsPrefill(item, entry, name) {
+  const field = FIELDS.find(f => f.name === name);
+  return JSON.stringify(toValue(field, entry.values[name])) === JSON.stringify(toValue(field, asInput(field, item.prefill[name])));
+}
+function blankEntry(item) {
+  const values = {};
+  for (const f of FIELDS) values[f.name] = asInput(f, item.prefill[f.name]);
+  return { values, evidence: {}, notes: "", pii: false, live: "", touched: false, fromSaved: null };
+}
+function entryFromRecord(item, rec) {
+  const entry = blankEntry(item);
+  for (const f of FIELDS) {
+    if (f.name === "old_price_eur") { const old = (rec.price_history || [])[0]; entry.values.old_price_eur = old ? String(old.price_eur) : ""; }
+    else entry.values[f.name] = asInput(f, (rec.fields || {})[f.name]);
+  }
+  entry.evidence = Object.assign({}, rec.evidence || {});
+  if (entry.evidence.price_history) { entry.evidence.old_price_eur = entry.evidence.price_history; delete entry.evidence.price_history; }
+  entry.notes = rec.notes || "";
+  entry.pii = !!rec.pii;
+  entry.live = rec.live_page || "";
+  entry.fromSaved = rec;
+  return entry;
+}
+// The draft on screen. An untouched draft follows the store: if a saved record
+// arrives or changes (another tab, another device), the draft is rebuilt from it.
+function entry(item) {
+  const id = item.listing_id, draft = drafts[id], rec = saved[id];
+  if (draft && (draft.touched || !rec || draft.fromSaved === rec)) return draft;
+  drafts[id] = rec ? entryFromRecord(item, rec) : blankEntry(item);
+  return drafts[id];
+}
+function record(item, e) {
+  const fields = {};
+  for (const f of FIELDS) if (f.name !== "old_price_eur") fields[f.name] = toValue(f, e.values[f.name]);
+  const old = toValue(FIELDS.find(f => f.name === "old_price_eur"), e.values.old_price_eur);
+  const evidence = {};
+  for (const [k, v] of Object.entries(e.evidence)) if (v && v.trim()) evidence[k === "old_price_eur" ? "price_history" : k] = v.trim().slice(0, 160);
+  const prefilled = Object.keys(item.prefill);
+  return {
+    listing_id: item.listing_id, labeller: initials.toLowerCase(), labelled_at: today(), round: ROUND,
+    pii: !!e.pii, fields, price_history: old ? [{ price_eur: old, date: null }] : [], evidence,
+    notes: (e.notes || "").trim(), prefilled, changed_from_code: prefilled.filter(n => !sameAsPrefill(item, e, n)),
+    live_page: e.live || null,
+  };
+}
+
+function renderQueue() {
+  const list = $("queue"), jump = $("jump");
+  list.replaceChildren(); jump.replaceChildren();
+  ITEMS.forEach((item, i) => {
+    const rec = saved[item.listing_id];
+    const state = !rec ? "" : rec.live_page === "gone" ? "saved gone" : "saved";
+    const b = el("button", { type: "button", "aria-current": String(i === current) });
+    b.append(el("span", { class: "dot " + state, "aria-hidden": "true" }));
+    const label = el("span", {}, (i + 1) + ". " + (item.title || item.listing_id));
+    label.append(el("span", { class: "where" }, item.area + (rec ? " · saved" : "")));
+    b.append(label);
+    b.addEventListener("click", () => go(i));
+    const li = el("li"); li.append(b); list.append(li);
+    const o = el("option", { value: String(i) }, (i + 1) + ". " + (rec ? "✓ " : "") + (item.title || "") + " · " + item.area);
+    if (i === current) o.selected = true;
+    jump.append(o);
+  });
+  const done = ITEMS.filter(item => saved[item.listing_id]).length;
+  $("count").textContent = done + " of " + ITEMS.length + " saved";
+  $("fill").style.width = (100 * done / ITEMS.length) + "%";
+}
+
+function renderSheet() {
+  const item = ITEMS[current], e = entry(item);
+  $("pos").textContent = "Listing " + (current + 1) + " of " + ITEMS.length;
+  $("title").textContent = item.title || item.listing_id;
+  $("facts").textContent = item.area + " · " + item.listing_id;
+  $("open").href = item.url;
+  for (const r of document.querySelectorAll('input[name="live"]')) r.checked = r.value === e.live;
+  const box = $("fields");
+  box.replaceChildren();
+  for (const field of FIELDS) {
+    const row = el("div", { class: "row" });
+    const id = "f-" + field.name;
+    row.append(el("label", { for: id }, field.label));
+    let input;
+    if (field.kind === "select" || field.kind === "bool") {
+      input = el("select", { id });
+      input.append(el("option", { value: "" }, "unknown"));
+      for (const o of (field.kind === "bool" ? ["yes", "no"] : field.options)) input.append(el("option", { value: o }, optionLabel(o)));
+      input.value = e.values[field.name] || "";
+      input.addEventListener("change", () => { e.values[field.name] = input.value; e.touched = true; retag(item, e, field.name); });
+    } else if (field.kind === "flags") {
+      input = el("div", { class: "flags", id });
+      for (const o of field.options) {
+        const lab = el("label");
+        const check = el("input", { type: "checkbox", value: o, id: id + "-" + o });
+        check.checked = (e.values.flags || []).includes(o);
+        check.addEventListener("change", () => {
+          e.values.flags = field.options.filter(n => $(id + "-" + n).checked);
+          e.touched = true;
+          retag(item, e, field.name);
+        });
+        lab.append(check, document.createTextNode(optionLabel(o)));
+        input.append(lab);
+      }
+    } else {
+      input = el("input", { id, type: "text", inputmode: field.kind === "text" ? "text" : "decimal", autocomplete: "off" });
+      input.value = e.values[field.name] || "";
+      input.addEventListener("input", () => { e.values[field.name] = input.value; e.touched = true; retag(item, e, field.name); });
+    }
+    row.append(input);
+    const tag = field.name in item.prefill ? (sameAsPrefill(item, e, field.name) ? "table" : "changed") : "";
+    row.append(el("span", { class: "tag " + tag, id: "tag-" + field.name }, tag));
+    const quote = el("button", { type: "button", class: "quote", title: "Add the words you read this from", "aria-label": "Evidence for " + field.label }, "❝");
+    row.append(quote);
+    const ev = el("div", { class: "evidence" });
+    const evInput = el("input", { type: "text", id: "ev-" + field.name, placeholder: "Paste a few words from the listing", autocomplete: "off" });
+    evInput.value = e.evidence[field.name] || "";
+    evInput.addEventListener("input", () => { e.evidence[field.name] = evInput.value; e.touched = true; });
+    ev.append(evInput);
+    ev.hidden = !e.evidence[field.name];
+    quote.addEventListener("click", () => { ev.hidden = !ev.hidden; if (!ev.hidden) evInput.focus(); });
+    row.append(ev);
+    box.append(row);
+  }
+  $("notes").value = e.notes || "";
+  $("pii").checked = !!e.pii;
+  status(saved[item.listing_id] ? "Saved. Change anything and save again to update it." : "");
+}
+function retag(item, e, name) {
+  const tag = $("tag-" + name);
+  if (!tag || !(name in item.prefill)) return;
+  const value = sameAsPrefill(item, e, name) ? "table" : "changed";
+  tag.className = "tag " + value; tag.textContent = value;
+}
+function go(i) {
+  if (i < 0 || i >= ITEMS.length) return;
+  const first = current === i && !$("fields").childElementCount;
+  current = i;
+  renderQueue(); renderSheet();
+  if (!first) $("title").scrollIntoView({ block: "nearest" });
+}
+
+async function save() {
+  const item = ITEMS[current], e = entry(item);
+  e.notes = $("notes").value; e.pii = $("pii").checked;
+  if (!db || !uid) { status("Saving isn't available here. Open the link Mike sent you, signed in to Claude.", true); return; }
+  if (readOnly) { status("Your access can view but not save. Ask Mike to invite you as an Editor.", true); return; }
+  if (!initials.trim()) { status("Add your initials at the top first.", true); $("initials").focus(); return; }
+  if (!e.live) { status("Say whether the live page still matches.", true); $("live-matches").focus(); return; }
+  const rec = record(item, e);
+  $("save").disabled = true; status("Saving…");
+  try {
+    await db.collection("labels/" + uid + "/items").doc(item.listing_id).set(rec);
+  } catch (err) {
+    $("save").disabled = false;
+    if (err && err.code === "invalid_argument") { readOnly = true; status("Your access can view but not save. Ask Mike to invite you as an Editor.", true); }
+    else if (err && err.code === "quota_exceeded") status("The label store is full. Tell Mike.", true);
+    else status("Couldn't save just now. Try again in a moment.", true);
+    return;
+  }
+  saved[item.listing_id] = rec;
+  delete drafts[item.listing_id];
+  writeMe();
+  $("save").disabled = false;
+  const next = ITEMS.findIndex((it, i) => i > current && !saved[it.listing_id]);
+  const first = ITEMS.findIndex(it => !saved[it.listing_id]);
+  if (next >= 0) go(next); else if (first >= 0) go(first); else { renderQueue(); status("All " + ITEMS.length + " saved. Thank you!"); }
+}
+function writeMe() {
+  if (!db || !uid || readOnly || !initials.trim()) return;
+  const body = { initials: initials.trim().toUpperCase(), saved: ITEMS.filter(it => saved[it.listing_id]).length, updated_at: new Date().toISOString() };
+  meWrite = meWrite.then(() => db.doc("labels/" + uid).set(body)).catch(() => {});
+}
+
+function renderOwner(snap) {
+  const rows = $("owner-rows");
+  rows.replaceChildren();
+  const docs = snap.docs.filter(d => d.exists).map(d => d.data())
+    .sort((a, b) => String(b.updated_at || "").localeCompare(String(a.updated_at || "")));
+  if (!docs.length) {
+    const tr = el("tr"); tr.append(el("td", { colspan: "3" }, "No one has saved a label yet. Share the link and invite labellers as Editors."));
+    rows.append(tr);
+  }
+  for (const d of docs) {
+    const tr = el("tr");
+    tr.append(el("td", {}, d.initials || "?"));
+    tr.append(el("td", {}, (d.saved || 0) + " of " + ITEMS.length));
+    tr.append(el("td", {}, d.updated_at ? new Date(d.updated_at).toLocaleString() : ""));
+    rows.append(tr);
+  }
+}
+
+async function connect() {
+  const claude = window.claude;
+  const [dbNs, userNs] = claude && claude.use ? await Promise.all([claude.use("db"), claude.use("user")]) : [null, null];
+  if (!dbNs || !userNs) { notice("Saving isn't available in this view. Open the link Mike sent you in Claude, signed in, to save your labels."); return; }
+  const id = await userNs.id();
+  if (!id) { notice("Sign in to Claude to save your labels."); return; }
+  db = dbNs; uid = id;
+  isOwner = await userNs.isOwner();
+  const unsubscribeItems = db.collection("labels/" + uid + "/items").onSnapshot(snap => {
+    for (const d of snap.docs) if (d.exists) saved[d.id] = d.data();
+    renderQueue();
+    const draft = drafts[ITEMS[current].listing_id];
+    if (!draft || !draft.touched) renderSheet();
+  }, () => notice("Your saved labels couldn't load. Reload the page."));
+  db.doc("labels/" + uid).onSnapshot(snap => {
+    const body = snap.exists ? snap.data() : null;
+    if (body && body.initials && !$("initials").value) { initials = body.initials; $("initials").value = initials; }
+  }, () => {});
+  if (isOwner) {
+    $("owner").hidden = false;
+    db.collection("labels").onSnapshot(renderOwner, () => {});
+  }
+  window.addEventListener("pagehide", () => unsubscribeItems());
+}
+
+$("round").textContent = ROUND;
+$("total").textContent = ITEMS.length;
+$("initials").addEventListener("change", ev => { initials = ev.target.value.trim().toUpperCase(); ev.target.value = initials; writeMe(); });
+$("initials").addEventListener("input", ev => { initials = ev.target.value.trim(); });
+$("notes").addEventListener("input", ev => { const e = entry(ITEMS[current]); e.notes = ev.target.value; e.touched = true; });
+$("pii").addEventListener("change", ev => { const e = entry(ITEMS[current]); e.pii = ev.target.checked; e.touched = true; });
+for (const r of document.querySelectorAll('input[name="live"]')) r.addEventListener("change", () => { const e = entry(ITEMS[current]); e.live = r.value; e.touched = true; });
+$("save").addEventListener("click", save);
+$("prev").addEventListener("click", () => go(current - 1));
+$("jump").addEventListener("change", ev => go(Number(ev.target.value)));
+$("rules-open").addEventListener("click", () => $("rules").showModal());
+$("rules-close").addEventListener("click", () => $("rules").close());
+$("rules").addEventListener("click", ev => { if (ev.target === $("rules")) $("rules").close(); });
+document.addEventListener("keydown", ev => { if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); save(); } });
+go(0);
+connect();
+</script>

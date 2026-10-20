@@ -42,6 +42,13 @@ Write them in the notes so we can count them later: **rented** (μισθωμέν
 5. **Done, next** (or Ctrl or ⌘ + Enter) marks the listing labelled. **Export done** downloads a `.jsonl` file. Export at the end of each sitting as a backup; **Import** loads it back.
 6. Save the export in `data/private/labels/` and check it: `uv run python -m evals.harness.labels data/private/labels/<file>.jsonl`.
 
+## Extra labellers (the hosted page)
+
+A second labeller uses a hosted page with no listing text (D28): each listing has a link, and they read it on Spitogatos itself. The same rules apply, plus one: the "table" values come from our 20 October copy, so if the live page now shows something else because the listing changed, they keep our value, mark the page as "changed since 20 October" and note what changed. A listing that's gone is marked "gone" and left out.
+
+- **Invite them** from the page's Share menu, by email. They need to be able to save: Contributor if the menu offers it for them, otherwise Editor. A public link lets outside visitors view but not save.
+- **Getting the labels back:** I read them from the page's store, save one file per labeller in `data/private/labels/`, and score agreement: `uv run python -m evals.harness.agreement <yours>.jsonl <theirs>.jsonl`. The target is 95%.
+
 ## Duplicates
 
 Two listings are the **same property** only if they're the same physical home: same area, floor and size within about 2 m², even if the price, photos and wording differ.

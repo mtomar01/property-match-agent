@@ -205,3 +205,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Choice:** one offline HTML file, built from the private data by `evals/harness/build_label_tool.py` into `data/private/labels/`. It shows the page's table, ticks and description side by side with the form, highlights numbers and key words, saves as you go in the browser, and exports JSONL in the label format. `evals/harness/labels.py` validates the export.
 - **Why:** descriptions run to 3,000 characters, which a spreadsheet cell handles badly. A hosted page would publish scraped listings. An offline file keeps the data on your machine, needs no install, and exports exactly the format the eval reads. Listing text is untrusted, so the page only ever inserts it as text, never as HTML.
 - **Say:** "The labelling tool is part of the eval. It's built to make the right label the easy one."
+
+## D28. Extra labellers work from the live page, on a hosted page with no listing text
+
+- **Context:** you asked whether other people could label too, online.
+- **Options:** host the full tool (it would pass scraped descriptions to other people); send the offline file privately (the same copies, just fewer); a hosted page with links and facts only.
+- **Choice:** links and facts only, published as a private Claude page with a shared store, for 20 listings (the first 20 in your own labelling order, so your labels cover them early). Labellers open each listing on Spitogatos and read it there.
+- **Who sees what:** each labeller writes only under their own path in the store, and the store's rules let only you read everyone's labels, so each labeller stays blind to the others. Checked after publishing with a test write read back at a labeller's access level: they see nothing of anyone else's.
+- **Trade-off:** live listings change and disappear, so each label records whether the page still matched our 20 October copy (matches, changed, gone). Gone listings are left out of the agreement score. Labelling needs to happen within a week or two.
+- **Measuring it:** `evals/harness/agreement.py` scores two label sets field by field, split into pre-filled and free-text fields. The same script runs your own relabel a week later.
+- **Say:** "Extra labellers go to the source. We share links and facts, never someone else's writing, and the store keeps each labeller blind to the others."

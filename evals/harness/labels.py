@@ -16,10 +16,11 @@ Check a file:  uv run python -m evals.harness.labels data/private/labels/<file>.
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import sys
-import datetime as dt
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -87,6 +88,8 @@ class ExtractionLabel(_Strict):
     notes: str = ""
     prefilled: list[str] = Field(default_factory=list)
     changed_from_code: list[str] = Field(default_factory=list)
+    # Labels made from the live page (hosted tool, D28): did it still match our copy?
+    live_page: Literal["matches", "changed", "gone"] | None = None
 
     @field_validator("evidence")
     @classmethod

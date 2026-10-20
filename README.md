@@ -25,6 +25,8 @@ To use the MCP server from the Claude desktop app, see `docs/connect-claude-desk
 ```bash
 uv run python -m evals.harness.build_label_tool    # offline labelling page in data/private/labels/
 uv run python -m evals.harness.labels data/private/labels/<export>.jsonl   # check exported labels
+uv run python -m evals.harness.build_label_tool --hosted 20   # links-only page for extra labellers
+uv run python -m evals.harness.agreement first.jsonl second.jsonl  # how often two labellers agree
 ```
 
 The rules are in `docs/labelling-guide.md`.
