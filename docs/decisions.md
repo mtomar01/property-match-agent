@@ -38,7 +38,7 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Choice:** `core/pii.py` scrubs phones and emails, and the Listing model refuses any title or description that still contains one. A snapshot with a phone in it fails to load.
 - **How the phone rule works:** any run of 9 or more digits, allowing spaces, dots and dashes, or digits after "τηλ" or "tel". Prices top out at 7 digits (1.050.000), so they survive.
 - **Proof it matters:** in the first 270 real cards, one description carried an agency's mobile number, and a 9-digit typo at that.
-- **Limit:** personal names have no fixed shape, so code can't catch them reliably. They're handled by policy: descriptions stay in the private snapshot only, and extracted fields never include names. Business names (agencies) currently stay in private descriptions. **Open for you:** strip agency names too?
+- **Limit:** personal names have no fixed shape, so code can't catch them reliably. They're handled by policy: descriptions stay in the private snapshot only, and extracted fields never include names. Agency brand names stay (see D19).
 - **Say:** "Privacy isn't a reminder in a prompt. Bad data is refused at load time."
 
 ## D6. Energy classes stored as Latin letters
@@ -95,7 +95,9 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   - **xe.gr robots.txt** names Anthropic's `Claude-User` agent (Claude fetching pages for a person) and disallows it everywhere except a few editorial pages. It also disallows search and results pages for every bot. Its terms (section 9) need written permission for reuse.
   - **Spitogatos robots.txt** only disallows map search, annual reports, the account area and a list of bad bots, none of them Claude. Its terms (section 11) allow saving content electronically for personal, non-commercial use.
 - **Choice:** collected Spitogatos at a slow pace (a few seconds between pages, three result pages per area, 270 listings). Did not collect xe.gr. Browsing it through your Chrome would still be Claude acting for you, just under Chrome's name, so it would route round an opt-out that names us.
-- **Open for you:** skip xe.gr in the real snapshot (the synthetic set covers it), browse it yourself and paste listings, or ask xe.gr for permission.
+- **Follow-up (same day):** you said browsing xe.gr through Claude in Chrome is fine for the POC. I still didn't. The opt-out names Claude acting for a user, which is exactly what Claude in Chrome is, and your own project rule is "respect robots.txt".
+- **The route that works:** you browse xe.gr yourself, as a normal visitor, and save 20 to 30 listing pages. I parse the saved files offline. That's personal use under xe.gr's terms, and Claude never requests a page from xe.gr.
+- **Longer term:** ask xe.gr for permission, which fits the plan to work with the platforms.
 - **Say:** "I read the robots.txt and the terms before collecting anything, and one site said no to my agent specifically, so I didn't."
 
 ## D14. Real card parsing: code reads structure, the model will read prose
@@ -120,7 +122,29 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Choice:** build and test in this environment, push to GitHub, clone locally for the desktop app.
 - **Why:** the Claude desktop app starts local MCP servers, so the demo has to run where the app is. Commits use the GitHub no-reply address so your personal email never appears in a public repo.
 
-## Pending: front end (needed from v2)
+## D18. spiti24 added
+
+- **What it says (read 20 October 2026):** robots.txt disallows only `/wp-admin/` for every agent, plus a list of bad bots, none of them Claude. Its terms allow saving content electronically for personal, non-commercial use, the same wording as Spitogatos.
+- **Collected:** 3 result pages per area at the same slow pace, 214 full cards. Mini promoted cards (just price and size) were skipped.
+- **What its cards carry:** price, any price drop with its date, type, size, area and sub-area, bedrooms and bathrooms. No floor and no description, so those stay unknown, and a search that excludes floors leaves spiti24 listings out (fail closed, D8).
+- **Finding:** 204 of the 214 spiti24 listings match a Spitogatos listing on area, size within 1 m² and exact price. 176 match exactly one. 28 match several, usually units in the same new development with the same price and size. That's the duplicates eval handed to us: easy pairs, plus genuinely hard ones where "same building" isn't "same flat".
+- **Real-data check:** search safety on the merged 484 listings: 0 hard limit breaks.
+
+## D19. Agency brand names stay in private descriptions
+
+- **Context:** contact details are scrubbed. The question was whether to strip agency names too.
+- **Choice (yours):** keep them.
+- **Why:** the product sends people back to the agency and the platform rather than around them. Every card links to the original listing, and keeping the agency's name supports that.
+- **The line we still hold:** the spec's "never store agent or owner names" is about people. No personal name goes into a structured field, and phones and emails are always scrubbed.
+- **Say:** "We're a front door to the portals and agencies, not a way round them."
+
+## D20. Front end: a small React app
+
+- **Choice (yours):** React with Vite and TypeScript, kept basic, in this repo under `app/`.
+- **Considered:** Lovable (fast, but the code is harder to own and explain) and Open WebUI (a chat app, MCP over HTTP only, branding required above 50 users; useful as an extra MCP client in a demo).
+- **When:** with the v1 table view, after the interview and extraction evals exist. The spec warns the UI can eat the schedule, so it stays thin until v3.
+
+## Front end background (decided in D20)
 
 - **Your lean:** a small React app. Also considered: Lovable, Open WebUI.
 - **Open WebUI:** a good self-hosted chat interface, and it now supports MCP natively, but only over Streamable HTTP, so our stdio server would need an HTTP transport or the mcpo proxy. It's built for chat, so the swipe deck, criteria card and shortlist would mean working against it. Since v0.6.6 its licence also requires keeping its branding above 50 users. It's useful as a second MCP client for a demo, not as the product.

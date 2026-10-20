@@ -217,7 +217,7 @@ def normalise_parking(raw: str | None) -> str | None:
 # ---------------------------------------------------------------------------
 
 _PROPERTY_TYPES = [
-    ("συγκροτημα διαμερισματων", "apartment_complex"),
+    ("συγκροτημα", "apartment_complex"),
     ("οροφοδιαμερισμα", "apartment"),
     ("διαμερισμα", "apartment"),
     ("γκαρσονιερα", "studio"),

@@ -2,7 +2,8 @@
 
 Input: data/private/spitogatos_cards_<date>.jsonl, one card per line, as read
 from the results pages in a normal browser at a slow pace.
-Output: data/private/snapshot.jsonl, which PM_SNAPSHOT can point the server at.
+Output: data/private/snapshot_spitogatos.jsonl (merged into snapshot.jsonl by
+adapters/private_snapshot.py).
 
 Code calculates, the model reasons: this parser only reads the parts of a card
 that have a fixed structure (title, badges, price) plus the template sentences
@@ -24,7 +25,7 @@ from pathlib import Path
 from core import greek, pii
 from core.models import Listing
 
-OUT = Path(__file__).resolve().parent.parent / "data" / "private" / "snapshot.jsonl"
+OUT = Path(__file__).resolve().parent.parent / "data" / "private" / "snapshot_spitogatos.jsonl"
 
 TITLE = re.compile(r"^(?P<type>.+?),\s*(?P<size>[\d.,]+)\s*τ\.μ\.$")
 PRICE = re.compile(r"^€\s*(?P<price>[\d.]+)$")
