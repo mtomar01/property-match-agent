@@ -44,7 +44,7 @@ button, .button { font: inherit; padding: 5px 11px; border-radius: 6px; border: 
 button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 input, select, textarea { font: inherit; color: var(--text); background: var(--input); border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; }
-main { display: grid; grid-template-columns: 210px minmax(0, 1fr) 410px; height: calc(100vh - 53px); }
+main { display: grid; grid-template-columns: 210px minmax(0, 1fr) 410px; height: calc(100vh - var(--top, 53px)); }
 nav { overflow-y: auto; border-right: 1px solid var(--border); padding: 6px; }
 nav button { display: flex; width: 100%; text-align: left; gap: 7px; align-items: center; border: none; background: none; padding: 5px 6px; border-radius: 5px; }
 nav button[aria-current="true"] { background: var(--chip); font-weight: 600; }
@@ -85,6 +85,11 @@ textarea { width: 100%; min-height: 64px; resize: vertical; }
 dialog { max-width: 680px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); }
 dialog li { margin: 4px 0; }
 #status { font-size: 12px; color: var(--muted); }
+.banner { display: none; padding: 8px 16px; background: var(--warn); color: var(--panel); font-weight: 600; }
+.banner.show { display: block; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+dialog::backdrop { background: rgba(0, 0, 0, .35); }
+#export-text { width: 100%; min-height: 220px; font: 12px/1.4 ui-monospace, Menlo, monospace; }
 @media (max-width: 1150px) {
   main { grid-template-columns: minmax(0, 1fr) 390px; }
   nav { display: none; }
@@ -110,6 +115,7 @@ dialog li { margin: 4px 0; }
   <label class="button">Import<input type="file" id="import" accept=".jsonl,.json,application/json" hidden></label>
   <button type="button" class="primary" id="export">Export done</button>
 </header>
+<div class="banner" id="banner" role="alert"></div>
 <main>
   <nav id="list" aria-label="Listings"></nav>
   <section id="ref" aria-label="Listing">
@@ -152,7 +158,13 @@ dialog li { margin: 4px 0; }
     <li><b>Never</b> copy a name, phone or email into evidence or notes.</li>
   </ol>
   <p>The full guide is docs/labelling-guide.md.</p>
-  <form method="dialog"><button class="primary">Close</button></form>
+  <div class="dialog-actions"><button type="button" class="primary" id="rules-close">Close</button></div>
+</dialog>
+<dialog id="export-dialog">
+  <h2 style="margin-top:0">Your labels</h2>
+  <p>If no file downloaded, copy everything below and paste it into a file called <code>labels.jsonl</code>, or straight into the chat.</p>
+  <textarea id="export-text" readonly></textarea>
+  <div class="dialog-actions"><button type="button" id="export-copy">Copy</button><button type="button" class="primary" id="export-close">Close</button></div>
 </dialog>
 <script type="application/json" id="data">__DATA_JSON__</script>
 <script>
@@ -197,6 +209,11 @@ const FIELDS = [
 ];
 const HIGHLIGHT = /(\d[\d.,]*\s*(?:τ\.?\s?μ\.?|μέτρα|μ\.|m\b|€|χλμ\.?|λεπτ[άα]?)?|€\s?[\d.,]+|ασανσ[έε]ρ|ανελκυστ\p{L}*|αναβατ[όο]ρι\p{L}*|μετρ[όο]|πιλοτ\p{L}*|πυλωτ\p{L}*|υπ[όο]γει\p{L}*|ημιυπ[όο]γει\p{L}*|ισ[όο]γει\p{L}*|υπερυψωμ\p{L}*|ημι[όο]ροφ\p{L}*|[όο]ροφ\p{L}*|ρετιρ[έε]|ενεργειακ\p{L}*|ΠΕΑ|ανακαιν\p{L}*|μισθωμ[έε]ν\p{L}*|στ[άα]θμευσ\p{L}*|π[άα]ρκινγκ|parking|αποθ[ήη]κ\p{L}*|βερ[άα]ντ\p{L}*|μπαλκ[όο]ν\p{L}*|υπ[όο] κατασκευ\p{L}*|παρ[άα]δοσ\p{L}*|ημιτελ\p{L}*|wc)/giu;
 
+const CAN_SAVE = (() => {
+  try { localStorage.setItem("pm-probe", "1"); localStorage.removeItem("pm-probe"); return true; }
+  catch (e) { return false; }
+})();
+const EMBEDDED = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
 let state = loadState();
 let current = 0;
 
@@ -441,6 +458,10 @@ function exportDone() {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   setStatus("Exported " + lines.length + " labels.");
+  if (EMBEDDED || !CAN_SAVE) {
+    document.getElementById("export-text").value = lines.join("\n") + "\n";
+    document.getElementById("export-dialog").showModal();
+  }
 }
 
 function importFile(file) {
@@ -503,6 +524,28 @@ document.getElementById("export").addEventListener("click", exportDone);
 document.getElementById("import").addEventListener("change", ev => { if (ev.target.files[0]) importFile(ev.target.files[0]); ev.target.value = ""; });
 document.getElementById("jump").addEventListener("change", ev => go(Number(ev.target.value)));
 document.getElementById("rules-open").addEventListener("click", () => document.getElementById("rules").showModal());
+document.getElementById("rules-close").addEventListener("click", () => document.getElementById("rules").close());
+document.getElementById("export-close").addEventListener("click", () => document.getElementById("export-dialog").close());
+document.getElementById("export-copy").addEventListener("click", () => {
+  const box = document.getElementById("export-text");
+  box.select();
+  const done = () => setStatus("Copied. Paste it into a .jsonl file or the chat.");
+  if (navigator.clipboard) navigator.clipboard.writeText(box.value).then(done, () => { document.execCommand("copy"); done(); });
+  else { document.execCommand("copy"); done(); }
+});
+for (const dialog of document.querySelectorAll("dialog")) {
+  dialog.addEventListener("click", ev => { if (ev.target === dialog) dialog.close(); });  // click outside closes
+}
+if (!CAN_SAVE || EMBEDDED) {
+  const banner = document.getElementById("banner");
+  banner.textContent = !CAN_SAVE
+    ? "This view can't save your work. Download this file and open it in Chrome or Safari before you start labelling."
+    : "You're looking at this inside another app, which may not keep your work or allow downloads. For the real labelling, download the file and open it in Chrome or Safari.";
+  banner.classList.add("show");
+}
+const fitMain = () => document.documentElement.style.setProperty("--top", (document.querySelector("header").offsetHeight + document.getElementById("banner").offsetHeight) + "px");
+window.addEventListener("resize", fitMain);
+fitMain();
 document.addEventListener("keydown", ev => {
   if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); markDone(); }
   else if (ev.altKey && ev.key === "ArrowDown") { ev.preventDefault(); go(current + 1); }
