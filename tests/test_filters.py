@@ -68,3 +68,18 @@ def test_unknown_preference_scores_neutral():
     c = Criteria.model_validate({"user_id": "u", "intent": "buy", "preferences": [{"feature": "balcony", "equals": True, "weight": 1}]})
     assert score(listing(1, balcony=None), c.preferences) == 0.5
     assert score(listing(2, balcony=True), c.preferences) == 1.0
+
+
+def test_energy_preference_uses_letters():
+    c = Criteria.model_validate({"user_id": "u", "intent": "buy", "preferences": [{"feature": "energy_class", "min": "B", "weight": 1}]})
+    good = listing(1, energy_class={"raw": "Β+", "value": "B+"})
+    bad = listing(2, energy_class={"raw": "Δ", "value": "D"})
+    assert score(good, c.preferences) == 1.0 and score(bad, c.preferences) == 0.0
+
+
+def test_unknown_preference_feature_is_refused():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Criteria.model_validate({"user_id": "u", "intent": "buy", "preferences": [{"feature": "brightness", "min": 3, "weight": 1}]})

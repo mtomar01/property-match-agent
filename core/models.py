@@ -29,6 +29,7 @@ PropertyType = Literal[
 ]
 Condition = Literal["needs_work", "unfinished", "new_build", "renovated", "good"]
 EnergyClass = Literal["A+", "A", "B+", "B", "C", "D", "E", "F", "G", "pending", "exempt"]
+ENERGY_LETTERS = ("A+", "A", "B+", "B", "C", "D", "E", "F", "G")
 HeatingType = Literal["independent", "central", "none"]
 Fuel = Literal["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"]
 Parking = Literal["pilotis", "space", "garage", "none"]
@@ -237,19 +238,35 @@ class HardLimits(_Strict):
         return self
 
 
-class Preference(_Strict):
-    """A weighted wish. Scored, never filtered."""
+PreferenceFeature = Literal[
+    "price_eur", "size_m2", "bedrooms", "bathrooms", "floor_level", "year_built", "renovated_year",
+    "energy_class", "metro_walk_min", "balcony", "lift", "parking", "storage",
+    "dual_aspect", "corner", "whole_floor",
+]
 
-    feature: str
-    min: float | None = None
-    max: float | None = None
-    equals: bool | str | None = None
+
+class Preference(_Strict):
+    """A weighted wish. Scored, never filtered.
+
+    The feature list is closed on purpose: the interview model must map what a
+    user says onto features the listings actually have, and anything else
+    ("bright", "quiet street") goes into open_questions instead of being
+    invented as a field. energy_class bounds are letters, e.g. min "B".
+    """
+
+    feature: PreferenceFeature
+    min: float | str | None = None
+    max: float | str | None = None
+    equals: bool | None = None
     weight: float = Field(ge=0.0, le=1.0)
 
     @model_validator(mode="after")
     def _has_target(self) -> "Preference":
         if self.min is None and self.max is None and self.equals is None:
             raise ValueError("a preference needs min, max or equals")
+        for bound in (self.min, self.max):
+            if isinstance(bound, str) and (self.feature != "energy_class" or bound not in ENERGY_LETTERS):
+                raise ValueError("text bounds are only for energy_class letters, A+ to G")
         return self
 
 

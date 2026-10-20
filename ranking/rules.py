@@ -12,7 +12,8 @@ from __future__ import annotations
 from core import greek
 from core.models import Listing, Preference
 
-# energy_class preferences compare positions on this scale: G is 0, A+ is 8.
+# energy_class preferences compare positions on this scale (G lowest, A+ highest);
+# a preference names letters, e.g. min "B".
 ENERGY_ORDER = ["G", "F", "E", "D", "C", "B", "B+", "A", "A+"]
 
 
@@ -38,6 +39,9 @@ def preference_match(listing: Listing, preference: Preference) -> float:
     if preference.equals is not None:
         return 1.0 if value == preference.equals else 0.0
     low, high = preference.min, preference.max
+    if preference.feature == "energy_class":
+        low = ENERGY_ORDER.index(low) if isinstance(low, str) else low
+        high = ENERGY_ORDER.index(high) if isinstance(high, str) else high
     if low is not None and value < low:
         return 0.0
     if high is not None and value > high:
