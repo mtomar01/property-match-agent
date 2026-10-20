@@ -1,0 +1,25 @@
+name: tests and evals
+
+# Runs on every push and pull request. The evals use the synthetic snapshot
+# only, never a live site, and the build fails if a hard limit is ever broken.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: pip install uv
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Unit tests
+        run: uv run pytest
+      - name: Evals (fails on any hard limit break)
+        run: uv run python -m evals.harness.run --no-save
