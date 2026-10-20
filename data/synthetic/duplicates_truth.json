@@ -1,0 +1,134 @@
+[
+  {
+    "cluster_id": "truth-P00",
+    "listing_ids": [
+      "spitogatos:SYN0001",
+      "spiti24:SYN0049"
+    ],
+    "evidence": [],
+    "price_min_eur": 200000,
+    "price_max_eur": 200000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P02",
+    "listing_ids": [
+      "spiti24:SYN0003",
+      "xe:SYN0055"
+    ],
+    "evidence": [],
+    "price_min_eur": 318000,
+    "price_max_eur": 333000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P03",
+    "listing_ids": [
+      "spitogatos:SYN0004",
+      "spiti24:SYN0050"
+    ],
+    "evidence": [],
+    "price_min_eur": 175000,
+    "price_max_eur": 175000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P05",
+    "listing_ids": [
+      "spiti24:SYN0006",
+      "xe:SYN0056"
+    ],
+    "evidence": [],
+    "price_min_eur": 352000,
+    "price_max_eur": 374000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P06",
+    "listing_ids": [
+      "spitogatos:SYN0007",
+      "spiti24:SYN0051"
+    ],
+    "evidence": [],
+    "price_min_eur": null,
+    "price_max_eur": null,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P08",
+    "listing_ids": [
+      "spiti24:SYN0009",
+      "xe:SYN0057"
+    ],
+    "evidence": [],
+    "price_min_eur": 223000,
+    "price_max_eur": 226000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P09",
+    "listing_ids": [
+      "spitogatos:SYN0010",
+      "spiti24:SYN0052"
+    ],
+    "evidence": [],
+    "price_min_eur": 226000,
+    "price_max_eur": 226000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P11",
+    "listing_ids": [
+      "spiti24:SYN0012",
+      "xe:SYN0058"
+    ],
+    "evidence": [],
+    "price_min_eur": 267000,
+    "price_max_eur": 279000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P12",
+    "listing_ids": [
+      "spitogatos:SYN0013",
+      "spiti24:SYN0053"
+    ],
+    "evidence": [],
+    "price_min_eur": 78000,
+    "price_max_eur": 78000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P14",
+    "listing_ids": [
+      "spiti24:SYN0015",
+      "xe:SYN0059"
+    ],
+    "evidence": [],
+    "price_min_eur": 78000,
+    "price_max_eur": 82000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P15",
+    "listing_ids": [
+      "spitogatos:SYN0016",
+      "spiti24:SYN0054"
+    ],
+    "evidence": [],
+    "price_min_eur": 98000,
+    "price_max_eur": 98000,
+    "decided_by": "human"
+  },
+  {
+    "cluster_id": "truth-P17",
+    "listing_ids": [
+      "spiti24:SYN0018",
+      "xe:SYN0060"
+    ],
+    "evidence": [],
+    "price_min_eur": 113000,
+    "price_max_eur": 116000,
+    "decided_by": "human"
+  }
+]
