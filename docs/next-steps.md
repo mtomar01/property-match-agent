@@ -17,7 +17,7 @@ Updated 20 October 2026, session 1.
 3. Label in sittings of 20 to 30. Press **Export done** at the end of each sitting and keep the file.
 4. Send me the final export. I'll check it with `evals.harness.labels` and build the extraction eval on it.
 5. **A week later:** relabel 20 blind for the self-agreement check (target 95%).
-6. **Optional, a second labeller:** share the hosted page "Property Match Labels" (20 listings, D28) with one or two people by email, as Contributors or Editors. They label from the live site, so within a week or two. I'll score agreement with `evals.harness.agreement`.
+6. **Hosted batches (D28):** "Property Match Labels" (listings 1 to 20) is with an evaluator. "Property Match Labels 21–40" is the second batch. Share each by email as Contributor or Editor; label within a week or two, since they use the live site. I'll score agreement with `evals.harness.agreement`.
 
 ## v1 (about 3 days), evals first
 

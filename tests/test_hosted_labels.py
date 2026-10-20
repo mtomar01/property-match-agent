@@ -32,7 +32,7 @@ def write_inputs(tmp_path, n=3):
 def test_hosted_page_carries_links_and_facts_only(tmp_path):
     raw_path, snap_path = write_inputs(tmp_path)
     out = tmp_path / "hosted.html"
-    assert build_hosted(2, raw_path, snap_path, out) == 2
+    assert build_hosted(2, 0, raw_path, snap_path, out) == out
     html = out.read_text(encoding="utf-8")
     payload = json.loads(re.search(r'<script type="application/json" id="data">(.*?)</script>', html, re.S).group(1))
     assert len(payload["items"]) == 2
@@ -41,6 +41,23 @@ def test_hosted_page_carries_links_and_facts_only(tmp_path):
         assert item["prefill"]["price_eur"] == 150000 and item["prefill"]["lift"] is True
     assert DESCRIPTION not in html and "Ασανσέρ" not in html
     assert "<!doctype" not in html.lower() and "<body" not in html  # the artifact skeleton is added at publish
+    assert "<title>Property Match Labels</title>" in html and "__TITLE__" not in html
+
+
+def test_a_later_batch_is_its_own_page_numbered_in_the_full_order(tmp_path):
+    raw_path, snap_path = write_inputs(tmp_path, n=5)
+    out = build_hosted(2, 2, raw_path, snap_path, tmp_path / "batch2.html")
+    html = out.read_text(encoding="utf-8")
+    payload = json.loads(re.search(r'<script type="application/json" id="data">(.*?)</script>', html, re.S).group(1))
+    assert [item["number"] for item in payload["items"]] == [3, 4]
+    assert "<title>Property Match Labels 3–4</title>" in html
+
+
+def test_batch_one_keeps_the_file_its_page_was_published_from():
+    from evals.harness.build_label_tool import hosted_path
+
+    assert hosted_path(20, 0).name == "property-match-labels.html"
+    assert hosted_path(20, 20).name == "property-match-labels-21-40.html"
 
 
 def label(listing, **fields):

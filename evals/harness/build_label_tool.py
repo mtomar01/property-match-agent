@@ -9,13 +9,16 @@ The file holds real listing text, so it lives in data/private/ (git ignores
 it) and is never published as a web page. Contact details are scrubbed before
 collection; this script checks again and refuses to build if any remain.
 
---hosted N builds the page for extra labellers instead (decision D28): the
-first N listings in the same order, with links and the values code read, but
-no listing text, tick lists or extras. That page can be shared, because it
-passes on no one's writing; labellers read each listing on the portal.
+--hosted N [START] builds the page for extra labellers instead (decision D28):
+N listings from position START (0 by default) in the same order, with links
+and the values code read, but no listing text, tick lists or extras. That page
+can be shared, because it passes on no one's writing; labellers read each
+listing on the portal. Each batch is its own page, with its own store, so a
+new batch never touches a page someone is already labelling on.
 
 Run: uv run python -m evals.harness.build_label_tool
-     uv run python -m evals.harness.build_label_tool --hosted 20
+     uv run python -m evals.harness.build_label_tool --hosted 20        # listings 1 to 20
+     uv run python -m evals.harness.build_label_tool --hosted 20 20     # listings 21 to 40
 """
 
 from __future__ import annotations
@@ -35,9 +38,20 @@ SNAPSHOT = ROOT / "data" / "private" / "snapshot.jsonl"
 TEMPLATE = Path(__file__).with_name("label_tool.html")
 HOSTED_TEMPLATE = Path(__file__).with_name("hosted_label_tool.html")
 OUT = ROOT / "data" / "private" / "labels" / "extraction_labeller_round1.html"
-HOSTED_OUT = ROOT / "data" / "private" / "labels" / "hosted" / "property-match-labels.html"
+HOSTED_DIR = ROOT / "data" / "private" / "labels" / "hosted"
 # The only item keys the hosted page may carry: links and facts, never listing text.
-HOSTED_KEYS = ("listing_id", "url", "title", "area", "prefill")
+HOSTED_KEYS = ("number", "listing_id", "url", "title", "area", "prefill")
+
+
+def hosted_path(count: int, start: int) -> Path:
+    """Batch 1 keeps the file its published page was made from; later batches get their own."""
+    if start == 0 and count == 20:
+        return HOSTED_DIR / "property-match-labels.html"
+    return HOSTED_DIR / f"property-match-labels-{start + 1}-{start + count}.html"
+
+
+def hosted_title(count: int, start: int) -> str:
+    return "Property Match Labels" if start == 0 else f"Property Match Labels {start + 1}–{start + count}"
 
 # Table rows that never help a label and only add noise on screen.
 HIDDEN_ROWS = {"Τιμή ανά τ.μ.", "Κωδικός Συστήματος", "Κωδικός Ακινήτου", "Δημοσίευση αγγελίας", "Τελευταία ενημέρωση"}
@@ -80,9 +94,12 @@ def build_items(raw_records: list[dict], cards: dict[str, dict]) -> list[dict]:
     return items
 
 
-def hosted_items(items: list[dict], count: int) -> list[dict]:
-    """The first `count` listings, cut down to links and code-read facts."""
-    return [{key: item[key] for key in HOSTED_KEYS} for item in items[:count]]
+def hosted_items(items: list[dict], count: int, start: int = 0) -> list[dict]:
+    """`count` listings from position `start`, cut down to links and code-read facts."""
+    chosen = []
+    for number, item in enumerate(items[start:start + count], start=start + 1):
+        chosen.append({key: (number if key == "number" else item[key]) for key in HOSTED_KEYS})
+    return chosen
 
 
 def _load(raw_path: Path, snapshot_path: Path) -> list[dict]:
@@ -95,10 +112,12 @@ def _load(raw_path: Path, snapshot_path: Path) -> list[dict]:
     return build_items(raw_records, cards)
 
 
-def _write(template: Path, payload: dict, out_path: Path) -> None:
+def _write(template: Path, payload: dict, out_path: Path, title: str | None = None) -> None:
     html = template.read_text(encoding="utf-8")
     if html.count("__DATA_JSON__") != 1:
         raise ValueError("the template must hold exactly one __DATA_JSON__ placeholder")
+    if title is not None:
+        html = html.replace("__TITLE__", title)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html.replace("__DATA_JSON__", _json_for_script(payload)), encoding="utf-8")
 
@@ -109,17 +128,21 @@ def build(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path =
     return len(items)
 
 
-def build_hosted(count: int, raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT,
-                 out_path: Path = HOSTED_OUT, round_no: int = 1) -> int:
-    items = hosted_items(_load(raw_path, snapshot_path), count)
-    _write(HOSTED_TEMPLATE, {"round": round_no, "items": items}, out_path)
-    return len(items)
+def build_hosted(count: int, start: int = 0, raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT,
+                 out_path: Path | None = None, round_no: int = 1) -> Path:
+    items = hosted_items(_load(raw_path, snapshot_path), count, start)
+    if not items:
+        raise ValueError(f"no listings from position {start}")
+    out_path = out_path or hosted_path(count, start)
+    _write(HOSTED_TEMPLATE, {"round": round_no, "items": items}, out_path, title=hosted_title(len(items), start))
+    return out_path
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1] == "--hosted":
-        written = build_hosted(int(sys.argv[2]))
-        print(f"Wrote {written} listings to {HOSTED_OUT.relative_to(ROOT)}")
+    if len(sys.argv) in (3, 4) and sys.argv[1] == "--hosted":
+        start = int(sys.argv[3]) if len(sys.argv) == 4 else 0
+        path = build_hosted(int(sys.argv[2]), start)
+        print(f"Wrote listings {start + 1} to {start + int(sys.argv[2])} to {path.relative_to(ROOT)}")
     else:
         written = build()
         print(f"Wrote {written} listings to {OUT.relative_to(ROOT)}")

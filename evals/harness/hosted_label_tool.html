@@ -1,4 +1,4 @@
-<title>Property Match Labels</title>
+<title>__TITLE__</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,8 +133,8 @@ dialog li { margin: 5px 0; }
 
 <header class="top">
   <div>
-    <h1>Property Match Labels</h1>
-    <p class="sub">Round <span id="round"></span> · <span id="total"></span> listings · read each one on Spitogatos, fill in what it says</p>
+    <h1>__TITLE__</h1>
+    <p class="sub">Round <span id="round"></span> · listings <span id="range"></span> · read each one on Spitogatos, fill in what it says</p>
   </div>
   <div class="spacer"></div>
   <div class="me">
@@ -254,6 +254,8 @@ let readOnly = false;
 let meWrite = Promise.resolve();
 
 const $ = id => document.getElementById(id);
+// Listings keep their number in the full labelling order, so batch 2 starts at 21.
+const number = i => ITEMS[i].number || i + 1;
 function el(tag, attrs, text) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
@@ -332,12 +334,12 @@ function renderQueue() {
     const state = !rec ? "" : rec.live_page === "gone" ? "saved gone" : "saved";
     const b = el("button", { type: "button", "aria-current": String(i === current) });
     b.append(el("span", { class: "dot " + state, "aria-hidden": "true" }));
-    const label = el("span", {}, (i + 1) + ". " + (item.title || item.listing_id));
+    const label = el("span", {}, number(i) + ". " + (item.title || item.listing_id));
     label.append(el("span", { class: "where" }, item.area + (rec ? " · saved" : "")));
     b.append(label);
     b.addEventListener("click", () => go(i));
     const li = el("li"); li.append(b); list.append(li);
-    const o = el("option", { value: String(i) }, (i + 1) + ". " + (rec ? "✓ " : "") + (item.title || "") + " · " + item.area);
+    const o = el("option", { value: String(i) }, number(i) + ". " + (rec ? "✓ " : "") + (item.title || "") + " · " + item.area);
     if (i === current) o.selected = true;
     jump.append(o);
   });
@@ -348,7 +350,7 @@ function renderQueue() {
 
 function renderSheet() {
   const item = ITEMS[current], e = entry(item);
-  $("pos").textContent = "Listing " + (current + 1) + " of " + ITEMS.length;
+  $("pos").textContent = "Listing " + number(current) + " · " + (current + 1) + " of " + ITEMS.length + " here";
   $("title").textContent = item.title || item.listing_id;
   $("facts").textContent = item.area + " · " + item.listing_id;
   $("open").href = item.url;
@@ -494,7 +496,7 @@ async function connect() {
 }
 
 $("round").textContent = ROUND;
-$("total").textContent = ITEMS.length;
+$("range").textContent = number(0) + " to " + number(ITEMS.length - 1);
 $("initials").addEventListener("change", ev => { initials = ev.target.value.trim().toUpperCase(); ev.target.value = initials; writeMe(); });
 $("initials").addEventListener("input", ev => { initials = ev.target.value.trim(); });
 $("notes").addEventListener("input", ev => { const e = entry(ITEMS[current]); e.notes = ev.target.value; e.touched = true; });
