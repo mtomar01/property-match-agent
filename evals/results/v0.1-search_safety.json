@@ -1,0 +1,278 @@
+{
+  "eval": "search_safety",
+  "cases": 20,
+  "total_breaks": 0,
+  "mean_recall_at_20": 1.0,
+  "mean_precision_at_10": 1.0,
+  "count_mismatches": 0,
+  "rows": [
+    {
+      "id": "ss01",
+      "description": "Spec demo: two bed flat in Egaleo under 200k",
+      "expected": 10,
+      "total_matches": 10,
+      "returned": 10,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss02",
+      "description": "Budget exactly equal to a listed price (200,000 is allowed, 201,000 is not)",
+      "expected": 18,
+      "total_matches": 18,
+      "returned": 18,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss03",
+      "description": "Minimum size exactly 70 (70 allowed, 69 not)",
+      "expected": 23,
+      "total_matches": 23,
+      "returned": 20,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss04",
+      "description": "Greek area names",
+      "expected": 33,
+      "total_matches": 33,
+      "returned": 20,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss05",
+      "description": "Exclude basement and semi-basement, given in Greek",
+      "expected": 9,
+      "total_matches": 9,
+      "returned": 9,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2,
+        "floor": 2
+      }
+    },
+    {
+      "id": "ss06",
+      "description": "Exclude ground floors too",
+      "expected": 13,
+      "total_matches": 13,
+      "returned": 13,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss07",
+      "description": "Rent, not buy: sale listings must never appear",
+      "expected": 6,
+      "total_matches": 6,
+      "returned": 6,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss08",
+      "description": "Rent with a bedroom minimum",
+      "expected": 4,
+      "total_matches": 4,
+      "returned": 4,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss09",
+      "description": "Maisonettes only",
+      "expected": 5,
+      "total_matches": 5,
+      "returned": 5,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss10",
+      "description": "Three bedrooms or more in Chaidari",
+      "expected": 11,
+      "total_matches": 11,
+      "returned": 11,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss11",
+      "description": "Price band",
+      "expected": 15,
+      "total_matches": 15,
+      "returned": 15,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss12",
+      "description": "Size band",
+      "expected": 19,
+      "total_matches": 19,
+      "returned": 19,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss13",
+      "description": "Tight budget: price on request must not slip in",
+      "expected": 15,
+      "total_matches": 15,
+      "returned": 15,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss14",
+      "description": "No limits at all except intent: every sale listing",
+      "expected": 54,
+      "total_matches": 54,
+      "returned": 20,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss15",
+      "description": "Impossible: 4 bedrooms under 100k",
+      "expected": 0,
+      "total_matches": 0,
+      "returned": 0,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": null,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss16",
+      "description": "Everything at once",
+      "expected": 19,
+      "total_matches": 19,
+      "returned": 19,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2,
+        "bedrooms": 2
+      }
+    },
+    {
+      "id": "ss17",
+      "description": "Preferences must not loosen limits",
+      "expected": 9,
+      "total_matches": 9,
+      "returned": 9,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
+    },
+    {
+      "id": "ss18",
+      "description": "Investor intent searches sales",
+      "expected": 4,
+      "total_matches": 4,
+      "returned": 4,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss19",
+      "description": "Studios and apartments, small",
+      "expected": 9,
+      "total_matches": 9,
+      "returned": 9,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {}
+    },
+    {
+      "id": "ss20",
+      "description": "Mixed spelling of the same area",
+      "expected": 18,
+      "total_matches": 18,
+      "returned": 18,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "bedrooms": 2
+      }
+    }
+  ],
+  "version": "v0.1",
+  "commit": "59ed343",
+  "ran_at": "2026-10-20T09:36:12+00:00",
+  "data": "synthetic"
+}
