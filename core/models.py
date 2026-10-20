@@ -184,6 +184,7 @@ class Listing(_Strict):
             "listing_id": self.listing_id,
             "source": self.source,
             "url": self.url,
+            "listing_type": self.listing_type,
             "title": self.title,
             "price_eur": self.price_eur,
             "size_m2": self.size_m2,

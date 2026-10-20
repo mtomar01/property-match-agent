@@ -176,6 +176,10 @@ def _base_properties(rng: random.Random) -> list[Property]:
         "apartment", "basement", 75.0, 2, 72000)
     props[21].property_type, props[21].size_m2, props[21].bedrooms, props[21].floor_class, props[21].price_eur = (
         "apartment", 85.0, 2, "1", 201000)  # just over a 200k budget
+    # Cheap basements are old buildings: keep the edge cases realistic.
+    for idx, year, energy in ((15, 1978, "E"), (18, 1972, "G")):
+        props[idx].year_built, props[idx].energy, props[idx].condition, props[idx].renovated_year = year, energy, None, None
+        props[idx].lift, props[idx].balcony = False, False
 
     # Six rentals, monthly rent in price_eur.
     for idx in (30, 31, 32, 33, 34, 35):
