@@ -13,7 +13,10 @@ uv sync                                  # install dependencies
 uv run pytest                            # unit tests
 uv run python -m evals.harness.run       # eval suite, prints a results table
 uv run python -m core.synthetic          # regenerate the synthetic listings
+uv run python -m mcp_server.demo         # search through the MCP server, prints a table
 ```
+
+Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basements --limit 20`.
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
 

@@ -58,3 +58,15 @@ def test_snapshot_refuses_bad_lines(tmp_path):
     bad.write_text('{"listing_id": "xe:1", "source": "xe", "agent_phone": "6971234567"}\n', encoding="utf-8")
     with pytest.raises(SnapshotError, match="line 1"):
         SnapshotAdapter(bad)
+
+
+def test_demo_runs_over_stdio(capsys, monkeypatch):
+    """The command-line demo starts the real server as a subprocess, like the desktop app."""
+    import sys
+
+    from mcp_server import demo
+
+    monkeypatch.setattr(sys, "argv", ["demo", "--area", "Egaleo", "--max-price", "200000", "--limit", "3"])
+    demo.main()
+    out = capsys.readouterr().out
+    assert "synthetic listings" in out and "matches, showing 3" in out
