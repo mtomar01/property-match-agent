@@ -1,0 +1,10 @@
+{
+  "_doc": "One labelled pair for the duplicates eval. label is same, different or unsure.",
+  "pair_id": "pair_001",
+  "listing_a": "spitogatos:0000000000",
+  "listing_b": "xe:0000000000",
+  "label": "unsure",
+  "evidence": "",
+  "labeller": "mike",
+  "labelled_at": "2026-10-20"
+}

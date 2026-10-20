@@ -1,0 +1,28 @@
+{
+  "_doc": "One scripted chat. The user turns are fixed; expected_criteria is what a perfect interview would produce. must_ask lists the questions the agent has to ask before searching (for example an ambiguous budget). Save one JSON object per line in a .jsonl file.",
+  "chat_id": "chat_001",
+  "language": "el",
+  "persona": "First-time buyer, couple, works in central Athens",
+  "turns": [
+    {
+      "role": "user",
+      "text": ""
+    }
+  ],
+  "expected_criteria": {
+    "intent": "buy",
+    "areas": [],
+    "hard_limits": {
+      "max_price_eur": null,
+      "min_size_m2": null,
+      "min_bedrooms": null,
+      "property_types": [],
+      "exclude_floors": []
+    },
+    "preferences": [],
+    "open_questions": []
+  },
+  "must_ask": [],
+  "must_not_invent": [],
+  "notes": ""
+}
