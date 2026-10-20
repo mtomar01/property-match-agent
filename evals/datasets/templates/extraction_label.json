@@ -1,5 +1,5 @@
 {
-  "_doc": "One record per labelled listing. Copy this file, fill it, and save one JSON object per line in a .jsonl file. Use null for unknown. See docs/labelling-guide.md.",
+  "_doc": "One record per labelled listing, one JSON object per line in a .jsonl file. Blank (null) means the listing doesn't say, or says two different things. The labelling tool writes this format; evals/harness/labels.py checks it. See docs/labelling-guide.md.",
   "listing_id": "spitogatos:0000000000",
   "labeller": "mike",
   "labelled_at": "2026-10-20",
@@ -28,7 +28,18 @@
     "sub_area": null,
     "metro_walk_min": null
   },
-  "price_history": [],
+  "price_history": [
+    {
+      "price_eur": 170000,
+      "date": null
+    }
+  ],
   "evidence": {},
-  "notes": ""
+  "notes": "",
+  "prefilled": [
+    "price_eur",
+    "size_m2"
+  ],
+  "changed_from_code": [],
+  "_doc_prefilled": "Fields the tool showed pre-filled from the page's table and ticks, and which of those the labeller changed."
 }

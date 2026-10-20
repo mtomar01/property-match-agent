@@ -8,6 +8,8 @@ Everything in this folder is public, so it holds invented data only. Labels for 
 | `interview_chats.jsonl` | 40 scripted interview chats, 20 Greek and 20 English | Interview eval (v1) |
 | `templates/` | Empty templates for extraction labels, chats and duplicate pairs | Labelling |
 
+Extraction labels for the 100 real listings are made with the offline labelling tool (`evals/harness/build_label_tool.py`, rules in `docs/labelling-guide.md`) and stay in `data/private/labels/`. `evals/harness/labels.py` defines and checks the label format.
+
 ## Interview chats: how they will be scored
 
 Each chat has the user's turns in order, `user_facts` for a simulated user who answers only from those facts, and `expected_criteria`, the card a perfect interview ends with.

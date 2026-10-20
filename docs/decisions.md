@@ -149,3 +149,59 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Your lean:** a small React app. Also considered: Lovable, Open WebUI.
 - **Open WebUI:** a good self-hosted chat interface, and it now supports MCP natively, but only over Streamable HTTP, so our stdio server would need an HTTP transport or the mcpo proxy. It's built for chat, so the swipe deck, criteria card and shortlist would mean working against it. Since v0.6.6 its licence also requires keeping its branding above 50 users. It's useful as a second MCP client for a demo, not as the product.
 - **My recommendation:** a small React app (Vite), kept basic, in this repo. A swipe deck is a custom interaction, and interviewers can read every line.
+
+## D21. Preferences use a closed list of features
+
+- **Context:** a preference names a feature to rank on, such as `floor_level` with `min: 3`. The model writes these cards, so it can invent a feature, such as "brightness", that no listing field carries.
+- **Options:** accept any name and ignore the ones ranking doesn't know; accept a closed list and refuse the rest.
+- **Choice:** a closed list (`PreferenceFeature` in `core/models.py`), the 16 features ranking can actually score. Energy class bounds use letters ("B" or better), not numbers.
+- **Why:** an unknown feature would score 0.5 on every listing forever, so the user's wish would be silently dropped while the card still showed it. Refusing it makes the agent either map the wish to a real feature or keep it as an open question. Two interview chats (`el_14`, `en_14`) test the honest version of this.
+- **Say:** "If the ranking can't score it, the schema won't accept it, so the agent can't pretend a wish is being used."
+
+## D22. An unticked feature box means unknown, not no
+
+- **Context:** a Spitogatos page lists every feature in its form and strikes through the ones the agency didn't tick.
+- **Options:** read a struck-through lift as "no lift"; read it as "not stated".
+- **Choice:** a tick is a yes, a missing tick is unknown. A "no" comes only from the text ("δεν διαθέτει ασανσέρ").
+- **Why:** ticks are incomplete. On the 100 real pages, one maisonette ticks a single interior feature, and some texts describe parking that isn't ticked. Reading a missing tick as "no" would state facts the listing never gave. Unknown already fails closed in search (D8), so this costs nothing in safety.
+- **Say:** "Absence of a tick is absence of evidence. Only the listing saying 'no' counts as no."
+
+## D23. Advertisers who trade under a personal name are redacted
+
+- **Context:** D19 keeps agency brands in private descriptions. One of the 100 pages is advertised under a plain first name and surname.
+- **Choice:** brands and registered companies stay, including ones built from surnames with a company form (Ο.Ε., ΙΚΕ). A bare personal name as the advertiser is replaced with "[advertiser name removed]" before saving.
+- **Why:** the spec's rule is about people. A personal name is a person's name whatever it's used for.
+- **Say:** "A company name is a brand. A person's name is personal data, even on an advert."
+
+## D24. Full pages for the extraction set, collected slowly in your Chrome
+
+- **What:** 100 Spitogatos listing pages (33 Egaleo, 33 Peristeri, 34 Chaidari), opened in your own browser five at a time. A small script read six named sections (description, table, interior, exterior, construction, suitable for) and dropped struck-through features. Phones and emails were scrubbed before anything was saved, to `data/private/` only.
+- **Why this way:** the same terms basis as D15 and D18 (personal use, normal browsing pace), and result cards cut descriptions at about 300 characters, which is too short to label.
+- **A practical snag:** your tab suspender parked the tab mid-run and changed its ID. Navigating without fixed waits, re-reading the tab list when a call failed, and you pausing the suspender fixed it.
+- **What the real pages taught us:**
+  - Two bugs in the Greek heating normaliser: "Fan coil" was read as oil, because "coil" contains "oil", and Spitogatos's own wording "Αντλία Θέρμανσης" gave no fuel. Three fan coil flats in the private snapshot were labelled as oil heating. Both are fixed and tested.
+  - The page and its own text often disagree: the price (the table is newer after a drop), the floor (a raised ground floor shown as Ισόγειο), the year of renovation, the number of bathrooms, the energy class (Α++ in the text, which the table can't hold), the size (a house whose stated area includes its basement).
+  - Traps for a buyer that no field holds yet: rented with a tenant in place, a lift that stops one floor below the flat, a goods lift (αναβατόριο) instead of a lift, "available now" on a flat delivered in 2027, a "not eligible for Σπίτι μου" note.
+- **Say:** "A hundred real pages found two bugs that 197 tests on synthetic data missed. That's why the evals need real labels."
+
+## D25. When a listing contradicts itself, the label is unknown
+
+- **Context:** the table says one thing and the text another (D24).
+- **Options:** trust the table; trust the text; mark it unknown.
+- **Choice:** unknown, with both values in the notes. Two exceptions: the price (the table is what the portal updates on a price drop) and the size (the table is the number the listing is sold on).
+- **Why:** we can't tell which is true, and unknown fails closed in search, so a user with a hard limit never gets a listing on a coin toss. Later the extraction pipeline will do the same: code reads the table, the model reads the text, and a disagreement becomes unknown with both values kept as evidence.
+- **Say:** "When the listing argues with itself, we don't pick a side. We say unknown and show both."
+
+## D26. The labeller pre-fills only what code read
+
+- **Options:** a blank form (slow, three hours becomes six); everything pre-filled, including guesses from the text (fast, but you'd anchor on the guesses); only the table and ticks pre-filled.
+- **Choice:** the third. Free-text fields (parking type, minutes to the metro, and any field the table leaves out) start blank. Each label records which fields were pre-filled and which of those you changed.
+- **Why:** checking a printed table is quick and safe. Anything the model will have to read from text must come from you, or the eval would grade the model against code's guesses. The "changed" list also measures how often the portal's own table is wrong.
+- **Say:** "Pre-fill what's printed, never what's inferred, and log every correction."
+
+## D27. A local HTML labeller, not a spreadsheet or a hosted page
+
+- **Options:** a spreadsheet; a hosted page; one offline HTML file.
+- **Choice:** one offline HTML file, built from the private data by `evals/harness/build_label_tool.py` into `data/private/labels/`. It shows the page's table, ticks and description side by side with the form, highlights numbers and key words, saves as you go in the browser, and exports JSONL in the label format. `evals/harness/labels.py` validates the export.
+- **Why:** descriptions run to 3,000 characters, which a spreadsheet cell handles badly. A hosted page would publish scraped listings. An offline file keeps the data on your machine, needs no install, and exports exactly the format the eval reads. Listing text is untrusted, so the page only ever inserts it as text, never as HTML.
+- **Say:** "The labelling tool is part of the eval. It's built to make the right label the easy one."

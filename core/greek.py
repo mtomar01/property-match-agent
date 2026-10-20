@@ -156,13 +156,17 @@ _HEATING_TYPES = [
     ("no heating", "none"),
 ]
 
+# Ordered, first match wins. "fan coil" comes first because "coil" contains "oil".
 _HEATING_FUELS = [
+    ("fan coil", "other"),
+    ("fancoil", "other"),
     ("φυσικο αεριο", "gas"),
     ("φυσικου αεριου", "gas"),
     ("natural gas", "gas"),
     ("πετρελαι", "oil"),
     ("oil", "oil"),
     ("αντλια θερμοτητασ", "heat_pump"),
+    ("αντλια θερμανσησ", "heat_pump"),  # Spitogatos's own table wording
     ("heat pump", "heat_pump"),
     ("υγραεριο", "lpg"),
     ("ρευμα", "electric"),
@@ -170,7 +174,6 @@ _HEATING_FUELS = [
     ("electric", "electric"),
     ("ξυλ", "wood"),
     ("pellet", "wood"),
-    ("fan coil", "other"),
 ]
 
 

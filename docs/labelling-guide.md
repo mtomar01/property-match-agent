@@ -4,25 +4,43 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 
 ## The golden rules
 
-1. **Label what the listing says, not what you think is true.** If the text says 2 bedrooms and the floor plan shows 3, label 2 and add a note.
-2. **Unknown is a valid answer.** If the listing doesn't say, the label is `null`. Never fill a gap with a likely value. The model is scored on saying "unknown" correctly too.
-3. **Quote your evidence.** For every free-text field, copy the Greek phrase you read it from into `evidence`, a few words only.
-4. **Never label contact details.** Agent or owner names, phones and emails are never copied into a label, a note or evidence. If you see one that wasn't scrubbed, flag the listing with `"pii": true`.
+1. **Label what the listing says, not what you think is true.** Anywhere on the page counts: the table, the ticked features and the text. If the text says 2 bedrooms and the floor plan shows 3, label 2 and add a note.
+2. **Unknown is a valid answer.** If the listing doesn't say, the label is blank (`null`). Never fill a gap with a likely value. The model is scored on saying "unknown" correctly too.
+3. **When the listing contradicts itself, the label is unknown** (D25). Leave the field blank and write both values in the notes, such as "table 2ος, text 3ος". Two exceptions: the **price** and the **size**, where the table wins (note the text's figure).
+4. **A missing tick is not a no** (D22). Set lift, balcony or storage to "no" only when the text says so.
+5. **Quote your evidence.** For every field you fill from the text, keep the Greek phrase you read it from, a few words only.
+6. **Never label contact details.** Agent or owner names, phones and emails are never copied into a label, a note or evidence. If you see one that wasn't scrubbed, tick "Contact details slipped through".
 
 ## Field rules for the cases that come up most
 
 | Field | Rule | Example |
 |---|---|---|
-| `price_eur` | The asking price in the listing. **Price on request** (κατόπιν επικοινωνίας) is `null`. If two prices show (a price drop), take the current one and put the old one in `price_history`. | "€110.000 €120.000" is 110000 |
-| `size_m2` | The main area of the home in m². Leave out balconies, storage and plot size. If the title and the text disagree, take the title and add a note. | Title 82, text "88 τ.μ." is 82, note "text says 88" |
+| `price_eur` | The asking price. **Price on request** (κατόπιν επικοινωνίας) is blank. After a price drop the table shows two prices: take the current one, put the old one in "Old price". If the text names a different price, the table wins; note it. | "€162.000 €175.000" is 162000, old 175000 |
+| `size_m2` | The main area in m², as the title and table give it. Leave out balconies, storage, basements and plot size. If the text disagrees, the table wins; note it. | Table 210, text "150 τ.μ. και υπόγειο 60" is 210, note it |
 | `bedrooms` | Separate rooms for sleeping, as stated. "1 with room for a second" is 1. A γκαρσονιέρα with no bedroom stated is 0. | "1 υπνοδωμάτιο με δυνατότητα δεύτερου" is 1 |
-| `floor` | Use the glossary in `core/greek.py`. **Unclear floor** (just "όροφος" with no number, or two numbers that conflict) is `null`. A maisonette on two levels takes its lowest level. | "Μεζονέτα 4ος, 5ος" is `4` |
-| `year_built` | The year construction finished. If it's under construction, use the stated delivery year and set condition `new_build`. | "παράδοση τέλος 2026" is 2026 |
-| `renovated_year` | Only a full or major renovation. **A missing renovation year is `null`**, even when the text says "ανακαινισμένο" without a year: label condition `renovated` and leave the year empty. Partial work (just windows or the kitchen) is `null`, with a note. | "μερική ανακαίνιση 2025, στα κουφώματα" is `null` |
-| `energy_class` | Latin letters: Γ is C, Ζ is F, Η is G. "Υπό έκδοση" is `pending`. Not mentioned is `null`. | "ΠΕΑ: Ε" is E |
-| `heating` | αυτόνομη and ατομική are both `independent`. A fan coil with no fuel named is fuel `other`. | "Ατομική με Αντλία θερμότητας" is independent, heat_pump |
-| `metro_walk_min` | Only when minutes or metres are stated. Metres become minutes at 80 m per minute, rounded up. "Near the metro" with no number is `null`. | "500 μέτρα από σταθμό μετρό" is 7 |
-| `condition` | `needs_work`, `unfinished` (ημιτελές), `new_build`, `renovated`, or `null`. | "Χρήζει ολικής ανακαίνισης" is needs_work |
+| `bathrooms` | Full bathrooms only. **A WC is not a bathroom.** | "1 μπάνιο, 1 WC" is 1 |
+| `floor` | Use the glossary in `core/greek.py`. **υπερυψωμένο ισόγειο is raised_ground**, even when the table says Ισόγειο (more specific, not a conflict). A maisonette takes its lowest level. A ρετιρέ with a floor number takes the number; `top` is only for a ρετιρέ with no number. A floor that's just "όροφος" with no number is blank. | "Μεζονέτα 4ος, 5ος" is `4` |
+| `year_built` | The year construction finished. **Under construction:** the stated delivery year, and the condition is `new_build`. No delivery year stated: blank. | "παράδοση 12/2027" is 2027 |
+| `renovated_year` | Only a full or major renovation. **"ανακαινισμένο" without a year is blank**, with condition `renovated`. Partial work (just windows or the kitchen) is blank, with a note. | "μερική ανακαίνιση 2025, στα κουφώματα" is blank |
+| `energy_class` | Latin letters: Γ is C, Ζ is F, Η is G. **Α++ is A+** (the official scale stops at Α+). Εξαιρείται is `exempt`. Υπό έκδοση or σε εξέλιξη is `pending`. Not mentioned is blank. | "ΠΕΑ: Ε" is E |
+| `heating` | αυτόνομη and ατομική are both `independent`. A heat pump (αντλία θερμότητας or θέρμανσης) is fuel `heat_pump`. A fan coil with no fuel named is fuel `other`. "Προεγκατάσταση" (only the pipes) is not heating: blank, with a note. | "Ατομική με Αντλία θερμότητας" is independent, heat_pump |
+| `parking` | `pilotis` (πιλοτή), `garage` (closed or underground), `space` (an open or covered spot), `none`. A ticked "Parking" with no type in the text stays blank. | "θέση στάθμευσης στην πιλοτή" is pilotis |
+| `lift` | **"no" if the lift stops below the home's floor,** or there's only a goods lift (αναβατόριο), or a shaft with no cabin. | "ασανσέρ μέχρι τον 3ο", flat on the 4th, is no |
+| `metro_walk_min` | Only when minutes or metres are stated. Metres become minutes at 80 m per minute, rounded up. "Near the metro" with no number is blank. | "500 μέτρα από σταθμό μετρό" is 7 |
+| `condition` | `needs_work`, `unfinished` (ημιτελές), `new_build`, `renovated`, or blank. | "Χρήζει ολικής ανακαίνισης" is needs_work |
+
+## Things no field holds yet
+
+Write them in the notes so we can count them later: **rented** (μισθωμένο, a tenant in place), **"available now" on a home still being built**, **not eligible for Σπίτι μου**, a **whole building** or **several flats** sold together (label the totals the table gives).
+
+## The labelling tool
+
+1. Run `uv run python -m evals.harness.build_label_tool`. It writes `data/private/labels/extraction_labeller_round1.html`.
+2. Open that file in Chrome or Safari. No internet needed. It saves as you go, in that browser only.
+3. Values marked **table** were read by code from the page's table and ticks: check them against the text, and change them if the text wins under the rules above. Fields with no mark are yours to fill from the text.
+4. To keep evidence, select a few words in the listing and press ❝ next to the field.
+5. **Done, next** (or Ctrl or ⌘ + Enter) marks the listing labelled. **Export done** downloads a `.jsonl` file. Export at the end of each sitting as a backup; **Import** loads it back.
+6. Save the export in `data/private/labels/` and check it: `uv run python -m evals.harness.labels data/private/labels/<file>.jsonl`.
 
 ## Duplicates
 

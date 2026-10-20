@@ -20,6 +20,15 @@ Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basemen
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
 
+## Labelling real listings (private data, your machine only)
+
+```bash
+uv run python -m evals.harness.build_label_tool    # offline labelling page in data/private/labels/
+uv run python -m evals.harness.labels data/private/labels/<export>.jsonl   # check exported labels
+```
+
+The rules are in `docs/labelling-guide.md`.
+
 ## Results by version
 
 | Version | Eval | Cases | Hard limit breaks | Recall@20 | Precision@10 |

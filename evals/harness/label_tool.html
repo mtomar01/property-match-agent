@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extraction Labeller</title>
+<!--
+  Property Match Agent: extraction labelling tool (template).
+  evals/harness/build_label_tool.py fills the data placeholder with private listings
+  and writes the result to data/private/labels/, which git ignores. This
+  template holds no data and is safe to commit.
+
+  Listing text is untrusted. It is only ever inserted with textContent, never
+  as HTML, so a description can't run code or change the page.
+-->
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6a66; --border: #dedcd6;
+  --accent: #2f5d8a; --accent-text: #ffffff; --mark: #fff1b8; --ok: #2e7d4f; --warn: #b4531a;
+  --chip: #eeece6; --input: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1c1e; --panel: #232427; --text: #ecebe7; --muted: #a3a29d; --border: #3a3b3f;
+    --accent: #7fb0e0; --accent-text: #10202f; --mark: #5a4a10; --ok: #6cc28e; --warn: #f0a26b;
+    --chip: #2e2f33; --input: #1b1c1e;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1c1e; --panel: #232427; --text: #ecebe7; --muted: #a3a29d; --border: #3a3b3f;
+  --accent: #7fb0e0; --accent-text: #10202f; --mark: #5a4a10; --ok: #6cc28e; --warn: #f0a26b;
+  --chip: #2e2f33; --input: #1b1c1e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header h1 { font-size: 15px; margin: 0; font-weight: 650; }
+.progress { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.bar { width: 140px; height: 6px; background: var(--chip); border-radius: 3px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--ok); width: 0; }
+.spacer { flex: 1; }
+button, .button { font: inherit; padding: 5px 11px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input, select, textarea { font: inherit; color: var(--text); background: var(--input); border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; }
+main { display: grid; grid-template-columns: 210px minmax(0, 1fr) 410px; height: calc(100vh - 53px); }
+nav { overflow-y: auto; border-right: 1px solid var(--border); padding: 6px; }
+nav button { display: flex; width: 100%; text-align: left; gap: 7px; align-items: center; border: none; background: none; padding: 5px 6px; border-radius: 5px; }
+nav button[aria-current="true"] { background: var(--chip); font-weight: 600; }
+.dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.dot.started { border-color: var(--warn); background: transparent; box-shadow: inset 0 0 0 2px var(--warn); }
+.dot.done { border-color: var(--ok); background: var(--ok); }
+#ref { overflow-y: auto; padding: 14px 20px 40px; }
+#ref h2 { font-size: 18px; margin: 0 0 4px; }
+.meta { color: var(--muted); margin-bottom: 12px; }
+.meta a { color: var(--accent); }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 6px; }
+dl.table { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+dl.table dt { color: var(--muted); }
+dl.table dd { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { background: var(--chip); padding: 2px 8px; border-radius: 10px; font-size: 13px; }
+.chip.group { background: none; color: var(--muted); padding-left: 0; }
+.desc { white-space: pre-wrap; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 15px; line-height: 1.6; }
+.desc mark { background: var(--mark); color: inherit; border-radius: 2px; }
+form { overflow-y: auto; border-left: 1px solid var(--border); background: var(--panel); padding: 10px 14px 20px; }
+.row { display: grid; grid-template-columns: 118px minmax(0, 1fr) 62px 26px; gap: 6px; align-items: center; padding: 3px 0; }
+.row label { color: var(--muted); font-size: 13px; }
+.row input, .row select { width: 100%; }
+.row input[type="checkbox"] { width: auto; margin: 0 3px 0 0; }
+.flags label { display: inline-flex; align-items: center; white-space: nowrap; }
+.tag { font-size: 11px; text-align: center; border-radius: 8px; padding: 1px 4px; }
+.tag.table { background: var(--chip); color: var(--muted); }
+.tag.changed { color: var(--warn); border: 1px solid var(--warn); }
+.quote { padding: 2px 0; width: 26px; font-size: 13px; }
+.evidence { grid-column: 2 / 5; font-size: 12px; color: var(--muted); font-style: italic; display: flex; gap: 6px; }
+.evidence button { padding: 0 6px; font-size: 11px; }
+.flags { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.section-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 12px 0 2px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; }
+.actions { display: flex; gap: 8px; margin-top: 12px; position: sticky; bottom: -20px; background: var(--panel); padding: 10px 0; }
+.actions .primary { flex: 1; }
+.hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+dialog { max-width: 680px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); }
+dialog li { margin: 4px 0; }
+#status { font-size: 12px; color: var(--muted); }
+@media (max-width: 1150px) {
+  main { grid-template-columns: minmax(0, 1fr) 390px; }
+  nav { display: none; }
+  #jump { display: inline-block; }
+}
+@media (min-width: 1151px) { #jump { display: none; } }
+@media (max-width: 820px) {
+  main { grid-template-columns: 1fr; height: auto; }
+  form { border-left: none; border-top: 1px solid var(--border); }
+  .bar { width: 80px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Extraction labels · round <span id="round"></span></h1>
+  <div class="progress"><div class="bar"><div id="bar"></div></div><span id="count"></span></div>
+  <select id="jump" aria-label="Jump to listing"></select>
+  <span id="status"></span>
+  <div class="spacer"></div>
+  <label>Labeller <input id="labeller" size="8" value="mike"></label>
+  <button type="button" id="rules-open">Rules</button>
+  <label class="button">Import<input type="file" id="import" accept=".jsonl,.json,application/json" hidden></label>
+  <button type="button" class="primary" id="export">Export done</button>
+</header>
+<main>
+  <nav id="list" aria-label="Listings"></nav>
+  <section id="ref" aria-label="Listing">
+    <h2 id="title"></h2>
+    <div class="meta"><span id="position"></span> · <a id="link" target="_blank" rel="noopener noreferrer">open the page</a> · <span id="lid"></span></div>
+    <h3>Table on the page</h3>
+    <dl class="table" id="table"></dl>
+    <h3>Ticked features</h3>
+    <div id="ticks"></div>
+    <h3>Code also noticed</h3>
+    <div class="chips" id="extras"></div>
+    <h3>Description</h3>
+    <div class="desc" id="desc"></div>
+  </section>
+  <form id="form" autocomplete="off">
+    <div id="fields"></div>
+    <div class="section-title">Notes</div>
+    <textarea id="notes" placeholder="Conflicts, doubts, anything odd. Never copy a name, phone or email."></textarea>
+    <label class="flags" style="margin-top:6px"><input type="checkbox" id="pii"> Contact details slipped through the scrub</label>
+    <div class="actions">
+      <button type="button" id="prev">Back</button>
+      <button type="button" class="primary" id="done">Done, next</button>
+    </div>
+    <div class="hint">Blank means unknown. "table" marks a value code read from the page: check it against the text. Select words in the listing, then press ❝ to keep them as evidence. Ctrl or ⌘ + Enter: done, next. Alt + ↑ ↓: move between listings.</div>
+  </form>
+</main>
+<dialog id="rules">
+  <h2 style="margin-top:0">The rules that come up most</h2>
+  <ol>
+    <li><b>Label what the listing says</b>, anywhere on the page. Blank is unknown. Never fill a gap with a likely value.</li>
+    <li><b>Conflicts are unknown.</b> If the table or ticks and the text clearly disagree, leave the field blank and note both values. Two exceptions: the price and the size, where the table wins (note the text's figure).</li>
+    <li><b>A missing tick is not a no.</b> Set lift, balcony or storage to "no" only when the text says so.</li>
+    <li><b>Lift:</b> "no" if the text says the lift stops below the home's floor, or there is only a goods lift (αναβατόριο).</li>
+    <li><b>Floor:</b> υπερυψωμένο ισόγειο is raised ground even when the table says Ισόγειο. A maisonette takes its lowest level. A ρετιρέ with a floor number takes the number; "top" is only for a ρετιρέ with no number.</li>
+    <li><b>Bathrooms</b> count full bathrooms only. A WC is not a bathroom.</li>
+    <li><b>Energy:</b> Α++ is A+. Εξαιρείται is exempt. Υπό έκδοση or σε εξέλιξη is pending.</li>
+    <li><b>Under construction:</b> the year built is the stated delivery year, and the condition is new_build.</li>
+    <li><b>Parking:</b> pilotis (πιλοτή), garage (closed or underground), space (open or covered spot), none. A tick with no type in the text stays blank.</li>
+    <li><b>Metro minutes</b> only when minutes or metres are stated. Metres ÷ 80, rounded up.</li>
+    <li><b>Never</b> copy a name, phone or email into evidence or notes.</li>
+  </ol>
+  <p>The full guide is docs/labelling-guide.md.</p>
+  <form method="dialog"><button class="primary">Close</button></form>
+</dialog>
+<script type="application/json" id="data">__DATA_JSON__</script>
+<script>
+"use strict";
+const PAYLOAD = JSON.parse(document.getElementById("data").textContent);
+const ITEMS = PAYLOAD.items;
+const ROUND = PAYLOAD.round;
+const STORE_KEY = "pm-extraction-labels-round-" + ROUND;
+
+const FLOORS = ["basement", "semi_basement", "ground", "raised_ground", "mezzanine"]
+  .concat(Array.from({ length: 12 }, (_, i) => String(i + 1))).concat(["top"]);
+const GREEK = {
+  basement: "υπόγειο", semi_basement: "ημιυπόγειο", ground: "ισόγειο", raised_ground: "υπερυψωμένο",
+  mezzanine: "ημιόροφος", top: "ρετιρέ", "A+": "Α+", A: "Α", "B+": "Β+", B: "Β", C: "Γ", D: "Δ", E: "Ε",
+  F: "Ζ", G: "Η", pending: "υπό έκδοση", exempt: "εξαιρείται", pilotis: "πιλοτή", garage: "κλειστό, υπόγειο",
+  space: "θέση", independent: "αυτόνομη", central: "κεντρική", heat_pump: "αντλία", lpg: "υγραέριο",
+};
+const FIELDS = [
+  { name: "listing_type", label: "Listing type", kind: "select", options: ["sale", "rent"] },
+  { name: "price_eur", label: "Price €", kind: "int" },
+  { name: "old_price_eur", label: "Old price €", kind: "int" },
+  { name: "size_m2", label: "Size m²", kind: "float" },
+  { name: "property_type", label: "Type", kind: "select",
+    options: ["apartment", "studio", "maisonette", "detached_house", "loft", "building", "apartment_complex"] },
+  { name: "bedrooms", label: "Bedrooms", kind: "int" },
+  { name: "bathrooms", label: "Bathrooms", kind: "int" },
+  { name: "floor_class", label: "Floor", kind: "select", options: FLOORS },
+  { name: "year_built", label: "Year built", kind: "int" },
+  { name: "renovated_year", label: "Renovated", kind: "int" },
+  { name: "condition", label: "Condition", kind: "select", options: ["needs_work", "unfinished", "new_build", "renovated", "good"] },
+  { name: "energy_class", label: "Energy", kind: "select", options: ["A+", "A", "B+", "B", "C", "D", "E", "F", "G", "pending", "exempt"] },
+  { name: "heating_type", label: "Heating", kind: "select", options: ["independent", "central", "none"] },
+  { name: "heating_fuel", label: "Fuel", kind: "select", options: ["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"] },
+  { name: "parking", label: "Parking", kind: "select", options: ["pilotis", "space", "garage", "none"] },
+  { name: "lift", label: "Lift", kind: "bool" },
+  { name: "balcony", label: "Balcony", kind: "bool" },
+  { name: "storage", label: "Storage", kind: "bool" },
+  { name: "flags", label: "Flags", kind: "flags", options: ["whole_floor", "dual_aspect", "corner"] },
+  { name: "area", label: "Area", kind: "select", options: ["Egaleo", "Peristeri", "Chaidari"] },
+  { name: "sub_area", label: "Sub-area", kind: "text" },
+  { name: "metro_walk_min", label: "Metro walk min", kind: "int" },
+];
+const HIGHLIGHT = /(\d[\d.,]*\s*(?:τ\.?\s?μ\.?|μέτρα|μ\.|m\b|€|χλμ\.?|λεπτ[άα]?)?|€\s?[\d.,]+|ασανσ[έε]ρ|ανελκυστ\p{L}*|αναβατ[όο]ρι\p{L}*|μετρ[όο]|πιλοτ\p{L}*|πυλωτ\p{L}*|υπ[όο]γει\p{L}*|ημιυπ[όο]γει\p{L}*|ισ[όο]γει\p{L}*|υπερυψωμ\p{L}*|ημι[όο]ροφ\p{L}*|[όο]ροφ\p{L}*|ρετιρ[έε]|ενεργειακ\p{L}*|ΠΕΑ|ανακαιν\p{L}*|μισθωμ[έε]ν\p{L}*|στ[άα]θμευσ\p{L}*|π[άα]ρκινγκ|parking|αποθ[ήη]κ\p{L}*|βερ[άα]ντ\p{L}*|μπαλκ[όο]ν\p{L}*|υπ[όο] κατασκευ\p{L}*|παρ[άα]δοσ\p{L}*|ημιτελ\p{L}*|wc)/giu;
+
+let state = loadState();
+let current = 0;
+
+function blankEntry(item) {
+  const values = {};
+  for (const f of FIELDS) {
+    const v = item.prefill[f.name];
+    if (f.kind === "flags") values[f.name] = Array.isArray(v) ? v.slice() : [];
+    else if (f.kind === "bool") values[f.name] = v === true ? "yes" : v === false ? "no" : "";
+    else values[f.name] = v === undefined || v === null ? "" : String(v);
+  }
+  return { values, evidence: {}, notes: "", pii: false, done: false, touched: false, labelled_at: null };
+}
+function entry(i) {
+  const id = ITEMS[i].listing_id;
+  if (!state.entries[id]) state.entries[id] = blankEntry(ITEMS[i]);
+  return state.entries[id];
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* storage blocked or corrupt: start empty */ }
+  return { entries: {}, labeller: "mike", current: 0 };
+}
+function saveState() {
+  state.current = current;
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    setStatus("Saved in this browser. Export now and then as a backup.");
+  } catch (e) {
+    setStatus("This browser won't save. Export before closing the page.");
+  }
+}
+function setStatus(text) { document.getElementById("status").textContent = text; }
+function el(tag, attrs, text) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+function optionLabel(value) { return GREEK[value] ? value + " · " + GREEK[value] : value; }
+
+function renderList() {
+  const list = document.getElementById("list");
+  const jump = document.getElementById("jump");
+  list.replaceChildren();
+  jump.replaceChildren();
+  ITEMS.forEach((item, i) => {
+    const e = state.entries[item.listing_id];
+    const status = e && e.done ? "done" : e && e.touched ? "started" : "";
+    const button = el("button", { type: "button", "aria-current": String(i === current) });
+    button.append(el("span", { class: "dot " + status, "aria-hidden": "true" }));
+    button.append(el("span", {}, (i + 1) + ". " + (item.area || "?") + " · " + (item.title || item.listing_id)));
+    button.addEventListener("click", () => go(i));
+    list.append(button);
+    const option = el("option", { value: String(i) }, (i + 1) + ". " + (status === "done" ? "✓ " : "") + (item.title || item.listing_id));
+    if (i === current) option.selected = true;
+    jump.append(option);
+  });
+  const done = ITEMS.filter(item => (state.entries[item.listing_id] || {}).done).length;
+  document.getElementById("count").textContent = done + " / " + ITEMS.length + " labelled";
+  document.getElementById("bar").style.width = (100 * done / ITEMS.length) + "%";
+  const active = list.querySelector('[aria-current="true"]');
+  if (active) active.scrollIntoView({ block: "nearest" });
+}
+
+function renderRef(item) {
+  document.getElementById("title").textContent = item.title || item.listing_id;
+  document.getElementById("position").textContent = "Listing " + (current + 1) + " of " + ITEMS.length;
+  const link = document.getElementById("link");
+  link.href = item.url;
+  document.getElementById("lid").textContent = item.listing_id;
+  const table = document.getElementById("table");
+  table.replaceChildren();
+  for (const [key, value] of item.table) { table.append(el("dt", {}, key)); table.append(el("dd", {}, value)); }
+  const ticks = document.getElementById("ticks");
+  ticks.replaceChildren();
+  for (const [group, values] of Object.entries(item.ticked)) {
+    if (!values.length) continue;
+    const row = el("div", { class: "chips", style: "margin-bottom:5px" });
+    row.append(el("span", { class: "chip group" }, group));
+    for (const v of values) row.append(el("span", { class: "chip" }, v));
+    ticks.append(row);
+  }
+  if (!ticks.childElementCount) ticks.append(el("span", { class: "chip group" }, "nothing ticked"));
+  const extras = document.getElementById("extras");
+  extras.replaceChildren();
+  for (const [key, value] of Object.entries(item.extras)) extras.append(el("span", { class: "chip" }, key.replace(/_/g, " ") + (value === true ? "" : ": " + value)));
+  if (!extras.childElementCount) extras.append(el("span", { class: "chip group" }, "nothing else"));
+  const desc = document.getElementById("desc");
+  desc.replaceChildren();
+  const parts = (item.description || "").split(HIGHLIGHT);
+  parts.forEach((part, i) => {
+    if (!part) return;
+    desc.append(i % 2 === 1 ? el("mark", {}, part) : document.createTextNode(part));
+  });
+  document.getElementById("ref").scrollTop = 0;
+}
+
+function tagFor(item, e, name) {
+  if (!(name in item.prefill)) return "";
+  return sameAsPrefill(item, e, name) ? "table" : "changed";
+}
+function sameAsPrefill(item, e, name) {
+  const field = FIELDS.find(f => f.name === name);
+  return JSON.stringify(toValue(field, e.values[name])) === JSON.stringify(toValue(field, prefillAsInput(field, item.prefill[name])));
+}
+function prefillAsInput(field, v) {
+  if (field.kind === "flags") return Array.isArray(v) ? v : [];
+  if (field.kind === "bool") return v === true ? "yes" : v === false ? "no" : "";
+  return v === undefined || v === null ? "" : String(v);
+}
+function toValue(field, raw) {
+  if (field.kind === "flags") return (raw || []).slice().sort();
+  if (raw === "" || raw === undefined || raw === null) return null;
+  if (field.kind === "int") { const n = Number(String(raw).replace(/[.\s]/g, "")); return Number.isFinite(n) ? Math.round(n) : null; }
+  if (field.kind === "float") { const n = Number(String(raw).replace(",", ".")); return Number.isFinite(n) ? n : null; }
+  if (field.kind === "bool") return raw === "yes" ? true : raw === "no" ? false : null;
+  return String(raw).trim() || null;
+}
+
+function renderForm(item) {
+  const e = entry(current);
+  const box = document.getElementById("fields");
+  box.replaceChildren();
+  for (const field of FIELDS) {
+    const row = el("div", { class: "row" });
+    const id = "f-" + field.name;
+    row.append(el("label", { for: id }, field.label));
+    let input;
+    if (field.kind === "select" || field.kind === "bool") {
+      input = el("select", { id });
+      input.append(el("option", { value: "" }, "unknown"));
+      const options = field.kind === "bool" ? ["yes", "no"] : field.options;
+      for (const o of options) input.append(el("option", { value: o }, optionLabel(o)));
+      input.value = e.values[field.name] || "";
+    } else if (field.kind === "flags") {
+      input = el("div", { class: "flags", id });
+      for (const o of field.options) {
+        const label = el("label");
+        const check = el("input", { type: "checkbox", value: o });
+        check.checked = (e.values.flags || []).includes(o);
+        check.addEventListener("change", () => {
+          e.values.flags = field.options.filter(name => input.querySelector('input[value="' + name + '"]').checked);
+          changed(item, e, field.name);
+        });
+        label.append(check, document.createTextNode(" " + o.replace("_", " ")));
+        input.append(label);
+      }
+    } else {
+      input = el("input", { id, type: "text", inputmode: field.kind === "text" ? "text" : "decimal" });
+      input.value = e.values[field.name] || "";
+    }
+    if (field.kind !== "flags") {
+      input.addEventListener("input", () => { e.values[field.name] = input.value; changed(item, e, field.name); });
+      input.addEventListener("change", () => { e.values[field.name] = input.value; changed(item, e, field.name); });
+    }
+    row.append(input);
+    const tag = tagFor(item, e, field.name);
+    row.append(el("span", { class: "tag " + tag, id: "tag-" + field.name }, tag));
+    const quote = el("button", { type: "button", class: "quote", title: "Keep the selected words as evidence" }, "❝");
+    quote.addEventListener("click", () => takeEvidence(e, field.name));
+    row.append(quote);
+    if (e.evidence[field.name]) {
+      const ev = el("div", { class: "evidence" });
+      ev.append(el("span", {}, "“" + e.evidence[field.name] + "”"));
+      const clear = el("button", { type: "button", title: "Remove evidence" }, "×");
+      clear.addEventListener("click", () => { delete e.evidence[field.name]; touch(e); renderForm(item); });
+      ev.append(clear);
+      row.append(ev);
+    }
+    box.append(row);
+  }
+  document.getElementById("notes").value = e.notes || "";
+  document.getElementById("pii").checked = !!e.pii;
+}
+
+function changed(item, e, name) {
+  touch(e);
+  const tag = document.getElementById("tag-" + name);
+  const value = tagFor(item, e, name);
+  tag.className = "tag " + value;
+  tag.textContent = value;
+}
+function touch(e) { e.touched = true; saveState(); }
+
+function takeEvidence(e, name) {
+  const selection = window.getSelection();
+  const text = selection ? selection.toString().replace(/\s+/g, " ").trim() : "";
+  const ref = document.getElementById("ref");
+  if (!text || !selection.anchorNode || !ref.contains(selection.anchorNode)) {
+    setStatus("Select a few words in the listing first, then press ❝.");
+    return;
+  }
+  e.evidence[name] = text.slice(0, 160);
+  touch(e);
+  renderForm(ITEMS[current]);
+}
+
+function go(i) {
+  if (i < 0 || i >= ITEMS.length) return;
+  current = i;
+  const item = ITEMS[current];
+  renderRef(item);
+  renderForm(item);
+  renderList();
+  saveState();
+}
+
+function record(item, e) {
+  const fields = {};
+  for (const field of FIELDS) {
+    if (field.name === "old_price_eur") continue;
+    fields[field.name] = toValue(field, e.values[field.name]);
+  }
+  const old = toValue(FIELDS.find(f => f.name === "old_price_eur"), e.values.old_price_eur);
+  const prefilled = Object.keys(item.prefill);
+  return {
+    listing_id: item.listing_id,
+    labeller: state.labeller || "mike",
+    labelled_at: e.labelled_at || new Date().toISOString().slice(0, 10),
+    round: ROUND,
+    pii: !!e.pii,
+    fields,
+    price_history: old ? [{ price_eur: old, date: null }] : [],
+    evidence: Object.assign({}, e.evidence.old_price_eur ? { price_history: e.evidence.old_price_eur } : {},
+      Object.fromEntries(Object.entries(e.evidence).filter(([k]) => k !== "old_price_eur"))),
+    notes: (e.notes || "").trim(),
+    prefilled,
+    changed_from_code: prefilled.filter(name => !sameAsPrefill(item, e, name)),
+  };
+}
+
+function exportDone() {
+  const lines = ITEMS.filter(item => (state.entries[item.listing_id] || {}).done)
+    .map(item => JSON.stringify(record(item, state.entries[item.listing_id])));
+  if (!lines.length) { setStatus("Nothing is marked done yet."); return; }
+  const blob = new Blob([lines.join("\n") + "\n"], { type: "application/x-ndjson" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: "extraction_labels_round" + ROUND + "_" + new Date().toISOString().slice(0, 10) + ".jsonl" });
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  setStatus("Exported " + lines.length + " labels.");
+}
+
+function importFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let restored = 0;
+    for (const line of String(reader.result).split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      let rec;
+      try { rec = JSON.parse(line); } catch (err) { continue; }
+      const i = ITEMS.findIndex(item => item.listing_id === rec.listing_id);
+      if (i < 0) continue;
+      const e = blankEntry(ITEMS[i]);
+      for (const field of FIELDS) {
+        if (field.name === "old_price_eur") {
+          const old = (rec.price_history || [])[0];
+          e.values.old_price_eur = old ? String(old.price_eur) : "";
+          continue;
+        }
+        const v = (rec.fields || {})[field.name];
+        e.values[field.name] = prefillAsInput(field, v);
+      }
+      e.evidence = Object.assign({}, rec.evidence || {});
+      if (e.evidence.price_history) { e.evidence.old_price_eur = e.evidence.price_history; delete e.evidence.price_history; }
+      e.notes = rec.notes || "";
+      e.pii = !!rec.pii;
+      e.done = true;
+      e.touched = true;
+      e.labelled_at = rec.labelled_at || null;
+      state.entries[rec.listing_id] = e;
+      restored++;
+    }
+    saveState();
+    go(current);
+    setStatus("Imported " + restored + " labels.");
+  };
+  reader.readAsText(file);
+}
+
+function markDone() {
+  const e = entry(current);
+  e.notes = document.getElementById("notes").value;
+  e.pii = document.getElementById("pii").checked;
+  e.done = true;
+  e.touched = true;
+  e.labelled_at = new Date().toISOString().slice(0, 10);
+  saveState();
+  const next = ITEMS.findIndex((item, i) => i > current && !(state.entries[item.listing_id] || {}).done);
+  go(next >= 0 ? next : Math.min(current + 1, ITEMS.length - 1));
+}
+
+document.getElementById("round").textContent = ROUND;
+document.getElementById("labeller").value = state.labeller || "mike";
+document.getElementById("labeller").addEventListener("input", ev => { state.labeller = ev.target.value.trim(); saveState(); });
+document.getElementById("notes").addEventListener("input", ev => { const e = entry(current); e.notes = ev.target.value; touch(e); });
+document.getElementById("pii").addEventListener("change", ev => { const e = entry(current); e.pii = ev.target.checked; touch(e); });
+document.getElementById("done").addEventListener("click", markDone);
+document.getElementById("prev").addEventListener("click", () => go(current - 1));
+document.getElementById("export").addEventListener("click", exportDone);
+document.getElementById("import").addEventListener("change", ev => { if (ev.target.files[0]) importFile(ev.target.files[0]); ev.target.value = ""; });
+document.getElementById("jump").addEventListener("change", ev => go(Number(ev.target.value)));
+document.getElementById("rules-open").addEventListener("click", () => document.getElementById("rules").showModal());
+document.addEventListener("keydown", ev => {
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); markDone(); }
+  else if (ev.altKey && ev.key === "ArrowDown") { ev.preventDefault(); go(current + 1); }
+  else if (ev.altKey && ev.key === "ArrowUp") { ev.preventDefault(); go(current - 1); }
+});
+go(Math.min(state.current || 0, ITEMS.length - 1));
+</script>
+</body>
+</html>

@@ -72,6 +72,11 @@ def test_energy_class_shown_in_greek():
         ("κεντρική - πετρέλαιο", "central", "oil"),
         ("Ατομική με Υγραέριο", "independent", "lpg"),
         ("τζάκι", None, None),
+        # Found on real detail pages: the table says "θέρμανσης", not "θερμότητας".
+        ("Ατομική θέρμανση (Αντλία Θέρμανσης)", "independent", "heat_pump"),
+        # "coil" contains "oil", which once turned every fan coil into oil heating.
+        ("Αυτόνομη (Fan coil)", "independent", "other"),
+        ("Χωρίς θέρμανση", "none", None),
     ],
 )
 def test_heating(raw, heating_type, fuel):
