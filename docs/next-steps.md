@@ -17,7 +17,7 @@ Updated 21 October 2026.
 
 ## Next steps
 
-1. **Agreement check (D30):** "Mike's Agreement Set" (20 random listings GB labelled) is for you; "GB's Agreement Set" (20 random listings you labelled) is for GB. Share GB's by email as Contributor or Editor. I score agreement when both are done, before and after D29 separately.
+1. **Agreement check (D30): done.** 89.6% overall (target 95%): table fields 98%, free-text fields 59%. Most disagreements are amenities GB answered and you left blank.
 2. **Your notes** on how the page and description should be read. They shape the code that reads the table and the extraction prompt.
 3. **Freeze the answer key:** copy the labels as they stand into one versioned file (answer key v1) that every eval run uses. The pages stay editable; later rounds become v2.
 4. **Extraction eval harness:** scores any set of predictions against the frozen key, per field, with "unknown" scored as an answer, split into pre-filled and free-text fields. First run: the code-only baseline.

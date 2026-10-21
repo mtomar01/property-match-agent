@@ -37,6 +37,8 @@ The rules are in `docs/labelling-guide.md`.
 |---|---|---|---|---|---|
 | v0.1 | Search safety (synthetic) | 20 | **0** | 1.00 | 1.00 |
 
+Answer key quality: two labellers relabelled 20 of each other's listings (40 real listings, kept private). Agreement 89.6% overall against a 95% target: 98% on fields the page's table states, 59% on fields only the text states (D30).
+
 Results files are in `evals/results/`. A mutation test checks the eval fails when the hard-limit filter is switched off.
 
 ## Docs
