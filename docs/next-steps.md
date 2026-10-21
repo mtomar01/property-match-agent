@@ -1,6 +1,6 @@
 # Next steps
 
-Updated 20 October 2026, session 1.
+Updated 21 October 2026.
 
 ## Where we are
 
@@ -8,23 +8,27 @@ Updated 20 October 2026, session 1.
 - **Thin slice of v1 done:** MCP server with `search_listings` and `get_listing`, a command-line demo, the search safety eval (20 cases, 0 breaks), CI.
 - **Real data:** 484 listings (270 Spitogatos, 214 spiti24) for Egaleo, Peristeri and Chaidari, private and local only. 204 spiti24 listings match a Spitogatos one, so the duplicates eval has real material.
 - **Interview set done:** 40 scripted chats, 20 Greek and 20 English (`evals/datasets/interview_chats.jsonl`).
-- **Extraction set collected:** full pages for 100 Spitogatos listings (33 Egaleo, 33 Peristeri, 34 Chaidari), scrubbed, in `data/private/`. Code reads each page's table and ticks (`adapters/spitogatos_details.py`), and the labelling tool is built (D24 to D27).
+- **Extraction set collected:** full pages for 100 Spitogatos listings (33 Egaleo, 33 Peristeri, 34 Chaidari), scrubbed, in `data/private/`. Code reads each page's table and ticks (`adapters/spitogatos_details.py`). Labelling runs on five hosted pages of 20 (D24 to D29).
 
-## Your next job: label the 100 (about 3 hours)
+## Labelling: where it stands (21 October)
 
-1. On your machine, after pulling the repo and copying `data/private/` across (or open the file I sent you): open `data/private/labels/extraction_labeller_round1.html` in Chrome or Safari.
-2. Read the rules once (`docs/labelling-guide.md`, or the Rules button in the tool). The ones that matter most: conflicts are unknown, crossed out is no but not shown is unknown, a WC is not a bathroom.
-3. Label in sittings of 20 to 30. Press **Export done** at the end of each sitting and keep the file.
-4. Send me the final export. I'll check it with `evals.harness.labels` and build the extraction eval on it.
-5. **A week later:** relabel 20 blind for the self-agreement check (target 95%).
-6. **Hosted batches (D28):** listings 1 to 20 are done by your grader (20 valid labels, saved privately). 21 to 40 is published. 41 to 60 is published with the corrected rules (D29). 61 to 80 is yours to label, and 81 to 100 is for your grader, both with the final wording of D29. All 100 listings now have a hosted page. Share each by email as Contributor or Editor; label within a week or two, since they use the live site. I'll score agreement with `evals.harness.agreement`.
-7. **Your go-ahead needed:** revisit the 100 pages once to read the crossed-out features (D29).
+- **89 of 100 labelled** on the hosted pages (D28): GB 49 (1 to 20, 41 to 60, 9 of 81 to 100), you 40 (21 to 40, 61 to 80). All valid, copies in `data/private/labels/`.
+- **Rule versions differ:** 1 to 40 were labelled before D29 (crossed out is no, under the pilotis is pilotis); 41 to 100 after.
 
-## v1 (about 3 days), evals first
+## Next steps
 
-1. **Extraction eval harness** on the 100 labels: per-field accuracy, correct "unknown", split into fields the table states (target 98%) and fields only the text states (target 85%), using the `prefilled` list in each label.
-2. **Interview eval harness** on the 40 chats: field accuracy, hard limit vs preference split, zero invented hard limits, asks when it should.
-3. Then the features: the extraction prompt (Haiku 5.5) with the glossary, `extract_listing` on the server, the conflict rule from D25 in code, the interview prompt (Sonnet 5.5), the criteria card, the table view (React, D20).
+1. **GB finishes 81 to 100** (11 left).
+2. **Consistency pass on 1 to 40** (about 30 minutes): recheck only lift, storage, balcony and parking against D29. I flag the likely ones from the descriptions first.
+3. **Agreement check:** you relabel GB's 81 to 100 on that page (your labels stay private from GB). Same rules, so the score is clean. Target 95%.
+4. **Freeze the answer key:** one file of 100 labels, each with its labeller and rule version.
+5. **Extraction eval harness** (no API key needed): scores any set of predictions against the key, per field, with "unknown" scored as an answer, split into pre-filled and free-text fields. Its first run is the code-only baseline (table and ticks, no model), the number every model has to beat.
+6. **Then the model** (needs the API key): the extraction prompt on Haiku 5.5, scored against the key, Sonnet 5.5 for comparison.
+7. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+8. **Optional:** revisit the 100 pages for the crossed-out lists, so code can pre-fill "no" and the pipeline reads all three states.
+
+## v1 features, after the evals
+
+The extraction prompt (Haiku 5.5) with the glossary, `extract_listing` on the server, the conflict rule from D25 in code, the interview prompt (Sonnet 5.5), the criteria card, the table view (React, D20).
 
 ## Candidate fields the real pages asked for
 
@@ -35,6 +39,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 1. **xe.gr.** Save 20 to 30 listing pages from your own browser (Save Page As, "Webpage, HTML only") into one folder and share it with me. I'll add an offline xe parser. Or skip xe.gr for now; the synthetic set covers it.
 2. **Anthropic API key.** Needed from v1. Set it as `ANTHROPIC_API_KEY` where we run, with a spending limit in the Console.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
+4. **The crossed-out revisit** (step 8 above): your go-ahead, whenever it's useful.
 
 Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D29.
 
