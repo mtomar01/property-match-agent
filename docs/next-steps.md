@@ -13,7 +13,7 @@ Updated 20 October 2026, session 1.
 ## Your next job: label the 100 (about 3 hours)
 
 1. On your machine, after pulling the repo and copying `data/private/` across (or open the file I sent you): open `data/private/labels/extraction_labeller_round1.html` in Chrome or Safari.
-2. Read the rules once (`docs/labelling-guide.md`, or the Rules button in the tool). The ones that matter most: conflicts are unknown, a missing tick is not a no, a WC is not a bathroom.
+2. Read the rules once (`docs/labelling-guide.md`, or the Rules button in the tool). The ones that matter most: conflicts are unknown, crossed out is no but not shown is unknown, a WC is not a bathroom.
 3. Label in sittings of 20 to 30. Press **Export done** at the end of each sitting and keep the file.
 4. Send me the final export. I'll check it with `evals.harness.labels` and build the extraction eval on it.
 5. **A week later:** relabel 20 blind for the self-agreement check (target 95%).
