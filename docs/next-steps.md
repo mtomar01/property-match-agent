@@ -12,19 +12,18 @@ Updated 21 October 2026.
 
 ## Labelling: where it stands (21 October)
 
-- **89 of 100 labelled** on the hosted pages (D28): GB 49 (1 to 20, 41 to 60, 9 of 81 to 100), you 40 (21 to 40, 61 to 80). All valid, copies in `data/private/labels/`.
-- **Rule versions differ:** 1 to 40 were labelled before D29 (crossed out is no, under the pilotis is pilotis); 41 to 100 after.
+- **All 100 labelled** on the hosted pages (D28): GB 60 (1 to 20, 41 to 60, 81 to 100), you 40 (21 to 40, 61 to 80). All valid, copies in `data/private/labels/`.
+- **Rule versions differ:** 1 to 40 were labelled before D29; 41 to 100 after. No consistency pass, because more rounds are coming.
 
 ## Next steps
 
-1. **GB finishes 81 to 100** (11 left).
-2. **Consistency pass on 1 to 40** (about 30 minutes): recheck only lift, storage, balcony and parking against D29. I flag the likely ones from the descriptions first.
-3. **Agreement check:** you relabel GB's 81 to 100 on that page (your labels stay private from GB). Same rules, so the score is clean. Target 95%.
-4. **Freeze the answer key:** one file of 100 labels, each with its labeller and rule version.
-5. **Extraction eval harness** (no API key needed): scores any set of predictions against the key, per field, with "unknown" scored as an answer, split into pre-filled and free-text fields. Its first run is the code-only baseline (table and ticks, no model), the number every model has to beat.
-6. **Then the model** (needs the API key): the extraction prompt on Haiku 5.5, scored against the key, Sonnet 5.5 for comparison.
-7. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
-8. **Optional:** revisit the 100 pages for the crossed-out lists, so code can pre-fill "no" and the pipeline reads all three states.
+1. **Agreement check (D30):** "Mike's Agreement Set" (20 random listings GB labelled) is for you; "GB's Agreement Set" (20 random listings you labelled) is for GB. Share GB's by email as Contributor or Editor. I score agreement when both are done, before and after D29 separately.
+2. **Your notes** on how the page and description should be read. They shape the code that reads the table and the extraction prompt.
+3. **Freeze the answer key:** copy the labels as they stand into one versioned file (answer key v1) that every eval run uses. The pages stay editable; later rounds become v2.
+4. **Extraction eval harness:** scores any set of predictions against the frozen key, per field, with "unknown" scored as an answer, split into pre-filled and free-text fields. First run: the code-only baseline.
+5. **Then the model** (needs the API key): the extraction prompt on Haiku 5.5, Sonnet 5.5 for comparison.
+6. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+7. **Optional:** revisit the 100 pages for the crossed-out lists, so code can pre-fill "no".
 
 ## v1 features, after the evals
 
@@ -41,7 +40,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 4. **The crossed-out revisit** (step 8 above): your go-ahead, whenever it's useful.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D29.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D30.
 
 ## For the desktop app demo
 

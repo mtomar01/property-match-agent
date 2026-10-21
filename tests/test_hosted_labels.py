@@ -90,3 +90,27 @@ def test_agreement_counts_blanks_as_answers_and_skips_gone_listings():
     assert result.per_field["lift"] == [2, 2]  # both blank agrees
     assert result.structured == [3, 4]
     assert {(d[0], d[1]) for d in result.disagreements} == {("spitogatos:2", "floor_class"), ("spitogatos:2", "parking")}
+
+
+def test_agreement_sets_sample_only_other_peoples_listings_and_repeat():
+    from evals.harness.agreement_sets import choose
+
+    by = {"a": [f"spitogatos:{i}" for i in range(0, 30)], "b": [f"spitogatos:{i}" for i in range(30, 50)]}
+    first = choose(by, 10, seed=7)
+    assert first == choose(by, 10, seed=7)  # seeded, so it can be rebuilt and checked
+    assert not set(first["a"]) & set(by["a"]) and not set(first["b"]) & set(by["b"])
+    assert len(first["a"]) == 10 and len(set(first["a"])) == 10
+
+
+def test_selection_page_keeps_full_order_numbers_and_no_labels(tmp_path):
+    from evals.harness.build_label_tool import build_hosted_selection
+
+    raw_path, snap_path = write_inputs(tmp_path, n=4)
+    out = build_hosted_selection(["spitogatos:90000003", "spitogatos:90000000"], "Someone's Agreement Set",
+                                 tmp_path / "set.html", raw_path, snap_path)
+    html = out.read_text(encoding="utf-8")
+    payload = json.loads(re.search(r'<script type="application/json" id="data">(.*?)</script>', html, re.S).group(1))
+    assert [item["listing_id"] for item in payload["items"]] == ["spitogatos:90000003", "spitogatos:90000000"]
+    assert all(set(item) <= set(HOSTED_KEYS) for item in payload["items"])
+    with pytest.raises(ValueError):
+        build_hosted_selection(["spitogatos:1"], "x", tmp_path / "bad.html", raw_path, snap_path)

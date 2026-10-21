@@ -225,3 +225,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **To watch:** agencies that upload through an automatic feed may send "no" for every field they left empty. Once we have the crossed-out lists, we count how often one contradicts the description.
 - **Say:** "The person who'd filled in the form knew what the cross meant. Ask the domain expert, not just the page."
 
+
+## D30. Agreement check: each labeller relabels 20 of the other's listings
+
+- **Choice (yours):** 20 random listings GB labelled go to you, and 20 random listings you labelled go to GB, each on its own hosted page. Same pages as before: links and code-read values, never the other person's answers.
+- **How they're picked:** `evals/harness/agreement_sets.py` samples with a fixed seed (2026) and saves the chosen ids, so the sets can be rebuilt and checked.
+- **One caveat:** some sampled listings come from the batches labelled before D29 (13 of GB's 20, 7 of yours), so agreement is reported for before and after D29 separately. A disagreement there may be the old wording, not the labeller.
+- **No consistency pass on 1 to 40 (yours):** more labelling rounds are coming anyway.
+- **Say:** "Two people, twenty listings each, blind. That's the number that tells you whether the answer key can be trusted."

@@ -94,12 +94,13 @@ def build_items(raw_records: list[dict], cards: dict[str, dict]) -> list[dict]:
     return items
 
 
+def _hosted(item: dict, number: int) -> dict:
+    return {key: (number if key == "number" else item[key]) for key in HOSTED_KEYS}
+
+
 def hosted_items(items: list[dict], count: int, start: int = 0) -> list[dict]:
     """`count` listings from position `start`, cut down to links and code-read facts."""
-    chosen = []
-    for number, item in enumerate(items[start:start + count], start=start + 1):
-        chosen.append({key: (number if key == "number" else item[key]) for key in HOSTED_KEYS})
-    return chosen
+    return [_hosted(item, number) for number, item in enumerate(items[start:start + count], start=start + 1)]
 
 
 def _load(raw_path: Path, snapshot_path: Path) -> list[dict]:
@@ -135,6 +136,19 @@ def build_hosted(count: int, start: int = 0, raw_path: Path = RAW, snapshot_path
         raise ValueError(f"no listings from position {start}")
     out_path = out_path or hosted_path(count, start)
     _write(HOSTED_TEMPLATE, {"round": round_no, "items": items}, out_path, title=hosted_title(len(items), start))
+    return out_path
+
+
+def build_hosted_selection(listing_ids: list[str], title: str, out_path: Path, raw_path: Path = RAW,
+                           snapshot_path: Path = SNAPSHOT, round_no: int = 1) -> Path:
+    """A hosted page for chosen listings, in the order given, keeping their numbers in the full order."""
+    items = _load(raw_path, snapshot_path)
+    by_id = {item["listing_id"]: (number, item) for number, item in enumerate(items, start=1)}
+    missing = [listing_id for listing_id in listing_ids if listing_id not in by_id]
+    if missing:
+        raise ValueError(f"not in the collected pages: {missing}")
+    chosen = [_hosted(by_id[listing_id][1], by_id[listing_id][0]) for listing_id in listing_ids]
+    _write(HOSTED_TEMPLATE, {"round": round_no, "items": chosen}, out_path, title=title)
     return out_path
 
 
