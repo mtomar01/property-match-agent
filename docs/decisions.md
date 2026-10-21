@@ -219,7 +219,7 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 
 ## D29. Crossed-out features are a no (revises D22)
 
-- **What changed:** you've listed homes on Spitogatos yourself, and the advertiser has to cross a feature out on purpose. So a feature has three states: ticked (yes), crossed out (no), not shown (unknown). D22 had merged the last two, on my assumption about how the form works.
+- **What changed:** you've listed homes on Spitogatos yourself, and the advertiser has to cross a feature out on purpose. So a feature has three states: ticked (yes), crossed out (no), and not stated (unknown). In your words, not stated means the amenity is in none of the three places: not in the description, not in the table, not in the ticked or crossed list. D22 had merged crossed out with not stated, on my assumption about how the form works.
 - **How it showed up:** your grader, reading the live pages, answered "no" where the old rule said blank. The collector had also dropped crossed-out items, so neither your offline tool nor the pre-fill can see them yet.
 - **Now:** the hosted page for listings 41 to 60 says crossed out is no, and its parking rule is tighter (a spot under the pilotis is always pilotis). The pages for 1 to 20 and 21 to 40 keep their old wording, because people were labelling on them. The offline tool and the pre-fill change once the 100 pages' feature lists are read again with crossed-out items kept, which waits for your go-ahead to visit the live site.
 - **To watch:** agencies that upload through an automatic feed may send "no" for every field they left empty. Once we have the crossed-out lists, we count how often one contradicts the description.
