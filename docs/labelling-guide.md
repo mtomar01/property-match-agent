@@ -7,7 +7,7 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 1. **Label what the listing says, not what you think is true.** Anywhere on the page counts: the table, the ticked features and the text. If the text says 2 bedrooms and the floor plan shows 3, label 2 and add a note.
 2. **Unknown is a valid answer.** If the listing doesn't say, the label is blank (`null`). Never fill a gap with a likely value. The model is scored on saying "unknown" correctly too.
 3. **When the listing contradicts itself, the label is unknown** (D25). Leave the field blank and write both values in the notes, such as "table 2ος, text 3ος". Two exceptions: the **price** and the **size**, where the table wins (note the text's figure).
-4. **A missing tick is not a no** (D22). Set lift, balcony or storage to "no" only when the text says so.
+4. **Crossed out is no; not shown is unknown** (D29). On Spitogatos the advertiser crosses a feature out deliberately, so a crossed-out lift is a "no". A feature that isn't shown at all is blank. Until your offline tool shows crossed-out features, set "no" there only when the text says so.
 5. **Quote your evidence.** For every field you fill from the text, keep the Greek phrase you read it from, a few words only.
 6. **Never label contact details.** Agent or owner names, phones and emails are never copied into a label, a note or evidence. If you see one that wasn't scrubbed, tick "Contact details slipped through".
 
@@ -24,7 +24,7 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 | `renovated_year` | Only a full or major renovation. **"ανακαινισμένο" without a year is blank**, with condition `renovated`. Partial work (just windows or the kitchen) is blank, with a note. | "μερική ανακαίνιση 2025, στα κουφώματα" is blank |
 | `energy_class` | Latin letters: Γ is C, Ζ is F, Η is G. **Α++ is A+** (the official scale stops at Α+). Εξαιρείται is `exempt`. Υπό έκδοση or σε εξέλιξη is `pending`. Not mentioned is blank. | "ΠΕΑ: Ε" is E |
 | `heating` | αυτόνομη and ατομική are both `independent`. A heat pump (αντλία θερμότητας or θέρμανσης) is fuel `heat_pump`. A fan coil with no fuel named is fuel `other`. "Προεγκατάσταση" (only the pipes) is not heating: blank, with a note. | "Ατομική με Αντλία θερμότητας" is independent, heat_pump |
-| `parking` | `pilotis` (πιλοτή), `garage` (closed or underground), `space` (an open or covered spot), `none`. A ticked "Parking" with no type in the text stays blank. | "θέση στάθμευσης στην πιλοτή" is pilotis |
+| `parking` | `pilotis` for any spot under the building (πιλοτή), even when the text calls it a θέση στάθμευσης; `garage` (closed or underground); `space` (an open-air spot); `none`. Parking shown with no type in the text stays blank. | "θέση στάθμευσης στην πιλοτή" is pilotis |
 | `lift` | **"no" if the lift stops below the home's floor,** or there's only a goods lift (αναβατόριο), or a shaft with no cabin. | "ασανσέρ μέχρι τον 3ο", flat on the 4th, is no |
 | `metro_walk_min` | Only when minutes or metres are stated. Metres become minutes at 80 m per minute, rounded up. "Near the metro" with no number is blank. | "500 μέτρα από σταθμό μετρό" is 7 |
 | `condition` | `needs_work`, `unfinished` (ημιτελές), `new_build`, `renovated`, or blank. | "Χρήζει ολικής ανακαίνισης" is needs_work |

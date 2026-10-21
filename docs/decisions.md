@@ -216,3 +216,12 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Measuring it:** `evals/harness/agreement.py` scores two label sets field by field, split into pre-filled and free-text fields. The same script runs your own relabel a week later.
 - **Batches:** each batch of 20 is its own page with its own store (listings 1 to 20, then 21 to 40, numbered in the full labelling order), so starting a new batch never changes a page someone is labelling on.
 - **Say:** "Extra labellers go to the source. We share links and facts, never someone else's writing, and the store keeps each labeller blind to the others."
+
+## D29. Crossed-out features are a no (revises D22)
+
+- **What changed:** you've listed homes on Spitogatos yourself, and the advertiser has to cross a feature out on purpose. So a feature has three states: ticked (yes), crossed out (no), not shown (unknown). D22 had merged the last two, on my assumption about how the form works.
+- **How it showed up:** your grader, reading the live pages, answered "no" where the old rule said blank. The collector had also dropped crossed-out items, so neither your offline tool nor the pre-fill can see them yet.
+- **Now:** the hosted page for listings 41 to 60 says crossed out is no, and its parking rule is tighter (a spot under the pilotis is always pilotis). The pages for 1 to 20 and 21 to 40 keep their old wording, because people were labelling on them. The offline tool and the pre-fill change once the 100 pages' feature lists are read again with crossed-out items kept, which waits for your go-ahead to visit the live site.
+- **To watch:** agencies that upload through an automatic feed may send "no" for every field they left empty. Once we have the crossed-out lists, we count how often one contradicts the description.
+- **Say:** "The person who'd filled in the form knew what the cross meant. Ask the domain expert, not just the page."
+

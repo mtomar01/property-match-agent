@@ -17,7 +17,8 @@ Updated 20 October 2026, session 1.
 3. Label in sittings of 20 to 30. Press **Export done** at the end of each sitting and keep the file.
 4. Send me the final export. I'll check it with `evals.harness.labels` and build the extraction eval on it.
 5. **A week later:** relabel 20 blind for the self-agreement check (target 95%).
-6. **Hosted batches (D28):** "Property Match Labels" (listings 1 to 20) is with an evaluator. "Property Match Labels 21–40" is the second batch. Share each by email as Contributor or Editor; label within a week or two, since they use the live site. I'll score agreement with `evals.harness.agreement`.
+6. **Hosted batches (D28):** listings 1 to 20 are done by your grader (20 valid labels, saved privately). 21 to 40 is published. 41 to 60 is published with the corrected rules (D29). Share each by email as Contributor or Editor; label within a week or two, since they use the live site. I'll score agreement with `evals.harness.agreement`.
+7. **Your go-ahead needed:** revisit the 100 pages once to read the crossed-out features (D29).
 
 ## v1 (about 3 days), evals first
 
@@ -35,7 +36,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Needed from v1. Set it as `ANTHROPIC_API_KEY` where we run, with a spending limit in the Console.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D28.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D29.
 
 ## For the desktop app demo
 
