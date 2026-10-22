@@ -115,8 +115,9 @@ def load_predictions(path: Path) -> dict[str, dict]:
 
 
 def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", write: bool = True,
-        extra: dict | None = None) -> Score:
-    key, manifest = answer_key.load(version)
+        extra: dict | None = None, key_dir: Path | None = None, set_name: str | None = None) -> Score:
+    """Score one predictions file. `set_name` marks a test set other than the 100 (D45), with its own key in `key_dir`."""
+    key, manifest = answer_key.load(version, key_dir or answer_key.LABELS)
     result = score(key, load_predictions(predictions_path))
     print(report(result, name, manifest))
     if write:
@@ -131,10 +132,15 @@ def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", w
             **(extra or {}),
         }
         RESULTS.mkdir(parents=True, exist_ok=True)
-        suffix = "" if version == 1 else f"-key{version}"
-        (RESULTS / f"v0.2-extraction-{name}{suffix}.json").write_text(json.dumps(public, indent=2), encoding="utf-8")
+        if set_name:
+            public["test_set"] = set_name
+            result_name, detail_name = f"v0.2-extraction-{set_name}-{name}.json", f"detail-{set_name}-{name}.json"
+        else:
+            suffix = "" if version == 1 else f"-key{version}"
+            result_name, detail_name = f"v0.2-extraction-{name}{suffix}.json", f"detail-{name}-v{version}.json"
+        (RESULTS / result_name).write_text(json.dumps(public, indent=2), encoding="utf-8")
         PRIVATE.mkdir(parents=True, exist_ok=True)
-        (PRIVATE / f"detail-{name}-v{version}.json").write_text(json.dumps(result.detail, ensure_ascii=False, indent=1), encoding="utf-8")
+        (PRIVATE / detail_name).write_text(json.dumps(result.detail, ensure_ascii=False, indent=1), encoding="utf-8")
     return result
 
 

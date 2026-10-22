@@ -402,3 +402,12 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Frozen until scored:** prompt v3 and the merge rules don't change before the test runs. Then Haiku v3 + code reads the 10 (about a cent) and is scored against your labels.
 - **Caveat:** 10 listings is small. There are about 50 text-only fields, so one wrong field moves that score by about 2 points. It's a sanity check that the development score isn't overfitted, not a precise number.
 - **Say:** "I tuned on one set and tested on listings from another part of Athens that the prompt had never seen."
+
+## D45. The clean test, scored
+
+- **How:** your 10 blind labels became the Pagrati set's own answer key (v1, kept next to its data, never mixed with the 100). The code baseline and Haiku v3 + code ran with the prompt and merge rules unchanged since D41. `evals/harness/clean_test.py` does it in one command. Cost $0.008.
+- **As labelled:** Haiku v3 + code 100% on table fields and **88.2%** on the 34 text-only fields (target 85%); code alone 100% and 91.2%.
+- **What the misses are:** all four of Haiku's disagreements are facts the description states and the labels left blank ("δύο μπαλκόνια", "500 μέτρα από μετρό Αγ. Ιωάννη", "1 ευρύχωρο υπνοδωμάτιο", "1 χλμ από τη στάση μετρό Ευαγγελισμός"). None is a wrong value. Code alone also misses "χρήζει ανακαίνισης", which Haiku catches.
+- **What it shows:** no new kind of error on an area the prompt never saw. The development score wasn't the product of tuning to the first 100. As in D35, a single labeller's blanks are mostly misses.
+- **The honest number:** 88.2% stays the headline. A key corrected only where the system disagrees can only go up, because a fact both the labeller and the system missed is never looked at.
+- **Say:** "On unseen listings, every disagreement was a fact my labellers missed and the model found, with a quote."

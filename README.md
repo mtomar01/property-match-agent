@@ -55,8 +55,10 @@ The rules are in `docs/labelling-guide.md`.
 | v0.2 | **Answer key v4** (the key check, D43): Haiku 5.5 + code, prompt v3 | 100 | 99.3% | **94.8%** | 13 |
 | v0.2 | Answer key v4: Sonnet 5.5 + code, prompt v2 (11x the cost) | 100 | 99.4% | 95.0% | 12 |
 | v0.2 | Answer key v4: code only | 100 | 99.1% | 93.1% | 3 |
+| v0.2 | **Clean test, Pagrati** (blind labels, prompt and rules frozen, D44, D45): Haiku 5.5 + code | 10 | 100% | **88.2%** | 4 |
+| v0.2 | Clean test, Pagrati: code only | 10 | 100% | 91.2% | 2 |
 
-These 100 listings are the development set: the prompts and merge rules were shaped on them. The clean test is 10 listings from Pagrati, labelled blind and never used for tuning (D44); its score goes here once the labels are in.
+These 100 listings are the development set: the prompts and merge rules were shaped on them. The clean test is 10 listings from Pagrati, labelled blind and never used for tuning (D44). All four of Haiku's disagreements there are facts the description states and the labels left blank, each with a quote (D45).
 
 Most of Haiku's "invented" values come with a quote from the description that the key left blank, and 73 of its misses are "no" answers from the crossed-out feature list, which isn't in the text. Key v1 limited what this eval could show (D33); answer key v2 combines every round's labels (D35).
 

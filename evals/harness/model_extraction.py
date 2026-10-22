@@ -88,8 +88,9 @@ def read_all(records: list[dict], model: str, version: str, client, cache_dir: P
 
 def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_version: int = 1,
         limit: int | None = None, client=None, cache_dir: Path = CACHE, out_dir: Path = PRIVATE,
-        write: bool = True, revisit: bool = False) -> dict:
-    records, cards = load_inputs(revisit=revisit)
+        write: bool = True, revisit: bool = False, raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT,
+        key_dir: Path | None = None, set_name: str | None = None) -> dict:
+    records, cards = load_inputs(raw_path, snapshot_path, revisit=revisit)
     if limit:
         records = records[:limit]
     client = client or llm.client()
@@ -130,7 +131,7 @@ def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_vers
                 fh.write(json.dumps({"listing_id": listing_id, "fields": fields,
                                      "evidence": text.get("evidence", {}), "conflicts": blanked}, ensure_ascii=False) + "\n")
         extra = dict(summary, merge_rule=rule, conflicts_blanked=conflicts, crossed_out_lists=revisit)
-        results[rule] = extraction_eval.run(path, key_version, f"{name}-{rule}", extra=extra)
+        results[rule] = extraction_eval.run(path, key_version, f"{name}-{rule}", extra=extra, key_dir=key_dir, set_name=set_name)
         print()
     return dict(summary, results=results)
 

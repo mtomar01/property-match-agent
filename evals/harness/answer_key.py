@@ -43,6 +43,8 @@ ROUNDS = ("hosted_batch1_gb", "hosted_batch2_mike", "hosted_batch3_gb", "hosted_
 def rules_of(name: str) -> str:
     if name.startswith(PRE_D29):
         return "before D29"
+    if name.startswith("round6"):
+        return "D41"  # the Pagrati clean test, labelled under every rule to date (D44)
     return "D31" if name.startswith(("round2", "round3")) else "D29"
 
 
