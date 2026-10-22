@@ -18,7 +18,7 @@ Updated 22 October 2026, after the first model run.
 ## Next steps
 
 1. **Key check (waiting, your call):** the metro blanks and the 650 that should be 1500; raised ground against ground (6); older "no storage" labels with εσωτερική αποθήκη (3).
-2. **A clean test set:** prompts and merge rules were shaped on these 100, so 91.9% is a development score. A fresh batch, labelled blind, gives the honest number (touches the live site).
+2. **A clean test set:** prompts and merge rules were shaped on these 100, so 92.1% is a development score. A fresh batch, labelled blind, gives the honest number (touches the live site).
 3. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
 4. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
