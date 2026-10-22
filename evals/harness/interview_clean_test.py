@@ -99,8 +99,10 @@ FIXES = {
                      "around 150k is ±10% in code; 20-50 m² wasn't said; no loft; renovated means the last 10 years"),
     "clean_mike_3": ({"areas": [], "hard_limits": {"max_price_eur": 200000, "min_size_m2": 30, "max_size_m2": 50, "min_bedrooms": 1,
                                                     "property_types": APT},
+                      "budget_around": True, "ideally": ["bedrooms", "size"],
                       "preferences": [pref("renovated_year", 0.7, min=2016)]},
-                     "1 bedroom was said; διαμέρισμα is apartment only; lowest price from code; renovated means the last 10 years"),
+                     "1 bedroom was said; διαμέρισμα is apartment only; renovated means the last 10 years; "
+                     "'idanika' keeps size and bedrooms as limits with code's margins, and makes the price 'around' (D56)"),
     "clean_mike_4": ({"user_facts": {"budget": "A loan of up to 350k plus about 50k of my own, so up to 400k"},
                       "hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT},
                       "must_ask": ["budget_ceiling", "purpose"]},

@@ -220,6 +220,9 @@ def field_outcomes(expected: dict, predicted: dict) -> dict[str, str]:
         result = _outcome((expected.get("hard_limits") or {}).get(name), (predicted.get("hard_limits") or {}).get(name))
         if result:
             out[name] = result
+    soft_said, soft_caught = sorted(expected.get("ideally") or []), sorted(predicted.get("ideally") or [])
+    if soft_said or soft_caught:  # "ιδανικά" before a size or bedroom count, scored on what the model caught (D56)
+        out["ideally"] = _outcome(soft_said, soft_caught)
     said, caught = bool(expected.get("budget_around")), bool(predicted.get("budget_around"))
     if said or caught:  # "around" is scored on what the model caught; the 10% is code's (D53)
         out["budget_around"] = "correct" if said == caught else ("missed" if said else "invented")
@@ -331,6 +334,8 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     final = transcript["final"] or {}
     if "purpose" in asked:  # choosing "investment" in answer to the purpose question is choosing investor mode (D54)
         asked = asked | {"confirm_investor_mode"}
+    if any(t["output"]["action"] == "confirm" and t["output"]["criteria"].get("intent") == "invest" for t in replies):
+        asked = asked | {"confirm_investor_mode"}  # the spec: investor mode is confirmed on the criteria card (D56)
     out = {f"ask:{topic}": topic in asked or volunteered(topic, chat["expected_criteria"], final) for topic in chat["must_ask"]}
     user_numbers = set().union(*(numbers_in(t["text"]) for t in log if t["role"] == "user")) if log else set()
     for item in chat["must_say"]:
@@ -377,6 +382,8 @@ def _looser(name: str, before, after) -> bool:
     """Did this hard limit get looser from one card to the next? Removing a limit counts."""
     if name == "budget_around":
         return not before and bool(after)  # "around" widens the price by 10% (D53)
+    if name == "ideally":
+        return bool(set(after or []) - set(before or []))  # "ideally" widens a size or bedroom count (D56)
     if name == "areas":
         return bool(before) and (not after or bool(set(after) - set(before)))
     if _blank(before):
@@ -408,8 +415,8 @@ def unasked_loosenings(log: list[dict]) -> list[str]:
             continue
         current = entry["output"]["criteria"]
         if previous is not None and last_user and last_user["source"] != "script":
-            for name in ("areas", "budget_around", *interview.HARD_FIELDS):
-                top = name in ("areas", "budget_around")
+            for name in ("areas", "budget_around", "ideally", *interview.HARD_FIELDS):
+                top = name in ("areas", "budget_around", "ideally")
                 old = previous.get(name) if top else (previous.get("hard_limits") or {}).get(name)
                 new = current.get(name) if top else (current.get("hard_limits") or {}).get(name)
                 if _looser(name, old, new):

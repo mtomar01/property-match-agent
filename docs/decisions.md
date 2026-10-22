@@ -524,3 +524,12 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Two measurement fixes, rescored for free:** rental chats no longer score questions a rental doesn't get; "wide" now means the card's own check, not a probe of the whole snapshot (el_02, en_18).
 - **Weights:** 2 of 6 checked weights agree on the clean set ("I like big balconies" and "βεβαιώσου αν έχει μπαλκόνι" are a must on the cards, a plain wish to the model). Weights are judgement; they're reported, not scored.
 - **Still development scores** for the 40; the clean 10 are partly shaped now (D54), so they're the closest thing to a fresh test we have.
+
+## D56. Your four calls for v6 (built, not run)
+
+- **Investor mode is confirmed on the card,** as the spec says: when the user says investment, the card shows "investor mode" and confirming the card switches it on. No separate question that can go unanswered (mike_2, mike_5).
+- **The user's own renovation year wins** over the 10-year default ("after 2015" is 2015, el_17).
+- **Egaleo, Peristeri and Chaidari are in Athens:** "Athens" on its own gets "which of the three, or any?", not "Athens isn't covered" (mike_3).
+- **"Ιδανικά" before a list:** a size or a bedroom count stays a limit, widened by code, 10% either side for size and one bedroom either side; anything else is a wish. "Ideally 30 to 50 m² with 1 bedroom" searches 27 to 55 m² and 0 to 2 bedrooms. That needs a maximum bedroom limit, now in the search's own filter (`max_bedrooms`), which "up to 2 bedrooms" also uses.
+- **My reading, for you to confirm:** a price can't be a wish, because a card needs a top price (D53), so "ιδανικά" before a price is read as "around". mike_3's "idanika ... mexri 200000" then searches €180k to €220k.
+- **Eval:** "ideally" is scored as its own field, like "around"; adding it to a card without a yes counts as loosening; a confirmed card with investor mode counts as confirming it.

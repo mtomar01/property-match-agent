@@ -336,3 +336,36 @@ def test_wide_means_the_cards_own_check_not_a_probe():
     own = {"input": {}, "result": {"matches": 8}}
     replies = [{"output": answer("Card?", "confirm", criteria=card(max_price_eur=150000)), "tool_calls": [probe, own]}]
     assert ev.card_matches(replies) == 8
+
+
+def test_ideally_keeps_size_and_bedrooms_as_limits_with_code_margins():
+    soft = dict(card(max_price_eur=200000, min_size_m2=30, max_size_m2=50, min_bedrooms=1), ideally=["size", "bedrooms"])
+    limits = interview.search_card(soft)["hard_limits"]
+    assert (limits["min_size_m2"], limits["max_size_m2"]) == (27, 55)
+    assert limits["min_bedrooms"] is None and limits["max_bedrooms"] == 2  # ideally 1 bedroom: 0 to 2
+    two = interview.search_card(dict(card(max_price_eur=200000, min_bedrooms=2), ideally=["bedrooms"]))["hard_limits"]
+    assert (two["min_bedrooms"], two["max_bedrooms"]) == (1, 3)
+    plain = interview.search_card(card(max_price_eur=200000, min_bedrooms=2))["hard_limits"]
+    assert plain["min_bedrooms"] == 2 and plain.get("max_bedrooms") is None
+
+
+def test_a_maximum_bedroom_count_filters_in_code():
+    from core.filters import check
+    from core.models import Listing
+    listings = SnapshotAdapter().listings()
+    big = next(l for l in listings if l.bedrooms and l.bedrooms >= 3)
+    criteria = Criteria(user_id="t", intent=("rent" if big.listing_type == "rent" else "buy"), hard_limits=HardLimits(max_bedrooms=2))
+    assert check(big, criteria) == ("too_many_bedrooms", "bedrooms")
+
+
+def test_investor_mode_is_confirmed_on_the_card():
+    chat = {"must_ask": ["confirm_investor_mode"], "must_say": [], "must_not_invent": [],
+            "expected_criteria": card(intent="invest", max_price_eur=150000)}
+    log = [{"role": "user", "text": "An investment to rent out, around 150k.", "source": "script", "language": "en"},
+           {"role": "assistant", "output": answer("Investor mode, up to 150k. Right?", "confirm", criteria=card(intent="invest", max_price_eur=150000))}]
+    assert ev.behaviours(chat, {"log": log, "final": card(intent="invest", max_price_eur=150000)}) == {"ask:confirm_investor_mode": True}
+
+
+def test_v6_knows_athens_and_lets_the_users_year_win():
+    text = interview.system_prompt("interview_v6", today="2026-10-22")
+    assert "in Athens" in text and "min 2015" in text and "ideally" in text and "investor mode\" on the card" in text

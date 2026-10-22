@@ -17,7 +17,7 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview v6 (D55), your calls first:** investor mode confirmed on the card instead of by a separate question; the user's own renovation year wins; "Athens" covers our three areas; whether "ιδανικά" makes a whole list wishes.
+1. **Interview v6 (D56): built, not run.** Your four calls are in; one reading to confirm ("ιδανικά" before a price means around). Then v6 runs on the 40 and the 10, about $2.50.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
@@ -94,7 +94,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D55.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D56.
 
 ## For the desktop app demo
 

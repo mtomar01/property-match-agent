@@ -32,7 +32,7 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v5"
+PROMPT_VERSION = "interview_v6"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -51,9 +51,12 @@ EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one 
 MARGIN = 0.10  # "around X" means X minus to X plus 10% (Mike, D53)
 LOWEST_SHARE = {"buy": 0.8, "rent": 0.8, "invest": 0.5}  # lowest price, as a share of the top: keeps out wrecks and no-price ads (Mike, D53)
 WIDER_TYPES = {"apartment": ("maisonette", "loft")}  # types to offer when an apartment search is thin (Mike, D53)
+IDEALLY = ("size", "bedrooms")  # "ιδανικά" before these keeps them limits, widened by code (Mike, D56)
+SIZE_MARGIN = 0.10  # ideally 30 to 50 m² searches 27 to 55
+BEDROOM_MARGIN = 1  # ideally 1 bedroom searches 0 to 2
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
-HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "property_types",
+HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "max_bedrooms", "property_types",
                "exclude_floors")
 
 
@@ -67,7 +70,7 @@ def _hard_limits_schema() -> dict:
         "properties": {
             "max_price_eur": _nullable("integer"), "min_price_eur": _nullable("integer"),
             "min_size_m2": _nullable("number"), "max_size_m2": _nullable("number"),
-            "min_bedrooms": _nullable("integer"),
+            "min_bedrooms": _nullable("integer"), "max_bedrooms": _nullable("integer"),
             "property_types": {"type": "array", "items": {"type": "string", "enum": list(get_args(PropertyType))}},
             "exclude_floors": {"type": "array", "items": {"type": "string", "enum": list(FLOORS)}},
         },
@@ -80,6 +83,7 @@ def _criteria_core() -> dict:
         "areas": {"type": "array", "items": {"type": "string", "enum": list(SEARCH_AREAS)}},
         "hard_limits": _hard_limits_schema(),
         "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
+        "ideally": {"type": "array", "items": {"type": "string", "enum": list(IDEALLY)}},  # code adds the margins (D56)
     }
 
 
@@ -93,7 +97,7 @@ def schema() -> dict:
     }
     criteria = {
         "type": "object", "additionalProperties": False,
-        "required": ["intent", "areas", "hard_limits", "budget_around", "preferences", "open_questions"],
+        "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "open_questions"],
         "properties": {**_criteria_core(), "preferences": {"type": "array", "items": preference},
                        "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
@@ -115,7 +119,8 @@ TOOL = {
     "description": ("Count the listings in the snapshot that pass these hard limits, and how many would pass if each "
                     "limit were dropped. Code does the counting. Use it before showing a card whose asks may be hard "
                     "to meet together."),
-    "input_schema": {"type": "object", "additionalProperties": False, "required": ["intent", "areas", "hard_limits", "budget_around"],
+    "input_schema": {"type": "object", "additionalProperties": False,
+                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally"],
                      "properties": _criteria_core()},
 }
 
@@ -151,7 +156,10 @@ def _round(value: float, step: int) -> int:
 
 
 def search_card(raw: dict) -> dict:
-    """The card the search runs on: the user's numbers, plus Mike's budget rules applied by code (D53).
+    """The card the search runs on: the user's numbers, plus Mike's rules applied by code (D53, D56).
+
+    "Ideally" before a size or a bedroom count keeps it a limit with a margin:
+    10% either side for size, one bedroom either side.
 
     "Around X" searches from X minus 10% to X plus 10% (a range the user gave
     widens the same way). With no minimum from the user, the lowest price is
@@ -160,6 +168,16 @@ def search_card(raw: dict) -> dict:
     or €50 for a monthly rent. The model never does this arithmetic.
     """
     limits = dict(raw.get("hard_limits") or {})
+    ideally = set(raw.get("ideally") or [])
+    if "size" in ideally:  # "ideally 30 to 50 m²": 10% either side (D56)
+        if limits.get("min_size_m2"):
+            limits["min_size_m2"] = round(limits["min_size_m2"] * (1 - SIZE_MARGIN))
+        if limits.get("max_size_m2"):
+            limits["max_size_m2"] = round(limits["max_size_m2"] * (1 + SIZE_MARGIN))
+    if "bedrooms" in ideally and limits.get("min_bedrooms") is not None:  # "ideally 1 bedroom": one either side
+        said = limits["min_bedrooms"]
+        limits["max_bedrooms"] = max(limits.get("max_bedrooms") or said, said) + BEDROOM_MARGIN
+        limits["min_bedrooms"] = said - BEDROOM_MARGIN if said > BEDROOM_MARGIN else None
     top, low = limits.get("max_price_eur"), limits.get("min_price_eur")
     if not top:
         return {**raw, "hard_limits": limits}

@@ -218,6 +218,7 @@ class HardLimits(_Strict):
     min_size_m2: float | None = Field(default=None, gt=0)
     max_size_m2: float | None = Field(default=None, gt=0)
     min_bedrooms: int | None = Field(default=None, ge=0)
+    max_bedrooms: int | None = Field(default=None, ge=0)  # D56: "ideally 1 bedroom" searches 0 to 2
     property_types: list[PropertyType] = Field(default_factory=list)
     exclude_floors: list[str] = Field(default_factory=list)
 
@@ -238,6 +239,8 @@ class HardLimits(_Strict):
             raise ValueError("min_price_eur is above max_price_eur")
         if self.min_size_m2 and self.max_size_m2 and self.min_size_m2 > self.max_size_m2:
             raise ValueError("min_size_m2 is above max_size_m2")
+        if self.min_bedrooms is not None and self.max_bedrooms is not None and self.min_bedrooms > self.max_bedrooms:
+            raise ValueError("min_bedrooms is above max_bedrooms")
         return self
 
 

@@ -69,11 +69,13 @@ def check(listing: Listing, criteria: Criteria) -> tuple[str, str] | None:
         if limits.max_size_m2 is not None and listing.size_m2 > limits.max_size_m2:
             return ("too_big", "size_m2")
 
-    if limits.min_bedrooms is not None:
+    if limits.min_bedrooms is not None or limits.max_bedrooms is not None:
         if listing.bedrooms is None:
             return ("unknown", "bedrooms")
-        if listing.bedrooms < limits.min_bedrooms:
+        if limits.min_bedrooms is not None and listing.bedrooms < limits.min_bedrooms:
             return ("too_few_bedrooms", "bedrooms")
+        if limits.max_bedrooms is not None and listing.bedrooms > limits.max_bedrooms:
+            return ("too_many_bedrooms", "bedrooms")
 
     if limits.property_types:
         if listing.property_type is None:
