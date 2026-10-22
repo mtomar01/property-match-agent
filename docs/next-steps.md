@@ -1,6 +1,6 @@
 # Next steps
 
-Updated 22 October 2026.
+Updated 22 October 2026, after the first model run.
 
 ## Where we are
 
@@ -17,10 +17,17 @@ Updated 22 October 2026.
 
 ## Next steps
 
-1. **Cross-check round 2 (D32):** "Mike's Cross-Check 2" and "GB's Cross-Check 2", the 20 listings each where the code-only baseline was most wrong, with the D31 rules. When both are done I score agreement and build answer key v2 (D31 rules applied).
-2. **First model run (Haiku 5.5),** once you approve the spend: the extraction prompt with the glossary and the D31 rules, scored against the key next to the code-only baseline (98.7% table fields, 73.1% text fields). Then Sonnet 5.5 for comparison.
-3. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
-4. **Optional:** revisit the 100 pages for the crossed-out lists, so code can read "no" from the page.
+1. **Cross-check round 2 (D32):** "Mike's Cross-Check 2" and "GB's Cross-Check 2" are ready, with the D31 rules (the header now says round 2). When both are done I score agreement.
+2. **Answer key v2:** round 2's labels, the D31 rules applied, and, if you agree, a review of the places where Haiku quotes a value the key lacks (about 80): a page with the listing link, the field, the two values without saying which is the model's, and the quote. You pick; the key stays human-made.
+3. **The crossed-out revisit:** 73 of Haiku's 79 misses, the same gap as the baseline's, are "no" answers from the crossed-out list. Your go-ahead, since it touches the live site.
+4. **Sonnet 5.5 run** (about $1.50) once key v2 exists. Comparing models on key v1 would mostly measure the key.
+5. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+
+## First model run (22 October, D33)
+
+- Haiku 5.5 reads the description only; code reads the table and merges. Prompt v2 on key v1: table fields 98.2%, text fields 72.2% (code alone 73.1%).
+- Of 171 disagreements with the key, about 20 look like real model mistakes; the rest are crossed-out "no"s (73), values the key left blank (57), the key predating your notes (14) and raised ground (7).
+- Spent $0.155 of the $100.
 
 ## v1 features, after the evals
 
@@ -33,11 +40,12 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 ## Open decisions for you
 
 1. **xe.gr.** Save 20 to 30 listing pages from your own browser (Save Page As, "Webpage, HTML only") into one folder and share it with me. I'll add an offline xe parser. Or skip xe.gr for now; the synthetic set covers it.
-2. **Anthropic API key.** Received and working. It's stored outside the repo in this environment only. Set a monthly spend limit in the Console, and approve the first model run.
+2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
-4. **The crossed-out revisit** (step 8 above): your go-ahead, whenever it's useful.
+4. **The crossed-out revisit** (step 3 above): your go-ahead.
+5. **Internal storage:** two listings have storage crossed out in the feature list but "εσωτερική αποθήκη" (a storage room inside the flat) in the text. Is that storage, or a conflict (unknown)?
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D30.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D33.
 
 ## For the desktop app demo
 

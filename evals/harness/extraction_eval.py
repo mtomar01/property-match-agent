@@ -105,7 +105,8 @@ def report(result: Score, name: str, manifest: dict) -> str:
     return "\n".join(lines)
 
 
-def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", write: bool = True) -> Score:
+def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", write: bool = True,
+        extra: dict | None = None) -> Score:
     key, manifest = answer_key.load(version)
     predictions = {}
     for line in predictions_path.read_text(encoding="utf-8").splitlines():
@@ -123,6 +124,7 @@ def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", w
             "groups": {g: dict(c, accuracy=round(result.accuracy(c), 4)) for g, c in result.groups.items()},
             "per_field": {f: dict(c, accuracy=round(result.accuracy(c), 4)) for f, c in result.per_field.items()},
             "data": "real listings, private; totals only",
+            **(extra or {}),
         }
         RESULTS.mkdir(parents=True, exist_ok=True)
         (RESULTS / f"v0.2-extraction-{name}.json").write_text(json.dumps(public, indent=2), encoding="utf-8")

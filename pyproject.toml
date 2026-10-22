@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "AI property search assistant for Greece: criteria from chat, deduplicated search, a swipe deck that learns taste."
 requires-python = ">=3.11"
 dependencies = [
+    "anthropic>=2.1.0",
     "mcp>=2.3,<3",
     "pydantic>=2.7",
 ]

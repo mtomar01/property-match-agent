@@ -88,7 +88,8 @@ def build_round2(size: int = 20, key_version: int = 1, detail_name: str = "code_
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "sets_round2.json").write_text(json.dumps({"size": size, "ranked_by": f"{detail_name} errors on key v{key_version}",
                                                       "relabel": chosen}, indent=2), encoding="utf-8")
-    return {who: build_hosted_selection(ids, f"{display(who)}'s Cross-Check 2", OUT / f"cross-check-2-{who}.html")
+    return {who: build_hosted_selection(ids, f"{display(who)}'s Cross-Check 2", OUT / f"cross-check-2-{who}.html",
+                                         round_no=2)
             for who, ids in chosen.items()}
 
 

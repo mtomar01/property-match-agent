@@ -315,4 +315,12 @@ GLOSSARY: list[dict[str, str]] = [
     {"greek": "χρήζει ανακαίνισης", "meaning": "needs renovation", "normalised": "condition needs_work"},
     {"greek": "νεόδμητο", "meaning": "new build", "normalised": "condition new_build"},
     {"greek": "ΠΕΑ: Α+ to Η, υπό έκδοση", "meaning": "energy certificate class, or pending", "normalised": "energy_class A+ to G, pending"},
+    # From Mike's reading notes (D31)
+    {"greek": "μπαλκόνι, βεράντα, ιδιωτικός κήπος, αυλή", "meaning": "any private outdoor space", "normalised": "balcony yes"},
+    {"greek": "κοινόχρηστος κήπος", "meaning": "shared garden", "normalised": "not a balcony"},
+    {"greek": "πάρκινγκ, parking, γκαράζ", "meaning": "parking spot, garage", "normalised": "parking space, garage"},
+    {"greek": "fan coil, αντλία θερμότητας", "meaning": "heat pump", "normalised": "fuel heat_pump"},
+    {"greek": "ημιτελές, υπό κατασκευή, παράδοση 2027", "meaning": "still being built, delivery date", "normalised": "condition unfinished, year_built the completion year"},
+    {"greek": "αναβατόριο", "meaning": "goods lift", "normalised": "lift no"},
+    {"greek": "WC", "meaning": "toilet only", "normalised": "not a bathroom"},
 ]

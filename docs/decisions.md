@@ -250,3 +250,25 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Round 2 of the cross-check (your choice):** each of you relabels the 20 listings the other labelled where the baseline was most wrong, on pages carrying the D31 rules. 13 of GB's and 6 of yours are listings you each saw in round 1; they still compare with the other person's original label.
 - **Say:** "Before any model, a frozen key, a scorer that separates harmless misses from dangerous inventions, and a rules baseline at 98.7% and 73.1%. The model has to earn its place on the text fields."
 
+
+## D33. The extraction prompt: the model reads the prose, code does the rest
+
+- **Who does what:** code reads the page's table, ticks and result card, where it's right 98.7% of the time. The model (Haiku 5.5) reads only the description and reports what the description itself states. Code merges the two. Why: "code calculates, the model reasons". The model never sees the table, so it can't copy it, and every disagreement between the description and the table is visible to code instead of being settled silently inside the model.
+- **Quote first, then answer:** the answer is structured output (a JSON schema the API enforces), and its first part is a list of evidence quotes, one per filled field. Each value then rests on words the model has just copied from the listing, and checking a run takes minutes: read the quote next to the disputed value. No confidence score yet, because a model's own confidence isn't calibrated; accuracy per field is measured instead.
+- **Code does the arithmetic and the checks:** metres to the metro become minutes (80 m a minute, rounded up, the same rule as the scoring), choices are matched without case, numbers outside sane ranges become unknown, and quotes are scrubbed of contact details.
+- **The conflict rule (D25) lives in code,** and two variants are scored from the same answers: "fill" (code first, the description fills blanks) and "conflict" (when they disagree, unknown; the table wins for price and size). Differences the guide says aren't conflicts are reconciled in code: υπερυψωμένο ισόγειο is a more exact "ground", and a ρετιρέ with a floor number takes the number.
+- **Versioned and reproducible:** prompts live in `prompts/` with a version and a changelog line (`prompts/CHANGELOG.md`); the glossary in the prompt comes from `core/greek.py`, the same table the MCP server serves, now with your D31 terms. Every answer is cached by a hash of the exact request (model, prompt, schema, listing text), so re-scoring never pays twice. The API no longer takes a temperature setting, so two runs can differ slightly; the cache makes a scored run exactly re-scorable. A failed call keeps what code read (it fails closed), and a long listing that runs out of room gets one retry with twice the room.
+- **Results on answer key v1** (100 listings):
+
+  | | Table fields | Text-only fields | Invented |
+  |---|---|---|---|
+  | Code only (D32) | 98.7% | 73.1% | 43 |
+  | Haiku, prompt v1, fill | 98.2% | 69.4% | 72 |
+  | Haiku, prompt v2, fill | 98.2% | 72.2% | 58 |
+  | Haiku, prompt v2, conflict | 97.5% | 72.2% | 58 |
+
+- **What the disagreements say:** of prompt v2's 171 disagreements with the key, 73 are "no" answers from the crossed-out list, which isn't in the text; 57 are values Haiku quotes from the description that the key left blank (parking, balconies, metro distances, "δεν έχει ασανσέρ"); 14 are where the key predates your notes (unfinished, fan coil); 7 are "ground" in the key where the guide says raised ground. Only about 20 look like real model mistakes. So key v1, not the model, limits what this eval can show.
+- **Prompt v2 fixed two of my mistakes:** v1 offered a "good" condition the guide doesn't have, so "σε πολύ καλή κατάσταση" became a value the key never holds (17 cases); and it read "ασανσέρ έως -1" (the lift goes down to the basement) as no lift (3 cases). Both fixes are rules from the guide or plain Greek, not examples, but they were found by reading this set's errors, so v2's score is slightly optimistic. A fresh batch of listings will be the clean test.
+- **Fill or conflict:** against key v1, "fill" scores higher on table fields, because when the text disagreed with the table the labellers mostly kept the table's value, while D25 says leave it blank. Either the rule or the labels should change; key v2 decides.
+- **Cost:** $0.155 for everything today (a 2-listing dry run, prompt v1 and prompt v2 on 100 listings): under a tenth of a cent per listing.
+- **Say:** "The first model run looked worse than regex. The quotes showed why: most 'errors' were gaps in the answer key. An eval can't tell a good model from a good regex until the key is right, so the next step was the key, not the prompt."

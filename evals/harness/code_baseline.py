@@ -73,8 +73,8 @@ def from_description(text: str) -> dict:
     return found
 
 
-def predict(record: dict, card: dict) -> dict:
-    """All label fields for one listing; None where code can't tell."""
+def from_page(record: dict, card: dict) -> dict:
+    """What code reads from the page's fixed parts (table, ticks, card), before any prose."""
     f = parse_details(record).fields
     fields = {name: None for name in LABEL_FIELDS}
     fields.update({
@@ -99,6 +99,12 @@ def predict(record: dict, card: dict) -> dict:
         "area": card.get("area"),
         "sub_area": card.get("sub_area"),
     })
+    return fields
+
+
+def predict(record: dict, card: dict) -> dict:
+    """All label fields for one listing; None where code can't tell."""
+    fields = from_page(record, card)
     for name, value in from_description(record["sections"].get("Περιγραφή", "")).items():
         if fields.get(name) is None:
             fields[name] = value

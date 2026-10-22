@@ -498,7 +498,9 @@ async function connect() {
 }
 
 $("round").textContent = ROUND;
-$("range").textContent = number(0) + " to " + number(ITEMS.length - 1);
+// A batch runs in order ("21 to 40"); a chosen set does not, so it shows the count.
+const inOrder = ITEMS.every((item, i) => number(i) === number(0) + i);
+$("range").textContent = inOrder ? number(0) + " to " + number(ITEMS.length - 1) : ITEMS.length + ", chosen";
 $("initials").addEventListener("change", ev => { initials = ev.target.value.trim().toUpperCase(); ev.target.value = initials; writeMe(); });
 $("initials").addEventListener("input", ev => { initials = ev.target.value.trim(); });
 $("notes").addEventListener("input", ev => { const e = entry(ITEMS[current]); e.notes = ev.target.value; e.touched = true; });

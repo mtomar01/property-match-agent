@@ -40,6 +40,10 @@ The rules are in `docs/labelling-guide.md`.
 | Version | Eval | Listings | Table fields | Text-only fields | Invented values |
 |---|---|---|---|---|---|
 | v0.2 | Extraction, code-only baseline (answer key v1, real listings) | 100 | 98.7% (target 98%) | 73.1% (target 85%) | 43 |
+| v0.2 | Extraction, Haiku 5.5, prompt v1 (description only, code merges) | 100 | 98.2% | 69.4% | 72 |
+| v0.2 | Extraction, Haiku 5.5, prompt v2 | 100 | 98.2% | 72.2% | 58 |
+
+Most of Haiku's "invented" values come with a quote from the description that the key left blank, and 73 of its misses are "no" answers from the crossed-out feature list, which isn't in the text. Key v1 limits what this eval can show; key v2 comes next (D33).
 
 Answer key quality: two labellers relabelled 20 of each other's listings (40 real listings, kept private). Agreement 89.6% overall against a 95% target: 98% on fields the page's table states, 59% on fields only the text states (D30).
 
