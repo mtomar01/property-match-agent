@@ -24,7 +24,7 @@ Updated 22 October 2026, after answer key v4.
 
 - 40 chats: scripted user turns, a simulated user (Haiku) for gaps, scored in code. Sonnet 5.5 with one tool, check_supply, so trade-offs use code's numbers.
 - Prompt v1: fields 88.8%, 0 invented hard limits; stated bedroom counts became preferences. Prompt v2: fields 98.8%, 1 invented hard limit, behaviours 98.8%, 2.3 cents a chat.
-- Spent about $3.40 of the $100 in total.
+- Spent about $3.30 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 
