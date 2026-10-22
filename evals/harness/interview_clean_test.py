@@ -76,7 +76,7 @@ def pref(feature: str, weight: float, **bound) -> dict:
     return {"feature": feature, "weight": weight, **bound}
 
 
-MIKE_4_TOP = None  # 350k (the loan, as said) or 400k: Mike's call, pending (D54)
+MIKE_4_TOP = 400000  # the loan plus savings, reached only by asking (Mike, D54)
 APT = ["apartment"]
 GROUND_FLOORS = ["basement", "semi_basement", "ground", "raised_ground"]
 # The cards rewritten to the rules Mike settled on 22 October (D53, D54). Each entry replaces those parts of a
@@ -101,9 +101,11 @@ FIXES = {
                                                     "property_types": APT},
                       "preferences": [pref("renovated_year", 0.7, min=2016)]},
                      "1 bedroom was said; διαμέρισμα is apartment only; lowest price from code; renovated means the last 10 years"),
-    "clean_mike_4": ({"hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT},
+    "clean_mike_4": ({"user_facts": {"budget": "A loan of up to 350k plus about 50k of my own, so up to 400k"},
+                      "hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT},
                       "must_ask": ["budget_ceiling", "purpose"]},
-                     "apartment only; 100 m² wasn't said; lowest price from code; top price pending"),
+                     "400k only by asking whether savings come on top of the loan (the fact lets the simulated user answer); "
+                     "apartment only; 100 m² wasn't said; lowest price from code"),
     "clean_mike_5": ({"hard_limits": {"max_price_eur": 250000},
                       "preferences": [pref("balcony", 0.9, equals=True), pref("lift", 0.7, equals=True),
                                       pref("metro_walk_min", 0.6, max=10), pref("renovated_year", 0.7, min=2016)],

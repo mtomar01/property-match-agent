@@ -509,5 +509,6 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Floors:** no basement also rules out the semi-basement, and no ground floor the raised ground (el_02 and en_07 updated in the 40).
 - **"Renovated" with no year** means renovated in the last 10 years, so 2016 or later; code fills the year in.
 - **No question about the year built or the costs unless the user brings them up.** Those ticks are off the clean cards.
-- **The clean cards, rewritten to these rules** in one table (`FIXES` in `interview_clean_test.py`), each change with its reason in `changes.json`; the cards as written are kept beside them. mike_4's top price is open: 350k as said, or 400k.
+- **The clean cards, rewritten to these rules** in one table (`FIXES` in `interview_clean_test.py`), each change with its reason in `changes.json`; the cards as written are kept beside them.
+- **mike_4: 400k, reached only by asking.** "A loan of up to 350k" isn't the price, so the assistant should ask whether savings come on top. The chat gets the fact "plus about 50k of my own" so the simulated user can answer, and the prompt gets a general rule: a loan isn't the price, ask about savings, never work out what a bank would lend. That rule came from looking at a clean chat, so mike_4 is no longer fully blind.
 - **Not run yet.**
