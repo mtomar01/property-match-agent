@@ -1,7 +1,7 @@
 {
   "eval": "extraction",
   "name": "haiku_v2+crossed-conflict",
-  "ran_at": "2026-10-22T08:23:13+00:00",
+  "ran_at": "2026-10-22T08:59:41+00:00",
   "listings": 100,
   "answer_key": {
     "version": 2,
@@ -20,11 +20,11 @@
       "accuracy": 0.9819
     },
     "free_text": {
-      "correct": 407,
+      "correct": 432,
       "wrong": 7,
-      "invented": 26,
-      "missed": 56,
-      "accuracy": 0.8206
+      "invented": 46,
+      "missed": 11,
+      "accuracy": 0.871
     }
   },
   "per_field": {
@@ -120,18 +120,18 @@
       "accuracy": 0.98
     },
     "parking": {
-      "correct": 79,
+      "correct": 89,
       "wrong": 0,
-      "invented": 2,
-      "missed": 19,
-      "accuracy": 0.79
+      "invented": 10,
+      "missed": 1,
+      "accuracy": 0.89
     },
     "lift": {
-      "correct": 83,
+      "correct": 90,
       "wrong": 0,
-      "invented": 1,
-      "missed": 16,
-      "accuracy": 0.83
+      "invented": 9,
+      "missed": 1,
+      "accuracy": 0.9
     },
     "balcony": {
       "correct": 94,
@@ -141,11 +141,11 @@
       "accuracy": 0.94
     },
     "storage": {
-      "correct": 84,
+      "correct": 92,
       "wrong": 3,
-      "invented": 1,
-      "missed": 12,
-      "accuracy": 0.84
+      "invented": 5,
+      "missed": 0,
+      "accuracy": 0.92
     },
     "flags": {
       "correct": 96,

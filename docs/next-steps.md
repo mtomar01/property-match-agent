@@ -17,10 +17,14 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Check 5 (D37):** "Mike's Check 5" and "GB's Check 5", 5 listings each where the system says unknown for lift, parking and storage. Share GB's page by email.
-2. **Then the other 50 pages** for their crossed-out lists, if Check 5 shows the unknowns are crossed-out "no"s. Check 4 already found exactly that on #53.
-3. **Sonnet 5.5 run** (about $1.50) on key v2, to see whether a bigger model earns its cost on the text fields.
-4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+1. **Answer key v3 (your call):** 24 of the 46 "invented" values are lift, parking or storage crossed out on the page where key v2 is blank. Your checks marked 37 of 39 such cases "no". Fill those blanks with "no" (D29), recorded in the manifest as filled by the rule, or leave the key as labelled.
+2. **Sonnet 5.5 run** (about $1.50) on the key, to see whether a bigger model earns its cost on the text fields.
+3. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+
+## Crossed-out lists for all 100 (22 October, D38)
+
+- Haiku v2 + code: 98.9% on table fields, 87.1% on text-only fields (targets 98% and 85%). Code alone 85.7%.
+- Check 5: every difference was a crossed-out lift, parking or storage; the system now agrees with Checks 4 and 5 on 418 of 420 fields.
 
 ## Check 4 (22 October, D37)
 
@@ -58,7 +62,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D37.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D38.
 
 ## For the desktop app demo
 

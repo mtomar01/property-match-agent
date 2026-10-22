@@ -328,3 +328,18 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Check 5 (your call):** ten listings, five each (you then asked for a split; listings each of you never labelled come first): listings where the system says unknown for lift, parking and storage all at once, the three features a crossed-out list answers. Only 13 listings in the 100 are like that; ten were picked at random with a fixed seed, leaving out the round 4 pages. One (#81, on your page) is a revisited listing whose advertiser crossed out nothing, so unknown is right there: a control. The page pre-fills the system's answer, tagged "system", as in round 4.
 - **Why:** to show, on the live pages, whether the unknowns are crossed-out "no"s the system can't see, before deciding on the other 50 pages.
 - **Say:** "I let the two people who'd judge the fix pick the test: the listings where the system knows least."
+
+## D38. Check 5, and the crossed-out lists for all 100
+
+- **Check 5 result:** every difference between your checks and the system was a crossed-out lift, parking or storage the system called unknown, 26 in all; every other field agreed, and the control listing (a revisited page with nothing crossed out) matched on every field. Across Checks 4 and 5 you marked 37 of the 39 crossed-out lift, parking and storage features "no" and left 2 blank; none "yes". D29 holds.
+- **The fix (your go-ahead):** I read the crossed-out lists on the other 50 pages, the same way as D34: feature names and icons only, a few seconds apart, the script checked by its fingerprint (all 50 matched), the tab closed after. The first 50 were read this morning, so I didn't reopen them. All 100 listings now have their lists; 5 advertisers crossed out nothing.
+- **Results on key v2, all 100 listings** (no new model calls):
+
+  | | Table fields | Text-only fields | Missed | Invented |
+  |---|---|---|---|---|
+  | Code only, crossed-out lists | 99.4% | 85.7% | 27 | 39 |
+  | Haiku v2 + code, crossed-out lists | 98.9% | **87.1%** | 11 | 46 |
+
+  Both targets are met on the whole set. Against your Check 4 and 5 labels the system now agrees on 418 of 420 fields; the two left are storage you left blank where Αποθήκη is crossed out.
+- **What "invented" is now:** 24 of the 46 are lift, parking or storage crossed out on the page where answer key v2 is blank, mostly listings resting on one label made before D29. 10 are metro distances the description gives and the key left blank. The rest are scattered.
+- **Say:** "Two people checked fifteen listings and found the same gap every time. Reading one more part of the page closed it: misses went from 56 to 11, and the pipeline passed its target on all 100."
