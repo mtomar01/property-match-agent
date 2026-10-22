@@ -67,6 +67,12 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .intro { max-width: 70ch; color: var(--muted); display: grid; gap: 6px; }
 .intro p { margin: 0; }
 .intro strong { color: var(--ink); }
+.guide { max-width: 80ch; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.guide summary { font-weight: 700; cursor: pointer; }
+.guide dl { display: grid; grid-template-columns: minmax(0, 13em) minmax(0, 1fr); gap: 6px 16px; margin: 12px 0 0; }
+.guide dt { font-weight: 600; }
+.guide dd { margin: 0; color: var(--muted); }
+@media (max-width: 560px) { .guide dl { grid-template-columns: minmax(0, 1fr); } .guide dd { margin-bottom: 6px; } }
 .notice { background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 10px 14px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab { display: inline-flex; align-items: center; gap: 8px; }
@@ -112,6 +118,26 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
     <p><strong>Write 5 chats the way a real buyer or renter would talk to the assistant.</strong> Use your own words, in Greek or English. Please don't look at the assistant's prompt or the 40 existing chats first: these chats test it on things it has never seen.</p>
     <p>Mix in a few hard ones as they come naturally: a vague budget, two people's wishes, an area we don't cover, a monthly payment instead of a price. The search covers Egaleo, Peristeri and Chaidari. Everything saves as you type.</p>
   </section>
+
+  <details class="guide" id="guide" open lang="el">
+    <summary>Οδηγίες</summary>
+    <dl>
+      <dt>Γενικά</dt><dd>5 chats ο καθένας, με δικά σας λόγια. Μην κοιτάξετε πρώτα το prompt ή τα 40 chats. Βάλτε και μερικά δύσκολα: ασαφή προϋπολογισμό, επιθυμίες δύο ανθρώπων, περιοχή που δεν καλύπτουμε, δόση αντί για τιμή. Αποθηκεύεται αυτόματα.</dd>
+      <dt>Γλώσσα</dt><dd>Σε ποια γλώσσα γράφετε το chat.</dd>
+      <dt>Πρώτο μήνυμα</dt><dd>Ό,τι θα έγραφε ένας πραγματικός αγοραστής ή ενοικιαστής στον βοηθό.</dd>
+      <dt>Επόμενα μηνύματα</dt><dd>Προαιρετικά. Οι απαντήσεις σας στις ερωτήσεις που περιμένετε από έναν καλό βοηθό, με τη σειρά. Στέλνονται με αυτή τη σειρά, ό,τι κι αν ρωτήσει.</dd>
+      <dt>Αν ρωτήσει κάτι άλλο</dt><dd>Ένα στοιχείο ανά γραμμή, π.χ. «Υπνοδωμάτια: τουλάχιστον δύο». Κενό αν δεν έχετε προτίμηση.</dd>
+      <dt>Τι πρέπει να κάνει</dt><dd>Τσεκάρετε μόνο ό,τι πρέπει οπωσδήποτε να ρωτήσει ή να πει πριν ψάξει, π.χ. αν το «γύρω στις 200» είναι το ανώτατο.</dd>
+      <dt>Σημειώσεις</dt><dd>Προαιρετικά. Ό,τι άλλο πρέπει ή δεν πρέπει να κάνει.</dd>
+      <dt>Αγορά ή ενοικίαση</dt><dd>Για να μείνει, για ενοικίαση ή ως επένδυση.</dd>
+      <dt>Περιοχές</dt><dd>Όσες θέλει ο χρήστης. Καμία σημαίνει και τις τρεις. Περιοχή που δεν καλύπτουμε γράφεται στο πεδίο από κάτω.</dd>
+      <dt>Αυστηρά όρια</dt><dd>Μόνο ό,τι λέει ως όριο («μέχρι», «τουλάχιστον»). Η αναζήτηση δεν τα παραβιάζει ποτέ. Στην ενοικίαση, η τιμή είναι το μηνιαίο ενοίκιο.</dd>
+      <dt>Τύποι ακινήτου</dt><dd>Μόνο αν τους αναφέρει. «Διαμέρισμα» είναι διαμέρισμα, «flat» είναι διαμέρισμα ή μεζονέτα, «γκαρσονιέρα» είναι γκαρσονιέρα ή διαμέρισμα.</dd>
+      <dt>Όροφοι που αποκλείονται</dt><dd>Μόνο αν το λέει, π.χ. «όχι ισόγειο».</dd>
+      <dt>Επιθυμίες</dt><dd>Ό,τι θέλει αλλά δεν είναι όριο, και πόσο μετράει: A must (απαραίτητο), Strong wish (δυνατή επιθυμία), Would like (θα ήθελα), A bonus (μπόνους). Βοηθούν στην κατάταξη, δεν αποκλείουν αγγελίες.</dd>
+      <dt>Πότε είναι έτοιμο</dt><dd>Όταν έχει πρώτο μήνυμα, γλώσσα και αγορά ή ενοικίαση. Η πράσινη τελεία το δείχνει.</dd>
+    </dl>
+  </details>
 
   <p class="notice" id="offline" hidden>Saving isn't available in this view. Open the page from its link while signed in to Claude, then write the chats.</p>
 
