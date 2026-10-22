@@ -91,10 +91,19 @@ def guarded(reply: str, facts_used: list[str], chat: dict, said: list[str], lang
 # ---------------------------------------------------------------------------
 
 
+# Greek written in Latin letters ("Greeklish"): words that are common in Greek and rare in English (D52).
+GREEKLISH = {"kalispera", "kalimera", "geia", "thelo", "thelw", "ithela", "einai", "kai", "mexri", "gia", "apo", "den",
+             "noiazei", "tha", "stin", "sto", "ena", "mia", "tetragonika", "ypnodomatio", "ypnodomatia", "diamerisma",
+             "agorasw", "agoraso", "enoikio", "anakainismeno", "orofos", "xronologia", "paidi", "idanika", "spiti"}
+
+
 def language(text: str) -> str:
     letters = [c for c in text if c.isalpha()]
     greek = sum(1 for c in letters if "Ͱ" <= c <= "Ͽ" or "ἀ" <= c <= "῿")
-    return "el" if letters and greek / len(letters) >= 0.5 else "en"
+    if letters and greek / len(letters) >= 0.5:
+        return "el"
+    words = set(re.findall(r"[a-z]+", text.lower()))
+    return "el" if len(words & GREEKLISH) >= 2 else "en"
 
 
 def simulated_answer(chat: dict, said: str, lang: str, client, cache_dir: Path | None,
