@@ -76,7 +76,7 @@ def test_check_supply_counts_in_code_and_says_what_each_limit_costs():
     args = {"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 150000, "min_bedrooms": 3}}
     result = interview.check_supply(args, listings)
     criteria = Criteria(user_id="t", intent="buy", areas=["Egaleo"],
-                        hard_limits=HardLimits(max_price_eur=150000, min_price_eur=120000, min_bedrooms=3))  # 80% added by code
+                        hard_limits=HardLimits(max_price_eur=150000, min_price_eur=75000, min_bedrooms=3))  # half the top, added by code
     assert result["matches"] == len(apply_hard_limits(listings, criteria).matches)
     assert set(result["if_dropped"]) == {"max_price_eur", "min_price_eur", "min_bedrooms"}
     assert all(n >= result["matches"] for n in result["if_dropped"].values())
@@ -263,11 +263,11 @@ def test_mikes_budget_rules_are_applied_by_code():
     around = interview.search_card(card(max_price_eur=200000, budget_around=True))["hard_limits"]
     assert (around["min_price_eur"], around["max_price_eur"]) == (180000, 220000)
     ceiling = interview.search_card(card(max_price_eur=200000))["hard_limits"]
-    assert (ceiling["min_price_eur"], ceiling["max_price_eur"]) == (160000, 200000)  # 80% for a home to live in
+    assert (ceiling["min_price_eur"], ceiling["max_price_eur"]) == (100000, 200000)  # half the top (D60)
     invest = interview.search_card(card(intent="invest", max_price_eur=150000))["hard_limits"]
-    assert invest["min_price_eur"] == 75000  # 50% for an investment
-    rent = interview.search_card(card(intent="rent", max_price_eur=900))["hard_limits"]
-    assert rent["min_price_eur"] == 700  # 720, to the nearest €50
+    assert invest["min_price_eur"] == 75000  # the same half for an investment
+    small = interview.search_card(card(intent="rent", max_price_eur=900))["hard_limits"]
+    assert small["min_price_eur"] == 450  # a monthly figure rounds to €50
     stated = interview.search_card(card(intent="rent", max_price_eur=800, min_price_eur=700))["hard_limits"]
     assert stated["min_price_eur"] == 700  # the user's own minimum wins
     assert interview.search_card(card())["hard_limits"].get("min_price_eur") is None  # no top price, nothing to derive
@@ -291,7 +291,7 @@ def test_a_thin_apartment_search_can_offer_maisonettes_and_lofts():
     thin = interview.check_supply({"intent": "buy", "areas": ["Egaleo"], "budget_around": False,
                                    "hard_limits": {"max_price_eur": 90000, "property_types": ["apartment"]}}, listings)
     assert thin["matches"] < interview.THIN and {"add_type:maisonette", "add_type:loft"} <= set(thin["if_eased"])
-    assert thin["search_limits"] == {"min_price_eur": 70000, "max_price_eur": 90000}
+    assert thin["search_limits"] == {"min_price_eur": 45000, "max_price_eur": 90000}
 
 
 def test_around_is_scored_as_what_the_model_caught_and_a_silent_switch_is_loosening():

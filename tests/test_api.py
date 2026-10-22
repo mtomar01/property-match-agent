@@ -57,7 +57,7 @@ def test_chat_keeps_the_conversation_and_shows_the_card_as_searched(api):
     ask, model = api
     status, first = ask("/api/chat", {"session": None, "text": "Αιγάλεω μέχρι 200 χιλιάδες"})
     assert status == 200 and first["action"] == "confirm"
-    assert first["searched_as"]["min_price_eur"] == 160000  # code's lowest price, shown to the user
+    assert first["searched_as"]["min_price_eur"] == 100000  # code's lowest price, shown to the user
     status, second = ask("/api/chat", {"session": first["session"], "text": "Ναι"})
     assert second["session"] == first["session"] and len(model.seen[-1]) == 3  # user, assistant, user
 
@@ -66,7 +66,7 @@ def test_search_never_breaks_a_limit_and_refuses_rentals(api):
     ask, _ = api
     status, out = ask("/api/search", {"card": card(max_price_eur=200000)})
     assert status == 200 and out["searched_as"]["max_price_eur"] == 200000
-    assert all(160000 <= r["price_eur"] <= 200000 and r["area"] == "Egaleo" for r in out["results"])
+    assert all(100000 <= r["price_eur"] <= 200000 and r["area"] == "Egaleo" for r in out["results"])
     status, out = ask("/api/search", {"card": dict(card(max_price_eur=900), intent="rent")})
     assert status == 400 and "rentals" in out["error"]
 

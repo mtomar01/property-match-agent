@@ -81,7 +81,7 @@ export function CriteriaCard({ card, searchedAs, ready, unsupported, busy, onCha
         </label>
         <p className="hint">
           {range ? <>Searched as <strong>{range}</strong>. </> : null}
-          With no lowest price, code sets one: 80% of the top to live in, 50% for an investment.
+          With no lowest price, code sets half the top price, to keep out wrecks and ads with no real price.
         </p>
         <div className="grid">
           {number("min_size_m2", "Size from", "m²")}

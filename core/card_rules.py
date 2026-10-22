@@ -8,7 +8,7 @@ what it heard (a price, "around", "ideally"); this module does the sums.
 from __future__ import annotations
 
 MARGIN = 0.10  # "around X" means X minus to X plus 10% (Mike, D53)
-LOWEST_SHARE = {"buy": 0.8, "rent": 0.8, "invest": 0.5}  # lowest price, as a share of the top: keeps out wrecks and no-price ads (Mike, D53)
+LOWEST_SHARE = 0.5  # lowest price, half the top: keeps out wrecks and no-price ads, hides little else (Mike, D53, D60)
 IDEALLY = ("size", "bedrooms")  # "ιδανικά" before these keeps them limits, widened by code (Mike, D56)
 SIZE_MARGIN = 0.10  # ideally 30 to 50 m² searches 27 to 55
 BEDROOM_MARGIN = 1  # ideally 1 bedroom searches 0 to 2
@@ -26,7 +26,7 @@ def search_card(raw: dict) -> dict:
 
     "Around X" searches from X minus 10% to X plus 10% (a range the user gave
     widens the same way). With no minimum from the user, the lowest price is
-    80% of the top for a home to live in or to rent, 50% for an investment,
+    half the top price,
     to keep out wrecks and listings with no real price. Rounded to €5,000,
     or €50 for a monthly rent. The model never does this arithmetic.
     """
@@ -44,12 +44,11 @@ def search_card(raw: dict) -> dict:
     top, low = limits.get("max_price_eur"), limits.get("min_price_eur")
     if not top:
         return {**raw, "hard_limits": limits}
-    intent = raw.get("intent") or "buy"
     step = 50 if top < 10_000 else 5000  # a monthly rent or a sale price: the size of the number decides
     if raw.get("budget_around"):
         low = _round(low * (1 - MARGIN), step) if low else _round(top * (1 - MARGIN), step)
         top = _round(top * (1 + MARGIN), step)
     if not low:
-        low = _round(top * LOWEST_SHARE.get(intent, 0.8), step)
+        low = _round(top * LOWEST_SHARE, step)
     limits.update(max_price_eur=top, min_price_eur=min(low, top))
     return {**raw, "hard_limits": limits}

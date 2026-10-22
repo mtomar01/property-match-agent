@@ -43,7 +43,7 @@ def test_search_applies_mikes_rules_in_code():
 
 def test_check_supply_counts_in_code():
     out = call("check_supply", {"criteria": {"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 150000}}})
-    assert out["search_limits"] == {"min_price_eur": 120000, "max_price_eur": 150000} and "matches" in out
+    assert out["search_limits"] == {"min_price_eur": 75000, "max_price_eur": 150000} and "matches" in out
 
 
 def test_extract_listing_merges_the_page_and_the_description(monkeypatch):

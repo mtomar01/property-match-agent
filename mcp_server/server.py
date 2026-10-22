@@ -44,7 +44,7 @@ Property search over Greek listings in Egaleo, Peristeri and Chaidari.
 enforced by this server. Results never break them, so don't re-filter or loosen them.
 - Pass prices and sizes as the user said them. Set budget_around for "around X" and list \
 "size" or "bedrooms" in ideally for "ideally"; the server adds the margins and a lowest \
-price (80% of the top, 50% for an investment) and returns what it applied.
+price (half the top) and returns what it applied.
 - Rentals aren't supported yet.
 - Listings with an unknown value under a hard limit are left out and counted in \
 excluded_because_unknown. Tell the user about them rather than guessing.

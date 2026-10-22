@@ -9,9 +9,9 @@
     {
       "id": "ss01",
       "description": "Spec demo: two bed flat in Egaleo under 200k",
-      "expected": 4,
-      "total_matches": 4,
-      "returned": 4,
+      "expected": 5,
+      "total_matches": 5,
+      "returned": 5,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -23,9 +23,9 @@
     {
       "id": "ss02",
       "description": "Budget exactly equal to a listed price (200,000 is allowed, 201,000 is not)",
-      "expected": 7,
-      "total_matches": 7,
-      "returned": 7,
+      "expected": 12,
+      "total_matches": 12,
+      "returned": 12,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -37,9 +37,9 @@
     {
       "id": "ss03",
       "description": "Minimum size exactly 70 (70 allowed, 69 not)",
-      "expected": 13,
-      "total_matches": 13,
-      "returned": 13,
+      "expected": 18,
+      "total_matches": 18,
+      "returned": 18,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -51,9 +51,9 @@
     {
       "id": "ss04",
       "description": "Greek area names",
-      "expected": 2,
-      "total_matches": 2,
-      "returned": 2,
+      "expected": 20,
+      "total_matches": 20,
+      "returned": 20,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -65,15 +65,16 @@
     {
       "id": "ss05",
       "description": "Exclude basement and semi-basement, given in Greek",
-      "expected": 0,
-      "total_matches": 0,
-      "returned": 0,
+      "expected": 8,
+      "total_matches": 8,
+      "returned": 8,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
-      "precision_at_10": null,
+      "precision_at_10": 1.0,
       "excluded_because_unknown": {
-        "price_eur": 2
+        "price_eur": 2,
+        "floor": 2
       }
     },
     {
@@ -91,9 +92,9 @@
     {
       "id": "ss07",
       "description": "Rent, not buy: sale listings must never appear",
-      "expected": 3,
-      "total_matches": 3,
-      "returned": 3,
+      "expected": 5,
+      "total_matches": 5,
+      "returned": 5,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -165,9 +166,9 @@
     {
       "id": "ss13",
       "description": "Tight budget: price on request must not slip in",
-      "expected": 8,
-      "total_matches": 8,
-      "returned": 8,
+      "expected": 14,
+      "total_matches": 14,
+      "returned": 14,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -205,9 +206,9 @@
     {
       "id": "ss16",
       "description": "Everything at once",
-      "expected": 7,
-      "total_matches": 7,
-      "returned": 7,
+      "expected": 18,
+      "total_matches": 18,
+      "returned": 18,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -220,9 +221,9 @@
     {
       "id": "ss17",
       "description": "Preferences must not loosen limits",
-      "expected": 3,
-      "total_matches": 3,
-      "returned": 3,
+      "expected": 5,
+      "total_matches": 5,
+      "returned": 5,
       "breaks": 0,
       "break_details": {},
       "recall_at_20": 1.0,
@@ -271,7 +272,7 @@
     }
   ],
   "version": "v0.1",
-  "commit": "10e7306",
-  "ran_at": "2026-10-22T15:10:31+00:00",
+  "commit": "965ea43",
+  "ran_at": "2026-10-22T15:19:40+00:00",
   "data": "synthetic"
 }

@@ -33,7 +33,7 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v6"
+PROMPT_VERSION = "interview_v7"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)

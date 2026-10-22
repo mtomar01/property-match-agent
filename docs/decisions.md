@@ -560,3 +560,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Checked end to end:** a real chat on synthetic listings ("Ψάχνω διάρι ... γύρω στις 200 χιλιάδες, με μπαλκόνι") gave the right card, 1 bedroom from "δυάρι" despite the typo, €180k to €220k, balcony as a wish, and the search returned 5 homes, none breaking a limit. The page fits a phone's width.
 - **Search safety, rebuilt:** with the server adding a lowest price, each case's expected list is now computed on the limits the search runs on, and the independent checker also checks the new bedroom maximum. 0 breaks, recall 1.00, precision 1.00.
 - **Open, your call:** the 80% lowest price hides 46% to 78% of the homes within budget on the real listings. I recommend 50% for everyone as a junk filter and letting ranking do the narrowing.
+
+## D60. The lowest price is half the top price
+
+- **Your call:** the lowest price is 50% of the top for everyone, to keep out wrecks and ads with no real price. Ranking, not a hard floor, does the narrowing.
+- **Measured on your real listings:** the 80% floor hid 46% to 78% of the homes within budget; 50% hides 3% to 23% ("up to €200k in Egaleo": 88 homes, 68 shown, against 19 before).
+- **One number in code** (`LOWEST_SHARE` in `core/card_rules.py`). The search safety lists were rebuilt on it: 0 breaks, recall and precision 1.00, and the Greek-floors case (ss05) has listings to test again.
+- **Prompt v7** is v6 without the percentages: the assistant quotes the range code returns, so the number can change again without touching the prompt. Not run yet; the app uses it.
+- **Open:** the purpose question ("to live in or as an investment?") was added because the lowest price depended on it (D54). It no longer does.
