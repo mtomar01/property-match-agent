@@ -448,8 +448,21 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
     return {"summary": summary, "scores": scores, "transcripts": transcripts}
 
 
+def rescore(name: str) -> dict:
+    """Score saved transcripts against the current labels and rules. No calls."""
+    chats = {c["chat_id"]: c for c in load_chats()}
+    transcripts = [json.loads(line) for line in (PRIVATE / f"transcripts-{name}.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    scores = [score_chat(chats[t["chat_id"]], t) for t in transcripts]
+    summary = summarise(scores)
+    print(report(summary, scores, f"{name}, rescored"))
+    return {"summary": summary, "scores": scores}
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
+    if "--rescore" in args:
+        rescore(args[args.index("--rescore") + 1])
+        sys.exit(0)
     only = args[args.index("--only") + 1].split(",") if "--only" in args else None
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
     run(only=only, limit=limit)
