@@ -11,7 +11,8 @@ Ideas for later, kept in one place so they don't get lost. Nothing here is being
 
 ## Kinds of buyer
 
-- **Investor versus live-in buyer.** Investor mode, with its own criteria and data (rent yield, price per m² against the area), v5 (spec section 14). The interview already asks investors to confirm investor mode (D46).
+- **Investor mode with its own tools** (Mike, D62): ROI calculations and more for investors, on top of the criteria and data in spec section 14 (rent yield, price per m² against the area), v5. Code calculates them, as with every number here.
+- **Knowing who's investing:** the interview already asks "to live in or as an investment?" when a purchase doesn't say (D54), and keeps asking so investors can be offered these tools (D62).
 
 ## Listing fields
 

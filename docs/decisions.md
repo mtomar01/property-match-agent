@@ -567,7 +567,7 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Measured on your real listings:** the 80% floor hid 46% to 78% of the homes within budget; 50% hides 3% to 23% ("up to €200k in Egaleo": 88 homes, 68 shown, against 19 before).
 - **One number in code** (`LOWEST_SHARE` in `core/card_rules.py`). The search safety lists were rebuilt on it: 0 breaks, recall and precision 1.00, and the Greek-floors case (ss05) has listings to test again.
 - **Prompt v7** is v6 without the percentages: the assistant quotes the range code returns, so the number can change again without touching the prompt. Not run yet; the app uses it.
-- **Open:** the purpose question ("to live in or as an investment?") was added because the lowest price depended on it (D54). It no longer does.
+- **The purpose question stays** (D62), though the lowest price no longer depends on it.
 
 ## D61. The product's flow: no confirm step, a bar above the deck
 
@@ -575,3 +575,8 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **What this changes in the spec:** "nothing is searched until they confirm" goes. It was there because a wrong hard limit hides homes silently. Two things keep that check: the assistant's last message says in one sentence what it will search, and the bar always shows the hard limits (area, price range, bedrooms, floors ruled out); nice-to-haves can shorten to "+2 more". Investor mode shows on the bar too. The repo's `docs/spec.md` is updated; your original in the Project is unchanged.
 - **When:** with v2, the swipe deck. The v1 app keeps its side-by-side card and table, which is the quickest way to test the interview and the search.
 - **For the evals:** the assistant's "confirm" becomes "ready to search", and the simulated user's fixed "yes" becomes "no objection", so the scores keep their meaning.
+
+## D62. The purpose question stays, for investor mode
+
+- **Your call:** keep asking "to live in or as an investment?" when a purchase doesn't say. Investor mode will grow its own tools, such as ROI calculations, so knowing who's investing early matters even though the lowest price is now the same for everyone (D60).
+- **On the expansions list:** investor mode with ROI and more, calculated in code.
