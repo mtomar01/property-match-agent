@@ -17,8 +17,9 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview: done for now (D57).** 40 chats at 100%; your 10 at 92.1% with one real slip and two judgement calls left. The next honest test is new chats nobody has seen.
-2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+1. **Your call: the lowest price (D59).** 80% of the budget hides about half to three-quarters of the homes within budget on the real listings; I recommend 50% for everyone.
+2. **Try the app** (README, "The app"): build it once, run the server, chat. Then connect the server to the Claude desktop app (`docs/connect-claude-desktop.md`).
+3. **v2, the swipe deck:** cards with two "why this one" reasons, rule scoring, reject reasons, the Sheets export (spec section 13).
 
 ## Interview eval (22 October, D46, D47)
 
@@ -95,7 +96,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D57.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D59.
 
 ## For the desktop app demo
 

@@ -59,6 +59,10 @@ Good follow-ups to show in a demo:
 - "Show me the full details of the first one" calls `get_listing`.
 - "Same search, but no basements or semi-basements" tests floor exclusions.
 - "Why didn't you show more?" makes Claude read `excluded_because_unknown`, the listings left out because they don't state a price, size, bedrooms or floor.
+- "Around 200k, ideally 2 bedrooms" shows the server's own rules: `search_listings` returns the limits it applied (€180k to €220k, 1 to 3 bedrooms).
+- "What if I drop the size limit?" calls `check_supply`, which counts in code what each limit costs.
+- Pick **criteria_interview** from the prompts menu to have Claude interview you the way the evals measured it.
+- `extract_listing` reads a pasted Greek description into fields; it needs the API key on your machine (one Haiku call, about a tenth of a cent).
 
 ## 4. Optional: your real listings, on your own machine only
 

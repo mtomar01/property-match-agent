@@ -201,6 +201,9 @@ class Listing(_Strict):
             "renovated_year": self.renovated_year,
             "energy_class": self.energy_class.value,
             "property_type": self.property_type,
+            "first_seen": self.first_seen.isoformat(),
+            "previous_price_eur": next((p.price_eur for p in reversed(self.price_history)
+                                        if p.price_eur != self.price_eur), None),  # the shortlist shows price changes (spec)
             "synthetic": self.synthetic,
         }
 

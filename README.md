@@ -2,7 +2,7 @@
 
 A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
 
-**Status:** v0 foundations. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
+**Status:** v1, criteria and search: the interview, the criteria card, the MCP server and a table view. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
 
 ## Run it on the synthetic data
 
@@ -19,6 +19,20 @@ uv run python -m mcp_server.demo         # search through the MCP server, prints
 Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basements --limit 20`.
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
+
+## The app: chat, criteria card, results table
+
+You need Node 18 or newer, and the Anthropic API key for the chat (`ANTHROPIC_API_KEY`, or `~/.config/property-match/anthropic.env`).
+
+```bash
+cd app && npm install && npm run build && cd ..   # build the React app once
+uv run python -m api.server                       # http://127.0.0.1:8765, synthetic listings
+PM_SNAPSHOT=data/private/snapshot.jsonl uv run python -m api.server   # your private listings, your machine only
+```
+
+For changes to the app, run `npm run dev` in `app/` with the server running: Vite serves the page and passes `/api` to Python.
+
+Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents. Search and the card's rules are code and cost nothing.
 
 ## Labelling real listings (private data, your machine only)
 
