@@ -390,13 +390,15 @@ def _looser(name: str, before, after) -> bool:
         return False
     if _blank(after):
         return True
-    if name in ("max_price_eur", "max_size_m2"):
+    if name in ("max_price_eur", "max_size_m2", "max_bedrooms"):
         return after > before
     if name in ("min_price_eur", "min_size_m2", "min_bedrooms"):
         return after < before
     if name == "property_types":
         return bool(set(after) - set(before))
-    return bool(set(before) - set(after))  # exclude_floors: a floor no longer ruled out
+    if name == "exclude_floors":
+        return bool(set(before) - set(after))  # a floor no longer ruled out
+    raise ValueError(f"no loosening rule for {name}")  # a new limit must say what looser means
 
 
 def unasked_loosenings(log: list[dict]) -> list[str]:

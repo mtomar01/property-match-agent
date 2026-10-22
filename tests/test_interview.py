@@ -369,3 +369,10 @@ def test_investor_mode_is_confirmed_on_the_card():
 def test_v6_knows_athens_and_lets_the_users_year_win():
     text = interview.system_prompt("interview_v6", today="2026-10-22")
     assert "in Athens" in text and "min 2015" in text and "ideally" in text and "investor mode\" on the card" in text
+
+
+def test_every_hard_limit_has_a_loosening_rule():
+    for name in interview.HARD_FIELDS:
+        sample = ["ground"] if name in ("exclude_floors", "property_types") else 2
+        ev._looser(name, sample, sample)  # raises for a limit with no rule
+    assert ev._looser("max_bedrooms", 2, 3) and not ev._looser("max_bedrooms", 3, 2)
