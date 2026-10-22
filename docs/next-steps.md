@@ -17,7 +17,7 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview v5 and the clean test (D53, D54):** your rules are built and the cards rewritten to them. Open: mike_4's top price (350k or 400k). Then v5 runs on the 40 and the 10, when you say so.
+1. **Interview v6 (D55), your calls first:** investor mode confirmed on the card instead of by a separate question; the user's own renovation year wins; "Athens" covers our three areas; whether "ιδανικά" makes a whole list wishes.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
@@ -27,7 +27,8 @@ Updated 22 October 2026, after answer key v4.
 - Prompt v3 with the narrowing question: fields 97.5%, 2 invented hard limits, both from the simulated user (D49).
 - Prompt v4, suggest easing one limit and ask (D50): fields 100%, 0 invented hard limits, 0 unasked loosenings, behaviours 100%.
 - Clean test, 10 new chats (D52): 43.5% as labelled; see the decision list.
-- Spent about $7.10 of the $100 in total.
+- Prompt v5 (D55): 40 chats 100% fields and behaviours; clean 10: 82.9% fields, 0 invented hard limits.
+- Spent about $9.60 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 
@@ -93,7 +94,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D54.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D55.
 
 ## For the desktop app demo
 

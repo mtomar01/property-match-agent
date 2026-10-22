@@ -512,3 +512,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **The clean cards, rewritten to these rules** in one table (`FIXES` in `interview_clean_test.py`), each change with its reason in `changes.json`; the cards as written are kept beside them.
 - **mike_4: 400k, reached only by asking.** "A loan of up to 350k" isn't the price, so the assistant should ask whether savings come on top. The chat gets the fact "plus about 50k of my own" so the simulated user can answer, and the prompt gets a general rule: a loan isn't the price, ask about savings, never work out what a bank would lend. That rule came from looking at a clean chat, so mike_4 is no longer fully blind.
 - **Not run yet.**
+
+## D55. Interview v5, run on both sets
+
+- **The 40 chats** ($1.40, 3.5 cents a chat): fields **100%**, **0 invented hard limits**, preferences 16 of 17, behaviours **100%**: all 34 purpose questions, both "rentals aren't supported yet", the trade-offs, the advice, every reply in the user's language; no limit loosened without a yes; easing suggested with code's numbers in all 3 thin chats; narrowing asked in 3 of 4 wide chats.
+- **The clean 10** ($1.06, 11 cents a chat): fields **82.9%** (as written 43.5% with v4), **0 invented hard limits**, behaviours 97.1%, rentals 3 of 3.
+- **What the 6 clean field misses are:**
+  - 3 investment chats ended as "buy". In mike_2 and mike_5 the user says investment outright; the assistant asked two or three times to confirm investor mode, and the simulated user kept saying "no preference" though it's told to confirm what it already said. In gb_3 the assistant asked "to live in or as an investment?" twice while GB's script answered other things, so the fact never came up.
+  - 3 in mike_3: "ιδανικά … 30 to 50 m² with 1 bedroom" became nice-to-haves under the agreed rule that "ideally" softens; the card has them as limits. The assistant asked "essential or just ideal?", and the simulated user had no fact to answer from.
+- **Real bugs found:** "renovated after 2015" became 2016, because the 10-year default overrode the user's own year (el_17); and in mike_3 the assistant said "Athens isn't covered yet", though our three areas are in Athens.
+- **Two measurement fixes, rescored for free:** rental chats no longer score questions a rental doesn't get; "wide" now means the card's own check, not a probe of the whole snapshot (el_02, en_18).
+- **Weights:** 2 of 6 checked weights agree on the clean set ("I like big balconies" and "βεβαιώσου αν έχει μπαλκόνι" are a must on the cards, a plain wish to the model). Weights are judgement; they're reported, not scored.
+- **Still development scores** for the 40; the clean 10 are partly shaped now (D54), so they're the closest thing to a fresh test we have.

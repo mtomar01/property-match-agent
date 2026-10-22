@@ -430,6 +430,17 @@ def easing(transcript: dict) -> dict:
 THIN_DEFAULT = 10 ** 9
 
 
+def card_matches(replies: list[dict]) -> int:
+    """How many listings the card's own check found: the last check before the first card shown for confirmation."""
+    last = 0
+    for reply in replies:
+        for call in reply.get("tool_calls") or []:
+            last = call["result"].get("matches", last)
+        if reply["output"]["action"] == "confirm":
+            break
+    return last
+
+
 def score_chat(chat: dict, transcript: dict) -> dict:
     predicted = transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []}
     expected = chat["expected_criteria"]
@@ -444,8 +455,9 @@ def score_chat(chat: dict, transcript: dict) -> dict:
         "questions": sum(len(_asked(t)) for t in replies),
         "tool_calls": sum(len(t.get("tool_calls") or []) for t in replies),
         "repairs": sum(len(t.get("repairs") or []) for t in replies),
-        # D49: was the search wide (a check over 50), and did it ask the one narrowing question?
-        "wide": any(c["result"].get("matches", 0) > interview.WIDE for t in replies for c in t.get("tool_calls") or []),
+        # D49: was the search wide, and did it ask the one narrowing question? Wide means the last check before the
+        # first card shown over 50; a probe with no limits (all 484 listings) isn't the card's count (D55).
+        "wide": card_matches(replies) > interview.WIDE,
         "narrowing_asked": any("narrowing" in _asked(t) for t in replies),
         "easing": easing(transcript), "unasked_loosenings": unasked_loosenings(transcript["log"]),
         "cost_usd": transcript["cost_usd"],

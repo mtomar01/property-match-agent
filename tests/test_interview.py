@@ -329,3 +329,10 @@ def test_answering_the_purpose_question_counts_as_choosing_investor_mode():
 def test_the_prompt_fills_in_the_renovated_year():
     text = interview.system_prompt(today="2026-10-22")
     assert "renovated_year with min 2016" in text and "rent" in text
+
+
+def test_wide_means_the_cards_own_check_not_a_probe():
+    probe = {"input": {}, "result": {"matches": 484}}
+    own = {"input": {}, "result": {"matches": 8}}
+    replies = [{"output": answer("Card?", "confirm", criteria=card(max_price_eur=150000)), "tool_calls": [probe, own]}]
+    assert ev.card_matches(replies) == 8
