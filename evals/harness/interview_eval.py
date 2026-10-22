@@ -329,6 +329,8 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     replies = [t for t in log if t["role"] == "assistant" and t.get("output")]
     asked = set().union(*(_asked(t) for t in replies)) if replies else set()
     final = transcript["final"] or {}
+    if "purpose" in asked:  # choosing "investment" in answer to the purpose question is choosing investor mode (D54)
+        asked = asked | {"confirm_investor_mode"}
     out = {f"ask:{topic}": topic in asked or volunteered(topic, chat["expected_criteria"], final) for topic in chat["must_ask"]}
     user_numbers = set().union(*(numbers_in(t["text"]) for t in log if t["role"] == "user")) if log else set()
     for item in chat["must_say"]:
@@ -349,6 +351,10 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
             topic = item.split("_")[1]
             out[item] = any(topic in t["output"]["declined_advice"] and PROFESSIONAL.search(t["output"]["reply"])
                             for t in replies) if topic == "mortgage" else any(topic in t["output"]["declined_advice"] for t in replies)
+        elif item == "rent_not_supported":  # said so, and never confirmed a rental card (D54)
+            said = any("rent" in (t["output"].get("unsupported") or []) for t in replies)
+            confirmed_rent = any(t["output"]["action"] == "confirm" and t["output"]["criteria"].get("intent") == "rent" for t in replies)
+            out[item] = said and not confirmed_rent
         elif item == "confirm_change":
             last_script = max(i for i, t in enumerate(log) if t["role"] == "user" and t["source"] == "script")
             after = next((t for t in log[last_script + 1:] if t["role"] == "assistant" and t.get("output")), None)
@@ -427,11 +433,13 @@ THIN_DEFAULT = 10 ** 9
 def score_chat(chat: dict, transcript: dict) -> dict:
     predicted = transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []}
     expected = chat["expected_criteria"]
+    unsupported = expected.get("intent") == "rent"  # no rental search yet (D54): behaviours only, no card to score
     replies = [t for t in transcript["log"] if t["role"] == "assistant" and t.get("output")]
     return {
         "chat_id": chat["chat_id"], "language": chat["language"], "tests": chat["tests"],
-        "fields": field_outcomes(expected, predicted), "preferences": preference_outcomes(expected, predicted),
-        "behaviours": behaviours(chat, transcript), "confirmed": transcript["confirmed"],
+        "fields": {} if unsupported else field_outcomes(expected, predicted),
+        "preferences": [] if unsupported else preference_outcomes(expected, predicted),
+        "behaviours": behaviours(chat, transcript), "confirmed": transcript["confirmed"], "unsupported": unsupported,
         "valid_card": transcript["final_valid"], "assistant_replies": len(replies),
         "questions": sum(len(_asked(t)) for t in replies),
         "tool_calls": sum(len(t.get("tool_calls") or []) for t in replies),
@@ -497,7 +505,7 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
         bad += [f"pref {p['feature']} {p['result']}" for p in s["preferences"] if p["result"] != "correct"]
         bad += [f"weight {p['feature']}" for p in s["preferences"] if p.get("weight") == "disagrees"]
         bad += [k for k, v in s["behaviours"].items() if not v]
-        if not s["confirmed"]:
+        if not s["confirmed"] and not s.get("unsupported"):
             bad.append("not confirmed")
         bad += [f"loosened {name} unasked" for name in s.get("unasked_loosenings", [])]
         if s.get("easing", {}).get("thin") and not s["easing"]["suggested"]:

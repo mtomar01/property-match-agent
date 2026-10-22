@@ -303,3 +303,29 @@ def test_around_is_scored_as_what_the_model_caught_and_a_silent_switch_is_loosen
            {"role": "user", "text": "No preference.", "source": "simulated, no fact", "language": "en"},
            {"role": "assistant", "output": answer("Card?", "confirm", criteria=dict(card(max_price_eur=200000), budget_around=True))}]
     assert ev.unasked_loosenings(log) == ["budget_around"]
+
+
+def test_rentals_are_refused_in_code_and_the_eval_checks_it_was_said():
+    assert "rentals" in interview.card_problem(card(intent="rent", max_price_eur=800), "confirm")
+    chat = {"must_ask": [], "must_say": ["rent_not_supported"], "must_not_invent": [], "expected_criteria": card(intent="rent")}
+    said = dict(answer("Δεν υποστηρίζουμε ακόμα ενοικιάσεις. Θέλετε να δούμε αγορά;", criteria=card(intent="rent")), unsupported=["rent"])
+    log = [{"role": "user", "text": "Ενοικίαση στο Χαϊδάρι, 700-800.", "source": "script", "language": "el"},
+           {"role": "assistant", "output": said}]
+    assert ev.behaviours(chat, {"log": log, "final": card(intent="rent")}) == {"rent_not_supported": True}
+    scored = ev.score_chat(dict(chat, chat_id="r", language="el", tests=[]), {"log": log, "final": card(intent="rent"),
+                                                                              "confirmed": False, "final_valid": True, "cost_usd": 0})
+    assert scored["fields"] == {} and scored["unsupported"]
+
+
+def test_answering_the_purpose_question_counts_as_choosing_investor_mode():
+    chat = {"must_ask": ["confirm_investor_mode", "purpose"], "must_say": [], "must_not_invent": [],
+            "expected_criteria": card(intent="invest", max_price_eur=180000)}
+    log = [{"role": "user", "text": "Αγορά, 180 χιλιάδες.", "source": "script", "language": "el"},
+           {"role": "assistant", "output": answer("Για να μείνετε ή ως επένδυση;", asking=["purpose"])}]
+    assert ev.behaviours(chat, {"log": log, "final": card(intent="invest", max_price_eur=180000)}) == \
+        {"ask:confirm_investor_mode": True, "ask:purpose": True}
+
+
+def test_the_prompt_fills_in_the_renovated_year():
+    text = interview.system_prompt(today="2026-10-22")
+    assert "renovated_year with min 2016" in text and "rent" in text

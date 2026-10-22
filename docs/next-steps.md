@@ -17,7 +17,7 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview clean test: your rules for the cards (D52).** The first run scored 43.5% as labelled, but 24 of 35 misses are limits the cards add that nobody said. Decide which of those are product rules, then the saved transcripts are rescored for free.
+1. **Interview v5 and the clean test (D53, D54):** your rules are built and the cards rewritten to them. Open: mike_4's top price (350k or 400k). Then v5 runs on the 40 and the 10, when you say so.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
@@ -93,7 +93,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D52.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D54.
 
 ## For the desktop app demo
 

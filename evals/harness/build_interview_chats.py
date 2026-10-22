@@ -313,6 +313,22 @@ chat("en_20", "en", "Has no idea where to start", ["vague_start"],
      crit("buy", ["Egaleo", "Peristeri"], {"max_price_eur": 200000, "min_bedrooms": 2}),
      must_ask=["intent", "budget", "areas"], must_say=["reply_in:en"])
 
+# Mike's rules applied to every chat (D54), so each change is one visible rule rather than 40 hand edits:
+# - rentals aren't supported yet: the assistant says so, and the card isn't scored;
+# - a purchase that doesn't say whether it's to live in or an investment gets the purpose question;
+# - ruling out the basement also rules out the semi-basement, and the ground floor the raised ground.
+PURPOSE_STATED = {"el_14", "en_13", "el_15", "en_15"}  # "for my mother", "for my daughter", "to rent out"
+FLOOR_FAMILY = {"basement": "semi_basement", "ground": "raised_ground"}
+for row in C:
+    expected = row["expected_criteria"]
+    if expected["intent"] == "rent":
+        row["must_say"].append("rent_not_supported")
+    elif row["chat_id"] not in PURPOSE_STATED:
+        row["must_ask"].append("purpose")
+    floors = expected["hard_limits"].get("exclude_floors")
+    if floors:
+        expected["hard_limits"]["exclude_floors"] = floors + [FLOOR_FAMILY[f] for f in floors if f in FLOOR_FAMILY and FLOOR_FAMILY[f] not in floors]
+
 assert len(C) == 40, len(C)
 with OUT.open("w", encoding="utf-8") as fh:
     for row in C:

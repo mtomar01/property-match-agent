@@ -11,7 +11,7 @@ DATASET = Path(__file__).resolve().parent.parent / "evals" / "datasets" / "inter
 ROWS = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
 KNOWN_BEHAVIOURS = (
     "reply_in:", "area_not_covered:", "tradeoff_with_numbers", "no_mortgage_advice",
-    "no_investment_advice", "confirm_change",
+    "no_investment_advice", "confirm_change", "rent_not_supported",
 )
 
 

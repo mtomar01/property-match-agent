@@ -38,11 +38,13 @@ MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
 MAX_REPAIRS = 1  # a card that fails the checks goes back to the model once, with the reason (D47)
 NEW_BUILD_YEARS = 5  # "new build" means built in the last five years
+RENOVATED_YEARS = 10  # "renovated" with no year means renovated in the last ten years (Mike, D54)
 
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
-          "priorities", "narrowing", "ease_limit", "other")
+          "priorities", "narrowing", "ease_limit", "purpose", "other")
+UNSUPPORTED = ("rent",)  # rentals come later (Mike, D54)
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
 EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one more covered area
@@ -102,6 +104,7 @@ def schema() -> dict:
         "asking_about": {"type": "array", "items": {"type": "string", "enum": list(TOPICS)}},
         "not_covered_areas": {"type": "array", "items": {"type": "string"}},
         "declined_advice": {"type": "array", "items": {"type": "string", "enum": list(ADVICE)}},
+        "unsupported": {"type": "array", "items": {"type": "string", "enum": list(UNSUPPORTED)}},
         "criteria": criteria,
     }
     return {"type": "object", "additionalProperties": False, "required": list(properties), "properties": properties}
@@ -122,7 +125,8 @@ def system_prompt(version: str = PROMPT_VERSION, today: str | None = None) -> st
     text = (PROMPTS / f"{version}.md").read_text(encoding="utf-8")
     text = (text.replace("{{today}}", day.isoformat())
                 .replace("{{areas}}", "Egaleo (Αιγάλεω), Peristeri (Περιστέρι) and Chaidari (Χαϊδάρι)")
-                .replace("{{new_build_from}}", str(day.year - NEW_BUILD_YEARS)))
+                .replace("{{new_build_from}}", str(day.year - NEW_BUILD_YEARS))
+                .replace("{{renovated_from}}", str(day.year - RENOVATED_YEARS)))
     if "{{" in text:
         raise ValueError("a placeholder in the prompt wasn't filled")
     return text
@@ -351,6 +355,8 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
 
 def card_problem(raw: dict, action: str | None = None) -> str | None:
     """Why the search couldn't run on this card, or None if it can."""
+    if action == "confirm" and raw.get("intent") in UNSUPPORTED:
+        return "rentals aren't supported yet: say so and don't confirm a rental card (D54)"
     if action == "confirm" and not (raw.get("hard_limits") or {}).get("max_price_eur"):
         return "a card shown for confirmation needs a top price (max_price_eur): use the user's, or ask for it"  # D53
     try:

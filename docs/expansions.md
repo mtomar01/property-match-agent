@@ -6,7 +6,7 @@ Ideas for later, kept in one place so they don't get lost. Nothing here is being
 
 - **xe.gr.** The third portal. Skipped for now; it comes back together with new areas (D51). Plan: Mike saves 20 to 30 listing pages from his own browser ("Webpage, HTML only"), and an offline parser reads them.
 - **More areas.** The glossary already has every Athens metro station (D40), and Pagrati is an Area for the clean test (D44). New search areas need snapshot listings first, then `SEARCH_AREAS` in `core/models.py`.
-- **Rentals.** The private snapshot has sale listings only, so a rent search finds nothing yet (D49, D50).
+- **Rentals.** Not supported yet (Mike, D54): the assistant says so and offers to look at buying. They come back with rental listings in the snapshot.
 - **Bank and servicer sites.** For investor mode, v5 (spec).
 
 ## Kinds of buyer

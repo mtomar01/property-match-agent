@@ -501,3 +501,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Eval:** "around" is scored as its own field; switching a card to "around" without the user's yes counts as loosening a limit. Three dev chats changed by these rules: el_01 and en_02 no longer need the ceiling question, el_09 no longer needs rooms or bedrooms.
 - **Harness:** the simulated user now confirms what it has already said ("για επένδυση" in mike_5 couldn't confirm investor mode before).
 - **Not run yet,** at your request. The clean cards need your answers first (below, in chat).
+
+## D54. The details settled on 22 October
+
+- **Rentals aren't supported yet.** The assistant says so once and offers to look at buying; code refuses to confirm a rental card. Five chats became checks of that instead of scored cards: el_03 and en_03 in the 40, gb_2, gb_4 and mike_1 in the clean test. Rentals are on the expansions list.
+- **To live in or as an investment?** The lowest price depends on it (80% or 50%), so when a purchase doesn't say, the assistant asks once. "Investment" as the answer is the user's own choice of investor mode. With no answer, it's a home to live in. In the 40, every purchase that doesn't say who it's for or that it's to rent out (34) now expects the question; gb_3, whose card says investment though the chat doesn't, gets the fact "investment, to rent it out" so the simulated user can answer.
+- **Floors:** no basement also rules out the semi-basement, and no ground floor the raised ground (el_02 and en_07 updated in the 40).
+- **"Renovated" with no year** means renovated in the last 10 years, so 2016 or later; code fills the year in.
+- **No question about the year built or the costs unless the user brings them up.** Those ticks are off the clean cards.
+- **The clean cards, rewritten to these rules** in one table (`FIXES` in `interview_clean_test.py`), each change with its reason in `changes.json`; the cards as written are kept beside them. mike_4's top price is open: 350k as said, or 400k.
+- **Not run yet.**

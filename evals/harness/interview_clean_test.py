@@ -5,6 +5,9 @@ the ArtifactData tool into a folder (pulled/<writer>/.../chat_<n>.json), then
 this turns them into the same JSONL as evals/datasets/interview_chats.jsonl and
 runs the eval on them with the prompt unchanged.
 
+The cards are then rewritten to the rules Mike settled (FIXES, D54); the
+cards as written are kept beside them in chats_as_written.jsonl.
+
 Run: uv run python -m evals.harness.interview_clean_test build PULLED_DIR
      uv run python -m evals.harness.interview_clean_test run        # pays for the calls
 """
@@ -69,6 +72,66 @@ def to_chat(doc: dict, writer: str) -> dict:
     }
 
 
+def pref(feature: str, weight: float, **bound) -> dict:
+    return {"feature": feature, "weight": weight, **bound}
+
+
+MIKE_4_TOP = None  # 350k (the loan, as said) or 400k: Mike's call, pending (D54)
+APT = ["apartment"]
+GROUND_FLOORS = ["basement", "semi_basement", "ground", "raised_ground"]
+# The cards rewritten to the rules Mike settled on 22 October (D53, D54). Each entry replaces those parts of a
+# card and says why; everything else stays as written. The cards as written are kept beside them.
+FIXES = {
+    "clean_gb_1": ({"hard_limits": {"max_price_eur": 200000, "min_bedrooms": 2}, "budget_around": True,
+                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True), pref("lift", 0.6, equals=True)],
+                    "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
+                   "around 200 is ±10% in code; 70-120 m² wasn't said; bathrooms, parking and lift were; no ceiling or year question"),
+    "clean_gb_3": ({"user_facts": {"purpose": "Επένδυση, για να το νοικιάσω"},
+                    "hard_limits": {"max_price_eur": 180000, "property_types": APT},
+                    "must_ask": ["intent", "budget", "areas", "confirm_investor_mode", "purpose"]},
+                   "an investment the chat doesn't say, so the purpose question finds it; lowest price from code; no costs or year question"),
+    "clean_gb_5": ({"hard_limits": {"max_price_eur": 250000, "min_bedrooms": 3},
+                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True)],
+                    "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
+                   "grader slip: 3 δωμάτια, 2 bathrooms and parking were said; lowest price from code; no ceiling or costs question"),
+    "clean_mike_2": ({"hard_limits": {"max_price_eur": 150000, "property_types": ["apartment", "studio"], "exclude_floors": GROUND_FLOORS},
+                      "budget_around": True, "preferences": [pref("renovated_year", 0.9, min=2016)]},
+                     "around 150k is ±10% in code; 20-50 m² wasn't said; no loft; renovated means the last 10 years"),
+    "clean_mike_3": ({"areas": [], "hard_limits": {"max_price_eur": 200000, "min_size_m2": 30, "max_size_m2": 50, "min_bedrooms": 1,
+                                                    "property_types": APT},
+                      "preferences": [pref("renovated_year", 0.7, min=2016)]},
+                     "1 bedroom was said; διαμέρισμα is apartment only; lowest price from code; renovated means the last 10 years"),
+    "clean_mike_4": ({"hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT},
+                      "must_ask": ["budget_ceiling", "purpose"]},
+                     "apartment only; 100 m² wasn't said; lowest price from code; top price pending"),
+    "clean_mike_5": ({"hard_limits": {"max_price_eur": 250000},
+                      "preferences": [pref("balcony", 0.9, equals=True), pref("lift", 0.7, equals=True),
+                                      pref("metro_walk_min", 0.6, max=10), pref("renovated_year", 0.7, min=2016)],
+                      "must_ask": ["areas", "metro_minutes", "confirm_investor_mode"]},
+                     "σπίτι names no type; ideally renovated was said; an investment said unprompted is confirmed first (spec); no costs question"),
+}
+
+
+def fixed(chat: dict) -> tuple[dict, str | None]:
+    """The chat with its card rewritten to the settled rules (rentals: only the behaviour is checked)."""
+    chat = json.loads(json.dumps(chat))
+    if chat["expected_criteria"]["intent"] == "rent":
+        chat["must_say"].append("rent_not_supported")
+        return chat, "rentals aren't supported yet: the assistant says so; the card isn't scored"
+    change = FIXES.get(chat["chat_id"])
+    if not change:
+        return chat, None
+    parts, why = change
+    for key, value in parts.items():
+        if key in ("must_ask", "user_facts"):
+            chat[key] = value
+        elif key == "hard_limits":
+            chat["expected_criteria"]["hard_limits"] = {k: v for k, v in value.items() if v is not None}
+        else:
+            chat["expected_criteria"][key] = value
+    return chat, why
+
+
 def build(pulled: Path, out: Path = OUT) -> Path:
     chats = []
     for writer_dir in sorted(p for p in pulled.iterdir() if p.is_dir()):
@@ -78,7 +141,15 @@ def build(pulled: Path, out: Path = OUT) -> Path:
             if doc.get("turns") and any(t.strip() for t in doc["turns"]) and doc.get("intent"):
                 chats.append(to_chat(doc, writer_dir.name))
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in chats), encoding="utf-8")
+    out.with_name("chats_as_written.jsonl").write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in chats), encoding="utf-8")
+    rows, changes = [], {}
+    for chat in chats:
+        row, why = fixed(chat)
+        rows.append(row)
+        if why:
+            changes[chat["chat_id"]] = why
+    out.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in rows), encoding="utf-8")
+    out.with_name("changes.json").write_text(json.dumps(changes, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
 
 
