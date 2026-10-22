@@ -17,7 +17,7 @@ def test_dataset_matches_the_independent_checker():
     rows = [json.loads(line) for line in build_search_safety.DATASET.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 20
     for row in rows:
-        expected = sorted(l.listing_id for l in adapter.listings() if not breaks(l.summary(), row["criteria"]))
+        expected = sorted(l.listing_id for l in adapter.listings() if not breaks(l.summary(), row["effective_criteria"]))
         assert row["expected_ids"] == expected, row["id"]
 
 

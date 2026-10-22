@@ -268,3 +268,37 @@ def merge(code: dict, text: dict, rule: str = "conflict") -> tuple[dict, list[st
             out[name] = None
             conflicts.append(name)
     return out, conflicts
+
+
+def extract(description: str, known: dict | None = None, seen: str | None = None, client=None,
+            cache_dir=None, model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION) -> dict:
+    """One listing, end to end, the way the evals measured it (D33, D41, D45).
+
+    The model reads the description only; code applies the on-foot rule and
+    merges with what code already read from the page (`known`, in label field
+    names), the page winning ("fill"). Answers are cached by a hash of the
+    request, so the same listing never pays twice. Returns the fields, the
+    model's quotes as evidence, and any call error (then only `known` is kept).
+    """
+    import hashlib
+    import json
+    from pathlib import Path
+
+    body = request(description, seen, model, version)
+    key = hashlib.sha256(json.dumps(body, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    path = Path(cache_dir) / version / model / f"text_{key}.json" if cache_dir else None
+    raw, error = None, None
+    if path and path.exists():
+        raw = json.loads(path.read_text(encoding="utf-8"))["raw"]
+    else:
+        try:
+            raw, _response = call(client, body)
+            if path:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({"raw": raw}, ensure_ascii=False), encoding="utf-8")
+        except ExtractionError as err:
+            error = str(err)
+    text = apply_walking_rule(parse_reading(raw), description) if raw else {}
+    fields, _ = merge(known or {}, text, "fill")
+    return {"fields": fields, "evidence": text.get("evidence", {}), "error": error,
+            "model": model, "prompt": version}

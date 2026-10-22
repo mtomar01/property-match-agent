@@ -32,7 +32,7 @@
   "behaviours": {
    "area_not_covered": "3 of 3",
    "ask": "53 of 53",
-   "confirm_change": "0 of 1",
+   "confirm_change": "1 of 1",
    "no_investment_advice": "2 of 2",
    "no_mortgage_advice": "2 of 2",
    "not_invented": "10 of 10",
@@ -40,7 +40,7 @@
    "reply_in": "40 of 40",
    "tradeoff_with_numbers": "2 of 2"
   },
-  "behaviour_pass_rate": 0.9913,
+  "behaviour_pass_rate": 1.0,
   "confirmed": 38,
   "valid_cards": 40,
   "mean_questions": 2.1,
@@ -1524,7 +1524,7 @@
    "preferences": [],
    "behaviours": {
     "ask:purpose": true,
-    "confirm_change": false,
+    "confirm_change": true,
     "reply_in:en": true
    },
    "confirmed": true,
@@ -1580,5 +1580,6 @@
    "cost_usd": 0.0493
   }
  ],
- "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only"
+ "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only",
+ "rescored_at": "2026-10-22T15:01:03+00:00"
 }

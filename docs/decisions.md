@@ -545,3 +545,8 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   - **Weights:** 3 of 6 checked weights agree; reported, not scored.
 - **Two measurement fixes, rescored for free:** "which of our three areas?" counts as asking for the areas (mike_3); a change counts as confirmed on the first card shown after it, with a question in between allowed (en_19 asked first whether €220k is the bank's figure, the D54 loan rule).
 - **Where to stop:** the dev set is at 100% and the clean set's remaining misses are one real slip and two judgement calls. Another round would be tuning to 10 chats we've now read closely. The next honest test is new chats nobody has seen.
+
+## D58. Two last cards, and the go for v1
+
+- **mike_2:** "one bedroom but studios are fine" is "up to 1 bedroom", as the assistant read it. **mike_4:** "high floors" start at floor 4. With these, prompt v6 on the clean 10 scores **97.3%** of fields (target 95%), **0 invented hard limits**, preferences 13 of 13, behaviours 100%. The one real miss left is mike_3's "idanika" before the size and bedrooms.
+- **v1 features, approved:** the extraction and the interview's tools on the MCP server, a small web API, and the React app from D20 (chat, criteria card, table view).

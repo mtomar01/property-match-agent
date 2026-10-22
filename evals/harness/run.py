@@ -55,7 +55,7 @@ async def run_search_safety() -> dict:
             returned = response["results"]
             ids = [r["listing_id"] for r in returned]
             expected = set(case["expected_ids"])
-            broken = {r["listing_id"]: breaks(r, case["criteria"]) for r in returned}
+            broken = {r["listing_id"]: breaks(r, case.get("effective_criteria", case["criteria"])) for r in returned}
             broken = {k: v for k, v in broken.items() if v}
             denominator = min(TOP_K, len(expected))
             recall = (len(set(ids) & expected) / denominator) if denominator else (1.0 if not ids else 0.0)

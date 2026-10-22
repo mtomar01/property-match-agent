@@ -590,6 +590,11 @@ def rescore(name: str, chats_path: Path = CHATS) -> dict:
     scores = [score_chat(chats[t["chat_id"]], t) for t in transcripts]
     summary = summarise(scores)
     print(report(summary, scores, f"{name}, rescored"))
+    path = RESULTS / f"v1-interview-{name}.json"
+    if path.exists():  # keep the run's record, with the scores against the labels as they stand now
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record.update(summary=summary, chats=scores, rescored_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        path.write_text(json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
     return {"summary": summary, "scores": scores}
 
 

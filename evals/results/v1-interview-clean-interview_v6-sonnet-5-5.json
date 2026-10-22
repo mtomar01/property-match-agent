@@ -12,29 +12,29 @@
  },
  "summary": {
   "chats": 10,
-  "field_accuracy": 0.9211,
+  "field_accuracy": 0.973,
   "fields": {
-   "correct": 35,
+   "correct": 36,
    "wrong": 0,
-   "missed": 2,
-   "invented": 1
+   "missed": 1,
+   "invented": 0
   },
-  "invented_hard_limits": 1,
+  "invented_hard_limits": 0,
   "preferences": {
    "expected": 13,
-   "correct": 12,
-   "wrong_bound": 1,
+   "correct": 13,
+   "wrong_bound": 0,
    "missed": 0,
    "split": 0,
    "extra": 0
   },
-  "weights_agree": "3 of 6",
+  "weights_agree": "3 of 7",
   "behaviours": {
-   "ask": "21 of 22",
+   "ask": "22 of 22",
    "rent_not_supported": "3 of 3",
    "reply_in": "10 of 10"
   },
-  "behaviour_pass_rate": 0.9714,
+  "behaviour_pass_rate": 1.0,
   "confirmed": 7,
   "valid_cards": 10,
   "mean_questions": 5.0,
@@ -308,8 +308,7 @@
     "intent": "correct",
     "areas": "correct",
     "max_price_eur": "correct",
-    "max_bedrooms": "invented",
-    "property_types": "missed",
+    "max_bedrooms": "correct",
     "exclude_floors": "correct",
     "budget_around": "correct"
    },
@@ -373,7 +372,7 @@
     }
    ],
    "behaviours": {
-    "ask:areas": false,
+    "ask:areas": true,
     "reply_in:el": true
    },
    "confirmed": true,
@@ -420,15 +419,10 @@
      "feature": "floor_level",
      "expected": [
       "min",
-      3
+      4
      ],
-     "result": "wrong_bound",
-     "predicted": [
-      [
-       "min",
-       4
-      ]
-     ]
+     "result": "correct",
+     "weight": "disagrees"
     }
    ],
    "behaviours": {
@@ -524,5 +518,6 @@
    "cost_usd": 0.0926
   }
  ],
- "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only"
+ "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only",
+ "rescored_at": "2026-10-22T15:01:02+00:00"
 }

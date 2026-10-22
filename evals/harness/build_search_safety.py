@@ -4,7 +4,9 @@ The criteria are written by hand to hit the risky cases (budgets exactly on a
 price, Greek area and floor names, rentals, unknown values, an impossible
 search). The expected matches are computed once with the independent checker
 over the synthetic snapshot and frozen into the file, so any later change to
-search or to the synthetic data shows up as a diff to review.
+search or to the synthetic data shows up as a diff to review. Since D59 they're
+computed on the limits the search actually runs on (effective_criteria): the
+criteria plus Mike's lowest-price rule, so that limit is never broken either.
 
 Run: uv run python -m evals.harness.build_search_safety
 """
@@ -15,6 +17,7 @@ import json
 from pathlib import Path
 
 from adapters.snapshot import SnapshotAdapter
+from core.card_rules import search_card
 from evals.harness.checks import breaks
 
 DATASET = Path(__file__).resolve().parent.parent / "datasets" / "search_safety.jsonl"
@@ -70,11 +73,14 @@ def build() -> Path:
     adapter = SnapshotAdapter()
     rows = []
     for case_id, description, criteria in CASES:
+        # The limits the search runs on: the criteria as given, plus Mike's rules in code (a lowest price, D53, D59).
+        effective = search_card(criteria)
         expected = [
             l.listing_id for l in adapter.listings()
-            if not breaks(l.summary(), criteria)
+            if not breaks(l.summary(), effective)
         ]
-        rows.append({"id": case_id, "description": description, "criteria": criteria, "expected_ids": sorted(expected)})
+        rows.append({"id": case_id, "description": description, "criteria": criteria,
+                     "effective_criteria": effective, "expected_ids": sorted(expected)})
     DATASET.parent.mkdir(parents=True, exist_ok=True)
     with DATASET.open("w", encoding="utf-8") as fh:
         for row in rows:

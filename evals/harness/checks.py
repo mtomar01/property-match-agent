@@ -64,6 +64,8 @@ def breaks(result: dict, criteria: dict) -> list[str]:
     bedrooms = result.get("bedrooms")
     if limits.get("min_bedrooms") is not None and (bedrooms is None or bedrooms < limits["min_bedrooms"]):
         found.append(f"bedrooms {bedrooms} breaks min {limits['min_bedrooms']}")
+    if limits.get("max_bedrooms") is not None and (bedrooms is None or bedrooms > limits["max_bedrooms"]):
+        found.append(f"bedrooms {bedrooms} breaks max {limits['max_bedrooms']}")
 
     types = limits.get("property_types") or []
     if types and result.get("property_type") not in types:
