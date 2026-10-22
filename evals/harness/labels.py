@@ -30,7 +30,7 @@ from core.models import (
     Area, Condition, EnergyClass, Flag, Fuel, HeatingType, ListingType, Parking, PropertyType,
 )
 
-FREE_TEXT_ONLY = ("parking", "metro_walk_min")
+FREE_TEXT_ONLY = ("metro_walk_min",)  # parking is pre-filled from its tick or cross since D35
 
 
 class _Strict(BaseModel):
@@ -157,6 +157,7 @@ def prefill(details: DetailFields, card: dict) -> dict:
         "energy_class": f.get("energy_class"),
         "heating_type": f.get("heating_type"),
         "heating_fuel": f.get("heating_fuel"),
+        "parking": f.get("parking"),
         "lift": f.get("lift"),
         "balcony": f.get("balcony"),
         "storage": f.get("storage"),

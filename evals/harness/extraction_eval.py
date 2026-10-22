@@ -134,7 +134,8 @@ def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", w
             **(extra or {}),
         }
         RESULTS.mkdir(parents=True, exist_ok=True)
-        (RESULTS / f"v0.2-extraction-{name}.json").write_text(json.dumps(public, indent=2), encoding="utf-8")
+        suffix = "" if version == 1 else f"-key{version}"
+        (RESULTS / f"v0.2-extraction-{name}{suffix}.json").write_text(json.dumps(public, indent=2), encoding="utf-8")
         PRIVATE.mkdir(parents=True, exist_ok=True)
         (PRIVATE / f"detail-{name}-v{version}.json").write_text(json.dumps(result.detail, ensure_ascii=False, indent=1), encoding="utf-8")
     return result

@@ -1,0 +1,180 @@
+{
+  "eval": "extraction",
+  "name": "code_baseline",
+  "ran_at": "2026-10-22T08:15:42+00:00",
+  "listings": 100,
+  "answer_key": {
+    "version": 2,
+    "sha256": "245614c92fdb1d8da68e7afb832a6ba2e6f8541b994dbe96c12520ddd3a94806"
+  },
+  "targets": {
+    "structured": 0.98,
+    "free_text": 0.85
+  },
+  "groups": {
+    "structured": {
+      "correct": 1586,
+      "wrong": 9,
+      "invented": 0,
+      "missed": 9,
+      "accuracy": 0.9888
+    },
+    "free_text": {
+      "correct": 349,
+      "wrong": 9,
+      "invented": 15,
+      "missed": 123,
+      "accuracy": 0.7036
+    }
+  },
+  "per_field": {
+    "listing_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "price_eur": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "size_m2": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "property_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "bedrooms": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "bathrooms": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "floor_class": {
+      "correct": 99,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 0.99
+    },
+    "year_built": {
+      "correct": 95,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 4,
+      "accuracy": 0.95
+    },
+    "renovated_year": {
+      "correct": 92,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 8,
+      "accuracy": 0.92
+    },
+    "condition": {
+      "correct": 87,
+      "wrong": 5,
+      "invented": 0,
+      "missed": 8,
+      "accuracy": 0.87
+    },
+    "energy_class": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_type": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.99
+    },
+    "heating_fuel": {
+      "correct": 99,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 0.99
+    },
+    "parking": {
+      "correct": 58,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 42,
+      "accuracy": 0.58
+    },
+    "lift": {
+      "correct": 65,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 35,
+      "accuracy": 0.65
+    },
+    "balcony": {
+      "correct": 95,
+      "wrong": 2,
+      "invented": 3,
+      "missed": 0,
+      "accuracy": 0.95
+    },
+    "storage": {
+      "correct": 68,
+      "wrong": 2,
+      "invented": 0,
+      "missed": 30,
+      "accuracy": 0.68
+    },
+    "flags": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 2,
+      "accuracy": 0.98
+    },
+    "area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "sub_area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "metro_walk_min": {
+      "correct": 80,
+      "wrong": 6,
+      "invented": 12,
+      "missed": 2,
+      "accuracy": 0.8
+    }
+  },
+  "data": "real listings, private; totals only"
+}

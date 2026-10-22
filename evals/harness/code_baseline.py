@@ -109,6 +109,10 @@ def predict(record: dict, card: dict) -> dict:
     for name, value in from_description(record["sections"].get("Περιγραφή", "")).items():
         if fields.get(name) is None:
             fields[name] = value
+        elif name == "parking" and fields[name] == "none" and value != "none":
+            fields[name] = value  # a mention in the text beats a crossed-out tick (D35)
+        elif name == "storage" and fields[name] is False and value is True:
+            fields[name] = value  # (D34)
     return fields
 
 

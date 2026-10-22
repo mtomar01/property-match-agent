@@ -69,3 +69,19 @@ def test_score_can_be_limited_to_a_subset():
                                            "round": 1, "fields": {"lift": True}, "prefilled": []}) for i in (1, 2)]
     result = score(key, {"spitogatos:1": {"lift": True}}, only={"spitogatos:1"})
     assert result.listings == 1 and result.per_field["lift"]["correct"] == 1
+
+
+def test_a_ticked_garden_is_a_balcony_but_a_shared_one_isnt():
+    assert parse_details(record(**{"Εξωτερικά χαρακτηριστικά": "Κήπος"})).fields["balcony"] is True
+    assert "balcony" not in parse_details(record(**{"Εξωτερικά χαρακτηριστικά": "Κοινόχρηστος κήπος"})).fields
+
+
+def test_parking_the_text_mentions_beats_a_crossed_out_tick():
+    from evals.harness.code_baseline import predict
+
+    assert reconcile("parking", "none", "space") == "space"
+    fields, blanked = merge({"parking": "none"}, {"parking": "pilotis"}, "conflict")
+    assert fields["parking"] == "pilotis" and blanked == []
+    crossed = dict(record(**{"Περιγραφή": "Πάρκινγκ στην πιλοτή."}), crossed={"Εξωτερικά χαρακτηριστικά": ["Parking"]})
+    assert predict(crossed, {})["parking"] == "pilotis"
+    assert predict(dict(record(**{"Περιγραφή": "Φωτεινό."}), crossed={"Εξωτερικά χαρακτηριστικά": ["Parking"]}), {})["parking"] == "none"

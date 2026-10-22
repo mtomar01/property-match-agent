@@ -89,3 +89,24 @@ def test_round2_takes_the_listings_code_read_worst_from_the_other_labeller():
     chosen = choose_hardest(origin, errors, size=2)
     assert chosen["b"] == ["spitogatos:1", "spitogatos:3"]
     assert chosen["a"] == ["spitogatos:7", "spitogatos:9"]
+
+
+def test_combining_labels_keeps_a_found_value_and_lets_the_newer_label_settle_a_clash():
+    old = label("spitogatos:1", labeller="gb", parking="none", balcony=True, lift=True, floor_class="2")
+    new = label("spitogatos:1", labeller="mike", parking=None, balcony=None, lift=False, floor_class="2")
+    combined, how = answer_key.combine([old, new])
+    assert combined.fields.parking == "none" and combined.fields.balcony is True  # a blank doesn't erase a value
+    assert combined.fields.lift is False  # they clash, the newer label wins
+    assert combined.labeller == "gb+mike"
+    assert sorted(how["filled_from_older"]) == ["balcony", "parking"] and how["newest_won"] == ["lift"]
+
+
+def test_a_combined_key_records_every_label_it_used(tmp_path):
+    write(tmp_path / "hosted_batch3_gb.jsonl", [label("spitogatos:1", labeller="gb", lift=True), label("spitogatos:2", labeller="gb")])
+    write(tmp_path / "round2_mike.jsonl", [label("spitogatos:1", labeller="mike", lift=None, storage=True)])
+    answer_key.freeze_combined(2, ("hosted_batch3_gb", "round2_mike"), out_dir=tmp_path)
+    labels, manifest = answer_key.load(2, tmp_path)
+    one = {l.listing_id: l for l in labels}["spitogatos:1"]
+    assert one.fields.lift is True and one.fields.storage is True
+    assert [entry["file"] for entry in manifest["origin"]["spitogatos:1"]["labels"]] == ["hosted_batch3_gb", "round2_mike"]
+    assert manifest["origin"]["spitogatos:1"]["rules"] == "D31" and manifest["origin"]["spitogatos:2"]["rules"] == "D29"

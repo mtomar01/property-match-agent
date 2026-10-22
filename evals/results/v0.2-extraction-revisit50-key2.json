@@ -1,0 +1,108 @@
+{
+  "eval": "extraction, revisit subset",
+  "listings": 50,
+  "ran_at": "2026-10-22T08:15:46+00:00",
+  "answer_key": {
+    "version": 2,
+    "sha256": "245614c92fdb1d8da68e7afb832a6ba2e6f8541b994dbe96c12520ddd3a94806"
+  },
+  "runs": {
+    "code only": {
+      "structured": {
+        "correct": 790,
+        "wrong": 3,
+        "invented": 0,
+        "missed": 9,
+        "accuracy": 0.985
+      },
+      "free_text": {
+        "correct": 168,
+        "wrong": 6,
+        "invented": 7,
+        "missed": 67,
+        "accuracy": 0.6774
+      }
+    },
+    "code only, crossed-out lists": {
+      "structured": {
+        "correct": 799,
+        "wrong": 3,
+        "invented": 0,
+        "missed": 0,
+        "accuracy": 0.9963
+      },
+      "free_text": {
+        "correct": 214,
+        "wrong": 6,
+        "invented": 11,
+        "missed": 17,
+        "accuracy": 0.8629
+      }
+    },
+    "Haiku v2, fill": {
+      "structured": {
+        "correct": 786,
+        "wrong": 7,
+        "invented": 0,
+        "missed": 9,
+        "accuracy": 0.98
+      },
+      "free_text": {
+        "correct": 174,
+        "wrong": 8,
+        "invented": 10,
+        "missed": 56,
+        "accuracy": 0.7016
+      }
+    },
+    "Haiku v2, fill, crossed-out lists": {
+      "structured": {
+        "correct": 795,
+        "wrong": 7,
+        "invented": 0,
+        "missed": 0,
+        "accuracy": 0.9913
+      },
+      "free_text": {
+        "correct": 220,
+        "wrong": 8,
+        "invented": 13,
+        "missed": 7,
+        "accuracy": 0.8871
+      }
+    },
+    "Haiku v2, conflict": {
+      "structured": {
+        "correct": 780,
+        "wrong": 5,
+        "invented": 0,
+        "missed": 17,
+        "accuracy": 0.9726
+      },
+      "free_text": {
+        "correct": 174,
+        "wrong": 8,
+        "invented": 10,
+        "missed": 56,
+        "accuracy": 0.7016
+      }
+    },
+    "Haiku v2, conflict, crossed-out lists": {
+      "structured": {
+        "correct": 789,
+        "wrong": 5,
+        "invented": 0,
+        "missed": 8,
+        "accuracy": 0.9838
+      },
+      "free_text": {
+        "correct": 220,
+        "wrong": 8,
+        "invented": 13,
+        "missed": 7,
+        "accuracy": 0.8871
+      }
+    }
+  },
+  "data": "real listings, private; totals only"
+}

@@ -17,11 +17,16 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Cross-check round 2 (D32):** "Mike's Cross-Check 2" and "GB's Cross-Check 2", 20 each, with the D31 rules.
-2. **Round 3 (D34):** "Mike's Check 3" (10 of GB's) and "GB's Check 3" (7 of yours, 3 of his own), from the 50 revisited listings where Haiku and the key disagree most. Share GB's page by email.
-3. **Answer key v2:** rounds 2 and 3, the D29 and D31 rules applied. Then Haiku and code are re-scored on it.
-4. **Sonnet 5.5 run** (about $1.50) once key v2 exists.
-5. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+1. **Revisit the other 50 pages** for their crossed-out lists, the same way (about ten minutes). On the revisited half the pipeline is at 88.7% on text fields; on the other half 46 of 49 misses are crossed-out "no"s. Your go-ahead, since it touches the live site.
+2. **Metro rounding:** labels give minutes worked out in different ways (700 m as 8, code says 9). Either score metro within a minute, or label the metres as written and let code convert. Your call.
+3. **Sonnet 5.5 run** (about $1.50) on key v2, to see whether a bigger model earns its cost on the text fields.
+4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+
+## Answer key v2 (22 October, D35)
+
+- Every round combined: a value one labeller found beats a blank another left; a clash goes to the newer label. 70 of 100 listings have two or three labels.
+- Haiku v2 + code with crossed-out lists: 88.7% on text fields on the revisited 50 (target 85%), 81.2% on all 100.
+- Round 2 agreement: 89.3% and 90.0%, parking 34 of 87 disagreements; round 3: 95.7% and 92.4%.
 
 ## The crossed-out revisit (22 October, D34)
 
@@ -48,9 +53,8 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 1. **xe.gr.** Save 20 to 30 listing pages from your own browser (Save Page As, "Webpage, HTML only") into one folder and share it with me. I'll add an offline xe parser. Or skip xe.gr for now; the synthetic set covers it.
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
-4. **The other 50 pages:** the revisit covered 50. The rest only if round 3 says the lists are worth it everywhere.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D34.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D35.
 
 ## For the desktop app demo
 

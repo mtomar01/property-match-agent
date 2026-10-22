@@ -208,8 +208,9 @@ def parse_details(record: dict) -> DetailFields:
         if storage_m2:
             x["storage_m2"] = storage_m2[0]
     balcony_m2 = [number(AREA.match(i).group(1)) for i in exterior if AREA.match(i)]
-    # Any private outdoor space counts as a balcony (D31).
-    if "Βεράντα" in exterior or "Ιδιωτικός Κήπος" in exterior or balcony_m2:
+    # Any private outdoor space counts as a balcony (D31), a ticked Κήπος
+    # included (D35). A shared garden (Κοινόχρηστος κήπος) doesn't count.
+    if "Βεράντα" in exterior or "Ιδιωτικός Κήπος" in exterior or "Κήπος" in exterior or balcony_m2:
         f["balcony"] = True
         if balcony_m2:
             x["balcony_m2"] = balcony_m2[0]

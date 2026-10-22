@@ -9,7 +9,15 @@ one from next month can be compared, or knowingly not (D32).
 
 A version is never overwritten. Later rounds become v2, v3.
 
+From v2 a listing can have several labels (the original, a cross-check, a
+check round). They are combined field by field (D35): a value one labeller
+found beats a blank another left, because the rounds showed blanks are mostly
+misses; when two labels give different values, the newer one wins, because
+it was made under the newer rules. The manifest records, per listing, every
+label used and which fields were settled each way.
+
 Run: uv run python -m evals.harness.answer_key freeze 1
+     uv run python -m evals.harness.answer_key freeze 2   # combined, from every round
 """
 
 from __future__ import annotations
@@ -20,12 +28,87 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from evals.harness.labels import ExtractionLabel, check
+from evals.harness.labels import LABEL_FIELDS, ExtractionLabel, check, comparable
 
 ROOT = Path(__file__).resolve().parents[2]
 LABELS = ROOT / "data" / "private" / "labels"
 # Batches labelled before the crossed-out rule (D29) changed.
 PRE_D29 = ("hosted_batch1", "hosted_batch2")
+# Every human label file, oldest first, for the combined keys (v2 on).
+ROUNDS = ("hosted_batch1_gb", "hosted_batch2_mike", "hosted_batch3_gb", "hosted_batch4_mike", "hosted_batch5_gb",
+          "agreement/relabel_mike", "agreement/relabel_gb", "round2_mike", "round2_gb", "round3_mike", "round3_gb")
+
+
+def rules_of(name: str) -> str:
+    if name.startswith(PRE_D29):
+        return "before D29"
+    return "D31" if name.startswith(("round2", "round3")) else "D29"
+
+
+def _blank(name: str, value) -> bool:
+    return comparable(name, value) in (None, [])
+
+
+def combine(labels: list[ExtractionLabel]) -> tuple[ExtractionLabel, dict]:
+    """One label from several for the same listing, oldest first (see the module note)."""
+    newest = labels[-1]
+    fields, filled, newest_won = {}, [], []
+    for name in LABEL_FIELDS:
+        values = [getattr(label.fields, name) for label in labels]
+        present = [v for v in values if not _blank(name, v)]
+        if not present:
+            fields[name] = values[-1]
+            continue
+        fields[name] = present[-1]
+        if _blank(name, values[-1]):
+            filled.append(name)
+        elif len({json.dumps(comparable(name, v), sort_keys=True) for v in present}) > 1:
+            newest_won.append(name)
+    evidence: dict = {}
+    for label in labels:
+        evidence.update(label.evidence)
+    combined = newest.model_copy(update={
+        "fields": newest.fields.model_copy(update=fields),
+        "labeller": "+".join(dict.fromkeys(label.labeller for label in labels)),
+        "evidence": evidence,
+        "notes": " | ".join(label.notes for label in labels if label.notes),
+        "pii": any(label.pii for label in labels),
+        "price_history": next((label.price_history for label in reversed(labels) if label.price_history), []),
+    })
+    return combined, {"filled_from_older": filled, "newest_won": newest_won}
+
+
+def freeze_combined(version: int, names: tuple[str, ...] = ROUNDS, out_dir: Path = LABELS) -> Path:
+    out = out_dir / f"answer_key_v{version}.jsonl"
+    if out.exists():
+        raise FileExistsError(f"{out.name} exists; versions are never overwritten")
+    by_listing: dict[str, list[tuple[str, ExtractionLabel]]] = {}
+    for name in names:
+        path = out_dir / f"{name}.jsonl"
+        labels, problems = check(path)
+        if problems:
+            raise ValueError(f"{path.name}: {problems[:3]}")
+        for label in labels:
+            by_listing.setdefault(label.listing_id, []).append((name, label))
+    rows, origin = [], {}
+    for listing_id, entries in sorted(by_listing.items()):
+        label, how = combine([label for _, label in entries])
+        newest_name, newest = entries[-1]
+        origin[listing_id] = {
+            "file": newest_name, "labeller": newest.labeller, "rules": rules_of(newest_name.split("/")[-1]),
+            "labels": [{"file": n, "labeller": l.labeller, "rules": rules_of(n.split("/")[-1])} for n, l in entries],
+            **how,
+        }
+        rows.append(label.model_dump(mode="json"))
+    text = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
+    out.write_text(text, encoding="utf-8")
+    manifest = {
+        "version": version, "frozen_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "listings": len(rows),
+        "sources": list(names), "combined": True, "origin": origin,
+    }
+    (out_dir / f"answer_key_v{version}.manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return out
 
 
 def key_path(version: int) -> Path:
@@ -47,7 +130,7 @@ def freeze(version: int, sources: list[Path] | None = None, out_dir: Path = LABE
                 raise ValueError(f"{label.listing_id} appears in {origin[label.listing_id]['file']} and {path.name}")
             origin[label.listing_id] = {
                 "file": path.name, "labeller": label.labeller,
-                "rules": "before D29" if path.name.startswith(PRE_D29) else "D29",
+                "rules": rules_of(path.name),
             }
             rows.append(label.model_dump(mode="json"))
     rows.sort(key=lambda r: r["listing_id"])
@@ -79,7 +162,7 @@ def load(version: int, directory: Path = LABELS) -> tuple[list[ExtractionLabel],
 
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "freeze":
-        path = freeze(int(sys.argv[2]))
+        path = freeze(int(sys.argv[2])) if sys.argv[2] == "1" else freeze_combined(int(sys.argv[2]))
         print(f"Froze {path.relative_to(ROOT)}")
     else:
         print(__doc__)

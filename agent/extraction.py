@@ -25,7 +25,7 @@ from pathlib import Path
 
 from core import greek, pii
 from core.models import Condition, EnergyClass, Flag, Fuel, HeatingType, Parking, PropertyType
-from evals.harness.labels import LABEL_FIELDS, comparable
+from evals.harness.labels import LABEL_FIELDS, PARKING_PRESENT, comparable
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
@@ -179,14 +179,16 @@ def reconcile(name: str, mine, theirs):
     """Two values that differ but don't contradict each other, per the labelling guide.
 
     υπερυψωμένο ισόγειο is a more exact "ground", not a conflict; a ρετιρέ
-    with a floor number takes the number; storage the text mentions counts
-    even when the feature list crosses Αποθήκη out (your rule, D34). Returns the value to keep, or None
+    with a floor number takes the number; storage or parking the text
+    mentions counts even when the feature list crosses it out (D34, D35). Returns the value to keep, or None
     when the two really disagree.
     """
     if comparable(name, mine) == comparable(name, theirs):
         return mine
     if name == "storage" and theirs is True and mine is False:
         return True  # "εσωτερική αποθήκη" is storage even when the list crosses Αποθήκη out (D34)
+    if name == "parking" and mine == "none" and theirs in PARKING_PRESENT:
+        return theirs  # parking the text mentions counts even when Parking is crossed out (D35)
     if name == "floor_class":
         if {mine, theirs} == {"ground", "raised_ground"}:
             return "raised_ground"

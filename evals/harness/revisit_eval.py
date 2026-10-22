@@ -10,6 +10,7 @@ Run: uv run python -m evals.harness.revisit_eval
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 
 from evals.harness import answer_key
@@ -40,9 +41,10 @@ def run(key_version: int = 1, write: bool = True) -> dict:
         out = {"eval": "extraction, revisit subset", "listings": len(only), "ran_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                "answer_key": {"version": manifest["version"], "sha256": manifest["sha256"]}, "runs": table,
                "data": "real listings, private; totals only"}
-        (RESULTS / "v0.2-extraction-revisit50.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
+        suffix = "" if key_version == 1 else f"-key{key_version}"
+        (RESULTS / f"v0.2-extraction-revisit50{suffix}.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     return table
 
 
 if __name__ == "__main__":
-    run()
+    run(int(sys.argv[1]) if len(sys.argv) > 1 else 1)

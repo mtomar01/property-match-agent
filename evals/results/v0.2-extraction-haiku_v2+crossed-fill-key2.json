@@ -1,0 +1,194 @@
+{
+  "eval": "extraction",
+  "name": "haiku_v2+crossed-fill",
+  "ran_at": "2026-10-22T08:15:46+00:00",
+  "listings": 100,
+  "answer_key": {
+    "version": 2,
+    "sha256": "245614c92fdb1d8da68e7afb832a6ba2e6f8541b994dbe96c12520ddd3a94806"
+  },
+  "targets": {
+    "structured": 0.98,
+    "free_text": 0.85
+  },
+  "groups": {
+    "structured": {
+      "correct": 1587,
+      "wrong": 17,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 0.9894
+    },
+    "free_text": {
+      "correct": 403,
+      "wrong": 11,
+      "invented": 26,
+      "missed": 56,
+      "accuracy": 0.8125
+    }
+  },
+  "per_field": {
+    "listing_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "price_eur": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "size_m2": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "property_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "bedrooms": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 1,
+      "missed": 0,
+      "accuracy": 0.99
+    },
+    "bathrooms": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 1,
+      "missed": 0,
+      "accuracy": 0.99
+    },
+    "floor_class": {
+      "correct": 94,
+      "wrong": 6,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 0.94
+    },
+    "year_built": {
+      "correct": 95,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 4,
+      "accuracy": 0.95
+    },
+    "renovated_year": {
+      "correct": 95,
+      "wrong": 0,
+      "invented": 4,
+      "missed": 1,
+      "accuracy": 0.95
+    },
+    "condition": {
+      "correct": 91,
+      "wrong": 5,
+      "invented": 2,
+      "missed": 2,
+      "accuracy": 0.91
+    },
+    "energy_class": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_fuel": {
+      "correct": 99,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 0.99
+    },
+    "parking": {
+      "correct": 79,
+      "wrong": 0,
+      "invented": 2,
+      "missed": 19,
+      "accuracy": 0.79
+    },
+    "lift": {
+      "correct": 84,
+      "wrong": 0,
+      "invented": 1,
+      "missed": 15,
+      "accuracy": 0.84
+    },
+    "balcony": {
+      "correct": 94,
+      "wrong": 2,
+      "invented": 3,
+      "missed": 1,
+      "accuracy": 0.94
+    },
+    "storage": {
+      "correct": 84,
+      "wrong": 3,
+      "invented": 1,
+      "missed": 12,
+      "accuracy": 0.84
+    },
+    "flags": {
+      "correct": 96,
+      "wrong": 3,
+      "invented": 1,
+      "missed": 0,
+      "accuracy": 0.96
+    },
+    "area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "sub_area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "metro_walk_min": {
+      "correct": 81,
+      "wrong": 7,
+      "invented": 10,
+      "missed": 2,
+      "accuracy": 0.81
+    }
+  },
+  "data": "real listings, private; totals only",
+  "model": "claude-haiku-5-5",
+  "prompt": "extraction_v2",
+  "failed_calls": 0,
+  "usage": {
+    "input_tokens": 88421,
+    "output_tokens": 126429,
+    "cache_creation_input_tokens": 15232,
+    "cache_read_input_tokens": 365568
+  },
+  "cost_usd": 0.0776,
+  "spent_this_run_usd": 0.0,
+  "merge_rule": "fill",
+  "conflicts_blanked": {},
+  "crossed_out_lists": true
+}

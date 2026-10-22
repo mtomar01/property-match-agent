@@ -292,3 +292,24 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   Misses fall by about 40. "Invented" rises by about 22: mostly the crossed-out "no"s the key left blank. Table fields don't change (98.9% and 98.6%).
 - **Round 3, 10 each (your choice):** from the 50, less round 2's listings, ranked by where Haiku with the crossed-out lists disagrees most with the key. You get GB's 10. Only 7 of yours were left, so GB gets those 7 plus 3 of his own as a self-check (the guide's "agree with yourself" test). The pages pre-fill the crossed-out "no"s like the table's values; parking still isn't pre-filled.
 - **Say:** "Most of the misses weren't a reading problem. The page states 'no' with an icon, and my first collector threw it away. Revisiting 50 pages cut misses from 48 to 8."
+
+## D35. "You're losing parking and balconies": the pages were, and answer key v2
+
+- **Your observation:** parking (παρκινγκ, θέση στάθμευσης, γκαράζ) and balconies (βεράντα, μπαλκόνι, κήπος) were being lost, from the ticks, the text or both.
+- **Where they were lost:** not in the pipeline. Against your 60 new labels, code plus Haiku found 24 of 25 parking spots and all 45 balconies. They were lost on the labelling pages: the pre-fill never showed parking (a rule from before parking was scored as has or hasn't), and it missed 11 of the 45 balconies, those only in the text or behind a ticked "Κήπος", which code didn't count.
+- **Fixes:** the pages pre-fill parking from its tick (space) or cross (none); a ticked Κήπος is a balcony (a shared garden still isn't); parking the text mentions beats a crossed-out tick, as your label did, the same as storage (D34). The guide and the page rules say so.
+- **The labels had the same blind spot:** round 2 agreement was 89.3% (your relabels) and 90.0% (GB's), with text fields at 63% and 65%. Parking alone was 34 of the 87 disagreements, mostly one of you writing "no" for a crossed-out Parking and the other leaving it blank, or one finding parking in the ticks or text and the other not. Round 3 agreed better: 95.7% (you) and 92.4% (GB). GB's self-check matched himself on every table field and 8 of 10 text fields.
+- **Answer key v2** (`answer_key.py`, frozen 22 October): every human label, combined per listing. 70 listings have two or three labels. A value one labeller found beats a blank another left, because the rounds showed blanks are mostly misses; when labels give different values, the newer one wins, because it follows the newer rules. That filled 22 parking values, 10 metro, 8 lift, 6 storage and 5 balconies; the newer label settled 18 clashes, 8 of them condition (the new-build rule). The manifest lists every label used per listing. 12 listings still rest on one label made before D29.
+- **Results on key v2** (no new model calls):
+
+  | | Listings | Table fields | Text-only fields | Missed | Invented |
+  |---|---|---|---|---|---|
+  | Code only | 100 | 98.9% | 70.4% | 123 | 15 |
+  | Code, crossed-out lists | 100 | 99.4% | 79.6% | 73 | 19 |
+  | Haiku v2 + code, crossed-out lists | 100 | 98.9% | 81.2% | 56 | 26 |
+  | Code, crossed-out lists | the 50 revisited | 99.6% | 86.3% | 17 | 11 |
+  | Haiku v2 + code, crossed-out lists | the 50 revisited | 99.1% | **88.7%** | 7 | 13 |
+
+  On the revisited half, both targets are met. On the other half, 46 of Haiku's 49 misses are parking, lift and storage: the crossed-out lists not read yet.
+- **What's left on the revisited half:** metro, mostly rounding (700 m typed as 8 minutes where code works out 9) and labels left blank where the text gives a distance; three older labels that say "no storage" where the text has εσωτερική αποθήκη (D34 came after them).
+- **Say:** "Two labellers looked unreliable on parking, and the model looked worse than regex. Both were the same bug: the labelling tool hid parking. Fix the tool, combine the two readers so a found value beats a blank, and the pipeline clears the 85% target."

@@ -40,7 +40,7 @@ def test_prefill_prefers_the_table_and_never_fills_free_text_fields():
     assert values["bathrooms"] == 1 and values["floor_class"] == "2"  # table, not card
     assert values["bedrooms"] == 2 and values["area"] == "Egaleo"  # only the card has these
     assert values["energy_class"] == "C"
-    assert "parking" not in values and "metro_walk_min" not in values  # a tick isn't a parking type
+    assert values["parking"] == "space" and "metro_walk_min" not in values  # a tick or cross is read since D35
     assert "lift" not in values  # unticked is unknown, so blank
 
 

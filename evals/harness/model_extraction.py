@@ -139,5 +139,6 @@ if __name__ == "__main__":
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
     models = [a for a in args if a.startswith("claude-")]
     prompts = [a for a in args if a.startswith("extraction_")]
-    run(models[0] if models else "claude-haiku-5-5", prompts[0] if prompts else PROMPT_VERSION, limit=limit,
-        revisit="--crossed" in args)
+    key = int(args[args.index("--key") + 1]) if "--key" in args else 1
+    run(models[0] if models else "claude-haiku-5-5", prompts[0] if prompts else PROMPT_VERSION, key_version=key,
+        limit=limit, revisit="--crossed" in args)
