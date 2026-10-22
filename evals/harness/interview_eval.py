@@ -51,7 +51,7 @@ SNAPSHOT = ROOT / "data" / "private" / "snapshot.jsonl"
 TODAY = "2026-10-22"  # fixed, so the prompt and the cache keys don't change from day to day
 SIM_MODEL = "claude-haiku-5-5"
 EXTRA_ANSWERS = 2
-TARGETS = {"field_accuracy": 0.95, "invented_hard_limits": 0}
+TARGETS = {"field_accuracy": 0.95, "invented_hard_limits": 0, "unasked_loosenings": 0}
 
 CONFIRM = {"en": "Yes, that's right. Go ahead.", "el": "Ναι, σωστά. Προχώρα."}
 COUNTERPART = {"max_price_eur": "price_eur", "min_price_eur": "price_eur", "min_size_m2": "size_m2",
@@ -275,6 +275,8 @@ def _tool_numbers(result: dict) -> set[float]:
     split = result.get("breakdown") or {}
     values |= set((split.get("by_bedrooms") or {}).values()) | set((split.get("by_size") or {}).values())
     values |= {split.get(k) for k in ("with_parking", "with_balcony", "with_lift")}
+    for option in (result.get("if_eased") or {}).values():
+        values |= {option.get("matches"), option.get("to")}
     return {float(v) for v in values if isinstance(v, (int, float))}
 
 
@@ -348,6 +350,60 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     return out
 
 
+def _looser(name: str, before, after) -> bool:
+    """Did this hard limit get looser from one card to the next? Removing a limit counts."""
+    if name == "areas":
+        return bool(before) and (not after or bool(set(after) - set(before)))
+    if _blank(before):
+        return False
+    if _blank(after):
+        return True
+    if name in ("max_price_eur", "max_size_m2"):
+        return after > before
+    if name in ("min_price_eur", "min_size_m2", "min_bedrooms"):
+        return after < before
+    if name == "property_types":
+        return bool(set(after) - set(before))
+    return bool(set(before) - set(after))  # exclude_floors: a floor no longer ruled out
+
+
+def unasked_loosenings(log: list[dict]) -> list[str]:
+    """Hard limits loosened when the user's last message wasn't their own words (D50).
+
+    A scripted turn is the user speaking, so a change it asks for is theirs. A fixed
+    "yes, go ahead" or a simulated answer from facts never asks to loosen a limit in
+    these chats, so a limit loosened after one was the assistant's own doing.
+    """
+    found, previous, last_user = [], None, None
+    for entry in log:
+        if entry["role"] == "user":
+            last_user = entry
+            continue
+        if not entry.get("output"):
+            continue
+        current = entry["output"]["criteria"]
+        if previous is not None and last_user and last_user["source"] != "script":
+            for name in ("areas", *interview.HARD_FIELDS):
+                old = previous.get(name) if name == "areas" else (previous.get("hard_limits") or {}).get(name)
+                new = current.get(name) if name == "areas" else (current.get("hard_limits") or {}).get(name)
+                if _looser(name, old, new):
+                    found.append(name)
+        previous = current
+    return found
+
+
+def easing(transcript: dict) -> dict:
+    """In a thin search (fewer than 5, not a data gap), did a reply suggest one eased limit with code's numbers?"""
+    replies = [t for t in transcript["log"] if t["role"] == "assistant" and t.get("output")]
+    results = [c["result"] for t in replies for c in t.get("tool_calls") or []]
+    thin = [r for r in results if r.get("matches", THIN_DEFAULT) < interview.THIN and r.get("if_eased")]
+    suggested = any("ease_limit" in _asked(t) and quotes_tool_number(t["output"]["reply"], thin, set()) for t in replies)
+    return {"thin": bool(thin), "suggested": bool(thin) and suggested}
+
+
+THIN_DEFAULT = 10 ** 9
+
+
 def score_chat(chat: dict, transcript: dict) -> dict:
     predicted = transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []}
     expected = chat["expected_criteria"]
@@ -363,6 +419,7 @@ def score_chat(chat: dict, transcript: dict) -> dict:
         # D49: was the search wide (a check over 50), and did it ask the one narrowing question?
         "wide": any(c["result"].get("matches", 0) > interview.WIDE for t in replies for c in t.get("tool_calls") or []),
         "narrowing_asked": any("narrowing" in _asked(t) for t in replies),
+        "easing": easing(transcript), "unasked_loosenings": unasked_loosenings(transcript["log"]),
         "cost_usd": transcript["cost_usd"],
     }
 
@@ -395,6 +452,9 @@ def summarise(scores: list[dict]) -> dict:
         "narrowing": {"wide_chats": sum(s["wide"] for s in scores),
                       "asked_when_wide": sum(s["wide"] and s["narrowing_asked"] for s in scores),
                       "asked_when_not_wide": sum(not s["wide"] and s["narrowing_asked"] for s in scores)},
+        "easing": {"thin_chats": sum(s["easing"]["thin"] for s in scores),
+                   "suggested_with_numbers": sum(s["easing"]["suggested"] for s in scores)},
+        "unasked_loosenings": sum(len(s["unasked_loosenings"]) for s in scores),
         "cost_usd": round(sum(s["cost_usd"] for s in scores), 4),
         "mean_cost_per_chat_usd": round(sum(s["cost_usd"] for s in scores) / len(scores), 4),
     }
@@ -409,7 +469,8 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
              f"  confirmed {summary['confirmed']}, valid cards {summary['valid_cards']}, "
              f"questions per chat {summary['mean_questions']}, replies {summary['mean_replies']}, tool calls {summary['tool_calls']}, "
              f"cards repaired {summary['card_repairs']}",
-             f"  narrowing {summary['narrowing']}",
+             f"  narrowing {summary['narrowing']}, easing {summary['easing']}, "
+             f"unasked loosenings {summary['unasked_loosenings']} (target 0)",
              f"  cost ${summary['cost_usd']:.3f} (${summary['mean_cost_per_chat_usd']:.4f} a chat)", "", "  misses:"]
     for s in scores:
         bad = [f"{k}={v}" for k, v in s["fields"].items() if v != "correct"]
@@ -418,6 +479,9 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
         bad += [k for k, v in s["behaviours"].items() if not v]
         if not s["confirmed"]:
             bad.append("not confirmed")
+        bad += [f"loosened {name} unasked" for name in s.get("unasked_loosenings", [])]
+        if s.get("easing", {}).get("thin") and not s["easing"]["suggested"]:
+            bad.append("thin, no easing suggested")
         if bad:
             lines.append(f"    {s['chat_id']}: {', '.join(bad)}")
     return "\n".join(lines)

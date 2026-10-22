@@ -194,3 +194,29 @@ def test_a_simulated_answer_with_no_fact_behind_it_becomes_no_preference():
     assert ev.guarded("Θέλω 3 υπνοδωμάτια.", ["budget"], chat, chat["turns"], "el")[1] is True  # a number nobody gave
     assert ev.guarded("Ναι, μέχρι 150.000.", ["budget"], chat, chat["turns"], "el") == ("Ναι, μέχρι 150.000.", False)
     assert set(ev.sim_schema(chat)["properties"]["facts_used"]["items"]["enum"]) == {"budget", "already_said"}
+
+
+def test_a_thin_search_comes_with_eased_limits_code_counted():
+    listings = SnapshotAdapter().listings()
+    thin = interview.check_supply({"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 150000, "min_bedrooms": 3}}, listings)
+    assert thin["matches"] < interview.THIN
+    eased = thin["if_eased"]
+    assert eased["max_price_eur"]["to"] == 165000 and eased["min_bedrooms"]["to"] == 2
+    assert {"add_area:Peristeri", "add_area:Chaidari"} <= set(eased)
+    assert all(option["matches"] >= thin["matches"] for option in eased.values())
+    gap = interview.check_supply({"intent": "rent", "areas": [], "hard_limits": {"max_price_eur": 900}},
+                                 [l for l in listings if l.listing_type == "sale"])
+    assert "if_eased" not in gap and "won't help" in gap["note"]
+
+
+def test_a_limit_loosened_after_a_yes_from_the_harness_is_caught():
+    first = card(areas=["Peristeri"], min_size_m2=120, max_price_eur=150000)
+    looser = card(areas=["Peristeri"], max_price_eur=150000)
+    log = [{"role": "user", "text": "Over 120 m², under 150k, Peristeri.", "source": "script", "language": "en"},
+           {"role": "assistant", "output": answer("0 match. Ease the size?", "ask", ["ease_limit"], first)},
+           {"role": "user", "text": "No preference.", "source": "simulated, no fact", "language": "en"},
+           {"role": "assistant", "output": answer("Done. Search?", "confirm", criteria=looser)}]
+    assert ev.unasked_loosenings(log) == ["min_size_m2"]
+    log[2]["source"] = "script"  # the user's own words asked for it
+    assert ev.unasked_loosenings(log) == []
+    assert ev._looser("areas", ["Peristeri"], []) and not ev._looser("areas", [], ["Peristeri"])

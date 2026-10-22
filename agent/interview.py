@@ -42,8 +42,10 @@ NEW_BUILD_YEARS = 5  # "new build" means built in the last five years
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
-          "priorities", "narrowing", "other")
+          "priorities", "narrowing", "ease_limit", "other")
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
+THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
+EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one more covered area
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "property_types",
@@ -171,10 +173,43 @@ def check_supply(args: dict, listings: list) -> dict:
     }
     if len(matches) > WIDE:
         result["breakdown"] = breakdown(matches)
+    of_kind = sum(1 for l in listings if l.listing_type == kind)
+    if len(matches) < THIN and of_kind:
+        result["if_eased"] = eased(criteria, listings)
     if not in_areas:
         result["note"] = (f"The snapshot has no {'rental' if kind == 'rent' else 'sale'} listings in these areas yet. "
                           "That's a gap in the data, not in the user's criteria.")
+    if not of_kind:
+        result["note"] += " Easing a limit won't help."
     return result
+
+
+def eased(criteria: Criteria, listings: list) -> dict:
+    """Each hard limit eased a little, one at a time, with the count it would give. Code picks the steps (D50)."""
+    limits, out = criteria.hard_limits, {}
+    rent = criteria.intent == "rent"
+    step = 50 if rent else 5000
+
+    def count(**update) -> int:
+        looser = criteria.model_copy(update={"hard_limits": limits.model_copy(update=update)}) if update else criteria
+        return len(apply_hard_limits(listings, looser).matches)
+
+    if limits.max_price_eur:
+        to = max(limits.max_price_eur + step, round(limits.max_price_eur * (1 + EASE) / step) * step)
+        out["max_price_eur"] = {"to": to, "matches": count(max_price_eur=to)}
+    if limits.min_size_m2:
+        to = min(limits.min_size_m2 - 1, round(limits.min_size_m2 * (1 - EASE)))
+        out["min_size_m2"] = {"to": to, "matches": count(min_size_m2=to)}
+    if limits.max_size_m2:
+        to = max(limits.max_size_m2 + 1, round(limits.max_size_m2 * (1 + EASE)))
+        out["max_size_m2"] = {"to": to, "matches": count(max_size_m2=to)}
+    if limits.min_bedrooms:
+        out["min_bedrooms"] = {"to": limits.min_bedrooms - 1, "matches": count(min_bedrooms=limits.min_bedrooms - 1)}
+    if criteria.areas:
+        for area in (a for a in SEARCH_AREAS if a not in criteria.areas):
+            wider = criteria.model_copy(update={"areas": [*criteria.areas, area]})
+            out[f"add_area:{area}"] = {"to": area, "matches": len(apply_hard_limits(listings, wider).matches)}
+    return out
 
 
 def breakdown(matches: list) -> dict:
