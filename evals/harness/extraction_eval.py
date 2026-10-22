@@ -132,11 +132,11 @@ def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", w
             **(extra or {}),
         }
         RESULTS.mkdir(parents=True, exist_ok=True)
+        suffix = "" if version == 1 else f"-key{version}"
         if set_name:
             public["test_set"] = set_name
-            result_name, detail_name = f"v0.2-extraction-{set_name}-{name}.json", f"detail-{set_name}-{name}.json"
+            result_name, detail_name = f"v0.2-extraction-{set_name}-{name}{suffix}.json", f"detail-{set_name}-{name}{suffix}.json"
         else:
-            suffix = "" if version == 1 else f"-key{version}"
             result_name, detail_name = f"v0.2-extraction-{name}{suffix}.json", f"detail-{name}-v{version}.json"
         (RESULTS / result_name).write_text(json.dumps(public, indent=2), encoding="utf-8")
         PRIVATE.mkdir(parents=True, exist_ok=True)

@@ -9,6 +9,7 @@ baseline and Haiku + code against it, with the prompt and rules unchanged.
 
 Run: uv run python -m evals.harness.clean_test pagrati            # pull files must already be saved
      uv run python -m evals.harness.clean_test pagrati --score    # pays for the model calls not yet cached
+     uv run python -m evals.harness.clean_test pagrati --key 2    # saved predictions against key v2, free
 """
 
 from __future__ import annotations
@@ -56,6 +57,14 @@ def score(name: str) -> dict:
     return results
 
 
+def rescore(name: str, key_version: int) -> dict:
+    """Score the saved predictions against another version of the set's key. No model calls."""
+    folder = SETS[name]
+    return {run: extraction_eval.run(folder / "evals" / f"predictions_{run}.jsonl", key_version, run,
+                                     key_dir=folder, set_name=name)
+            for run in ("code_baseline", "haiku_v3-fill", "haiku_v3-conflict")}
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args or args[0] not in SETS:
@@ -67,3 +76,5 @@ if __name__ == "__main__":
         print(f"Froze {freeze(folder, files).relative_to(ROOT)} from {', '.join(f.name for f in files)}")
     if "--score" in args:
         score(args[0])
+    if "--key" in args:
+        rescore(args[0], int(args[args.index("--key") + 1]))

@@ -57,6 +57,8 @@ The rules are in `docs/labelling-guide.md`.
 | v0.2 | Answer key v4: code only | 100 | 99.1% | 93.1% | 3 |
 | v0.2 | **Clean test, Pagrati** (blind labels, prompt and rules frozen, D44, D45): Haiku 5.5 + code | 10 | 100% | **88.2%** | 4 |
 | v0.2 | Clean test, Pagrati: code only | 10 | 100% | 91.2% | 2 |
+| v0.2 | Clean test, Pagrati key v2 (the four blanks confirmed, D45): Haiku 5.5 + code | 10 | 100% | 100% | 0 |
+| v0.2 | Clean test, Pagrati key v2: code only | 10 | 100% | 91.2% | 0 |
 
 These 100 listings are the development set: the prompts and merge rules were shaped on them. The clean test is 10 listings from Pagrati, labelled blind and never used for tuning (D44). All four of Haiku's disagreements there are facts the description states and the labels left blank, each with a quote (D45).
 

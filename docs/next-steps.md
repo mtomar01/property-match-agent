@@ -17,9 +17,13 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **The clean test (now):** label your 5 Pagrati listings; GB labels the other 5 (share GB's page by email). Then Haiku v3 + code reads the 10 and is scored against your labels (D44).
-2. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts (Sonnet, about $2.50 to $5 a run).
-3. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+1. **Interview eval harness (now)** on the 40 chats, with a simulated user that answers only from each chat's facts (Sonnet, about $2.50 to $5 a run).
+2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+
+## Pagrati clean test, scored (22 October, D45)
+
+- As labelled: Haiku v3 + code 100% table fields, 88.2% text fields; code alone 91.2%. All four of Haiku's disagreements were facts the labels left blank.
+- You confirmed the four, so Pagrati key v2: Haiku v3 + code 100% on both; code alone 91.2%. Headline stays 88.2%.
 
 ## Pagrati clean test (22 October, D44)
 
@@ -81,7 +85,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D44.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D45.
 
 ## For the desktop app demo
 

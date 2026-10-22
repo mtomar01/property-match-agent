@@ -1,0 +1,181 @@
+{
+  "eval": "extraction",
+  "name": "code_baseline",
+  "ran_at": "2026-10-22T10:45:14+00:00",
+  "listings": 10,
+  "answer_key": {
+    "version": 2,
+    "sha256": "d3cf3546b621006a7abc5d222ed438859431bdab7759825d74c059844fc15c9f"
+  },
+  "targets": {
+    "structured": 0.98,
+    "free_text": 0.85
+  },
+  "groups": {
+    "structured": {
+      "correct": 176,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "free_text": {
+      "correct": 31,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 3,
+      "accuracy": 0.9118
+    }
+  },
+  "per_field": {
+    "listing_type": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "price_eur": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "size_m2": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "property_type": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "bedrooms": {
+      "correct": 9,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.9
+    },
+    "bathrooms": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "floor_class": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "year_built": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "renovated_year": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "condition": {
+      "correct": 9,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.9
+    },
+    "energy_class": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_type": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_fuel": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "parking": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "lift": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "balcony": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "storage": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "flags": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "area": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "sub_area": {
+      "correct": 10,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "metro_walk_min": {
+      "correct": 9,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.9
+    }
+  },
+  "data": "real listings, private; totals only",
+  "test_set": "pagrati"
+}

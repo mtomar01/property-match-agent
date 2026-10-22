@@ -102,8 +102,9 @@ def build(out_path: Path = OUT) -> Path:
     return out_path
 
 
-def apply(decisions_dir: Path, version: int = 4, base: int = 3, out_dir: Path = answer_key.LABELS) -> Path:
-    """Answer key v4: key v3 with the check's decisions applied, each change recorded (D43)."""
+def apply(decisions_dir: Path, version: int = 4, base: int = 3, out_dir: Path = answer_key.LABELS,
+          decision: str = "D43") -> Path:
+    """A new key version: the base key with the check's decisions applied, each change recorded (D43; Pagrati, D45)."""
     import hashlib
     from datetime import datetime, timezone
 
@@ -125,7 +126,7 @@ def apply(decisions_dir: Path, version: int = 4, base: int = 3, out_dir: Path = 
                 continue
             value = d["proposed_value"] if d["choice"] == "proposed" else _parse_other(d["field"], d["other"])
             updates[d["field"]] = value
-            evidence[d["field"]] = f"Answer key check, {d['choice']} (D43)"
+            evidence[d["field"]] = f"Answer key check, {d['choice']} ({decision})"
             record.append({"field": d["field"], "from": d["key_value"], "to": value, "choice": d["choice"]})
             changed += 1
         if updates:
@@ -138,7 +139,7 @@ def apply(decisions_dir: Path, version: int = 4, base: int = 3, out_dir: Path = 
         "version": version, "frozen_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "listings": len(rows),
         "derived_from": {"version": base, "sha256": manifest["sha256"]},
-        "rule": "D43: the answer key check's decisions applied", "changed_by_check": changed,
+        "rule": f"{decision}: the answer key check's decisions applied", "changed_by_check": changed,
         "decisions": len(decisions), "combined": True, "origin": origin,
     }, indent=2), encoding="utf-8")
     return out
