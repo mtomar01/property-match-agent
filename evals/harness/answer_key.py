@@ -18,6 +18,7 @@ label used and which fields were settled each way.
 
 Run: uv run python -m evals.harness.answer_key freeze 1
      uv run python -m evals.harness.answer_key freeze 2   # combined, from every round
+     uv run python -m evals.harness.answer_key freeze 3   # v2 plus crossed-out blanks filled by rule (D39)
 """
 
 from __future__ import annotations
@@ -149,6 +150,73 @@ def freeze(version: int, sources: list[Path] | None = None, out_dir: Path = LABE
     return out
 
 
+RULE_FILLED = {  # label field: (feature list, feature name, the "no" value)
+    "lift": ("Εσωτερικό", "Ασανσέρ", False),
+    "storage": ("Εσωτερικό", "Αποθήκη", False),
+    "parking": ("Εξωτερικά χαρακτηριστικά", "Parking", "none"),
+}
+RULE_NOTE = "Crossed out in the feature list; filled by rule D29 (key v3, D39)"
+
+
+def fill_crossed_out(label: ExtractionLabel, crossed: dict, description: str) -> tuple[ExtractionLabel, list[str]]:
+    """Fill a blank lift, storage or parking with "no" where the page crosses it out (D39).
+
+    Only when the label is blank, the feature is crossed out, and the
+    description doesn't mention it: a mention in the text wins over a cross
+    for parking and storage (D34, D35), and a lift the text mentions against a
+    crossed-out one is a conflict, which stays unknown (D25).
+    """
+    from evals.harness.code_baseline import LIFT, PARKING, STORAGE
+
+    mentions = {"lift": LIFT, "storage": STORAGE, "parking": PARKING}
+    fields, evidence, filled = {}, dict(label.evidence), []
+    for name, (section, feature, no) in RULE_FILLED.items():
+        if getattr(label.fields, name) is not None or feature not in crossed.get(section, []):
+            continue
+        if mentions[name].search(description or ""):
+            continue
+        fields[name] = no
+        evidence[name] = RULE_NOTE
+        filled.append(name)
+    if not filled:
+        return label, []
+    return label.model_copy(update={"fields": label.fields.model_copy(update=fields), "evidence": evidence}), filled
+
+
+def freeze_rule_filled(version: int = 3, base: int = 2, out_dir: Path = LABELS) -> Path:
+    """Key v3: key v2 with crossed-out blanks filled by rule, every fill recorded."""
+    import json as _json
+
+    from adapters import spitogatos_features as features
+    from evals.harness.build_label_tool import RAW
+
+    out = out_dir / f"answer_key_v{version}.jsonl"
+    if out.exists():
+        raise FileExistsError(f"{out.name} exists; versions are never overwritten")
+    labels, base_manifest = load(base, out_dir)
+    lists = features.load()
+    descriptions = {f"spitogatos:{r['source_id']}": r["sections"].get("Περιγραφή", "")
+                    for r in (_json.loads(line) for line in RAW.read_text(encoding="utf-8").splitlines() if line.strip())}
+    rows, origin = [], {}
+    for label in labels:
+        row = lists.get(label.listing_id.split(":", 1)[1])
+        filled_label, filled = fill_crossed_out(label, row["crossed"] if row else {}, descriptions.get(label.listing_id, ""))
+        origin[label.listing_id] = dict(base_manifest["origin"][label.listing_id], filled_by_rule=filled)
+        rows.append(filled_label.model_dump(mode="json"))
+    text = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
+    out.write_text(text, encoding="utf-8")
+    manifest = {
+        "version": version, "frozen_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "listings": len(rows),
+        "derived_from": {"version": base, "sha256": base_manifest["sha256"]},
+        "rule": "D39: a blank lift, storage or parking is 'no' where the page crosses it out and the text doesn't mention it",
+        "filled_by_rule": sum(len(o["filled_by_rule"]) for o in origin.values()),
+        "sources": base_manifest.get("sources"), "combined": True, "origin": origin,
+    }
+    (out_dir / f"answer_key_v{version}.manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return out
+
+
 def load(version: int, directory: Path = LABELS) -> tuple[list[ExtractionLabel], dict]:
     path = directory / f"answer_key_v{version}.jsonl"
     manifest = json.loads((directory / f"answer_key_v{version}.manifest.json").read_text(encoding="utf-8"))
@@ -162,7 +230,8 @@ def load(version: int, directory: Path = LABELS) -> tuple[list[ExtractionLabel],
 
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "freeze":
-        path = freeze(int(sys.argv[2])) if sys.argv[2] == "1" else freeze_combined(int(sys.argv[2]))
+        version = int(sys.argv[2])
+        path = freeze(version) if version == 1 else freeze_combined(version) if version == 2 else freeze_rule_filled(version, version - 1)
         print(f"Froze {path.relative_to(ROOT)}")
     else:
         print(__doc__)

@@ -343,3 +343,20 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   Both targets are met on the whole set. Against your Check 4 and 5 labels the system now agrees on 418 of 420 fields; the two left are storage you left blank where Αποθήκη is crossed out.
 - **What "invented" is now:** 24 of the 46 are lift, parking or storage crossed out on the page where answer key v2 is blank, mostly listings resting on one label made before D29. 10 are metro distances the description gives and the key left blank. The rest are scattered.
 - **Say:** "Two people checked fifteen listings and found the same gap every time. Reading one more part of the page closed it: misses went from 56 to 11, and the pipeline passed its target on all 100."
+
+## D39. Answer key v3, and Haiku against Sonnet
+
+- **Answer key v3 (your call):** key v2 with a blank lift, storage or parking filled as "no" where the page crosses it out and the description doesn't mention it. A mention in the text still wins for parking and storage (D34, D35), and a lift the text mentions against a cross stays unknown (D25). Nothing a labeller answered is changed. 24 values were filled (10 parking, 9 lift, 5 storage) on 13 listings; each carries the note "filled by rule D29" in its evidence, and the manifest lists them per listing with the checksum of the key it came from. Why it's fair: in Checks 4 and 5 you both marked 37 of 39 crossed-out features "no" and none "yes".
+- **Results on key v3, all 100 listings** (same prompt, same merge with code, crossed-out lists read):
+
+  | | Table fields | Text-only fields | Missed | Invented | Cost for 100 |
+  |---|---|---|---|---|---|
+  | Code only | 99.4% | 90.5% | 27 | 15 | $0 |
+  | Haiku 5.5 + code | 98.9% | **91.7%** | 11 | 22 | $0.078 |
+  | Sonnet 5.5 + code | 98.9% | **91.7%** | 10 | 23 | $0.85 |
+
+- **Haiku stays.** Sonnet costs eleven times as much for the same score. The two disagree on 17 of 2,100 fields and each is right about half the time (Haiku on condition and metro, Sonnet on year built). This is what the spec planned: the small model for bulk extraction, the bigger one for the conversation.
+- **What's left is mostly the key and two rules, not the model:** 10 metro distances the description gives that the key left blank; 6 floors the key calls "ground" where the text says υπερυψωμένο ισόγειο, which the guide says is raised ground; 3 storage "no"s where the text has εσωτερική αποθήκη, from labels made before D34; 5 condition answers, mostly new build against unfinished.
+- **A caution for interviews:** prompt v2 and the merge rules were shaped by reading these 100 listings' errors, so 91.7% is the score on a development set. A fresh batch, labelled blind, is the clean test.
+- **Spend so far:** $1.01 of the $100 (Haiku runs $0.155, the Sonnet run $0.85).
+- **Say:** "I ran the bigger model and it tied. That's a result: the cheap model is the right one here, and I can show why with numbers."

@@ -117,3 +117,15 @@ def test_metro_within_a_minute_is_correct():
     assert outcome("metro_walk_min", 650, 10) == "correct"  # 650 m is 9 minutes
     assert outcome("metro_walk_min", 5, 7) == "wrong"
     assert outcome("metro_walk_min", None, 9) == "invented"
+
+
+def test_key_v3_fills_only_silent_crossed_out_blanks_and_marks_them():
+    crossed = {"Εσωτερικό": ["Ασανσέρ", "Αποθήκη"], "Εξωτερικά χαρακτηριστικά": ["Parking"]}
+    blank = label("spitogatos:1", lift=None, storage=None, parking=None)
+    filled, names = answer_key.fill_crossed_out(blank, crossed, "Φωτεινό διαμέρισμα.")
+    assert (filled.fields.lift, filled.fields.storage, filled.fields.parking) == (False, False, "none")
+    assert sorted(names) == ["lift", "parking", "storage"] and "D29" in filled.evidence["lift"]
+    said, names = answer_key.fill_crossed_out(blank, crossed, "Με θέση στάθμευσης και εσωτερική αποθήκη.")
+    assert said.fields.parking is None and said.fields.storage is None and names == ["lift"]  # the text wins (D34, D35)
+    kept, names = answer_key.fill_crossed_out(label("spitogatos:1", lift=True), crossed, "")
+    assert kept.fields.lift is True and "lift" not in names  # a labeller's answer is never overwritten
