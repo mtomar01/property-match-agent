@@ -580,3 +580,16 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 
 - **Your call:** keep asking "to live in or as an investment?" when a purchase doesn't say. Investor mode will grow its own tools, such as ROI calculations, so knowing who's investing early matters even though the lowest price is now the same for everyone (D60).
 - **On the expansions list:** investor mode with ROI and more, calculated in code.
+
+## D63. When a search finds fewer than 5, code offers ways to widen it
+
+- **Your test:** "an apartment in Egaleo, around €190k, ideally 80 m²" found 1 home, and nothing offered to widen it. You expected the assistant to ask about widening the size and the price past the 10%.
+- **Why it happened, three reasons:** the assistant checked supply only just before showing a card; the app's search button had no widening step at all; and the server ran on the 60 synthetic listings, where that search finds 1. On your real listings it finds 10, so no widening is needed there.
+- **What changed:**
+  1. **Code's options** (`eased` in `agent/interview.py`): each one now carries the exact limits it would set, the lowest price can be eased too, and there's a new "together" option, every number one step wider at once, for when no single change reaches 5. On the synthetic example: size 65 to 88 m² gives 5; price €155,000 to €230,000 with size 65 to 97 m² gives 7.
+  2. **Prompt v7:** the assistant calls check_supply as soon as it knows the area and the top price, not only before the card. If fewer than 5 pass, it offers the smallest change that reaches 5 (one limit if one is enough, otherwise "together"), gives its numbers and asks.
+  3. **The app:** when a search finds fewer than 5, the search route returns the options and the app shows up to four as buttons with their counts. A click is the user's yes, so D50 still holds: nothing widens without one. The card then holds exactly the numbers that were counted, with "around" and "ideally" switched off for what changed, so the rerun finds the number on the button.
+- **Why code picks the steps:** the counts are calculations, so code does them; the model only chooses which option to suggest and how to say it.
+- **A gap left for v2:** the assistant doesn't hear about a button click (or a hand edit to the card), so a later chat message can bring the old numbers back. v2 routes every change through the chat (D61), which closes it.
+- **Not measured yet:** prompt v7 needs its eval run (about $2.70). The eval already reads the numbers inside each option, so a count the assistant quotes is checked against code.
+

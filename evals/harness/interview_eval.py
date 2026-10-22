@@ -296,7 +296,8 @@ def _tool_numbers(result: dict) -> set[float]:
     values |= set((split.get("by_bedrooms") or {}).values()) | set((split.get("by_size") or {}).values())
     values |= {split.get(k) for k in ("with_parking", "with_balcony", "with_lift")}
     for option in (result.get("if_eased") or {}).values():
-        values |= {option.get("matches"), option.get("to")}
+        values.add(option.get("matches"))
+        values |= {v for v in (option.get("limits") or {}).values() if isinstance(v, (int, float))}
     return {float(v) for v in values if isinstance(v, (int, float))}
 
 

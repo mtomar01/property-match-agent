@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { SearchResult, Summary } from "./api";
-import { AREAS, floorText, money } from "./labels";
+import { SearchResult, Summary, Widening } from "./api";
+import { AREAS, floorText, money, wideningText } from "./labels";
 
 type Column = { key: keyof Summary; label: string; numeric?: boolean; render?: (row: Summary) => React.ReactNode };
 
@@ -32,7 +32,7 @@ function Price({ row }: { row: Summary }) {
   );
 }
 
-export function ResultsTable({ result }: { result: SearchResult }) {
+export function ResultsTable({ result, onWiden, busy }: { result: SearchResult; onWiden: (option: Widening) => void; busy: boolean }) {
   const [sort, setSort] = useState<{ key: keyof Summary; up: boolean } | null>(null);
   const rows = useMemo(() => {
     if (!sort) return result.results;
@@ -55,13 +55,14 @@ export function ResultsTable({ result }: { result: SearchResult }) {
           Showing {result.returned}, best matches first · {result.data}
         </span>
       </div>
+      {result.if_eased && <Widen result={result} onWiden={onWiden} busy={busy} />}
       {unknown.length > 0 && (
         <p className="hint">
           Left out because the listing doesn't say its {unknown.map(([field, n]) => `${UNKNOWN[field] ?? field.replace(/_/g, " ")} (${n})`).join(", ")}.
         </p>
       )}
       {result.total_matches === 0 ? (
-        <p className="muted">Nothing passes every limit. Ask in the chat which limit to ease: it answers with real counts.</p>
+        <p className="muted">Nothing passes every limit yet.</p>
       ) : (
         <div className="table-wrap">
           <table>
@@ -100,5 +101,28 @@ export function ResultsTable({ result }: { result: SearchResult }) {
         </div>
       )}
     </section>
+  );
+}
+
+// Fewer than 5 homes: code's ways to widen, each with its count. A click is the user's yes (D50, D63).
+function Widen({ result, onWiden, busy }: { result: SearchResult; onWiden: (option: Widening) => void; busy: boolean }) {
+  const options = Object.values(result.if_eased ?? {})
+    .filter((o) => o.matches > result.total_matches)
+    .sort((a, b) => (a.matches >= 5) === (b.matches >= 5) ? Object.keys(a.limits).length - Object.keys(b.limits).length || b.matches - a.matches : a.matches >= 5 ? -1 : 1)
+    .slice(0, 4);
+  if (options.length === 0) {
+    return <p className="hint">Only {result.total_matches} found, and widening one step doesn't add any. Tell the assistant what matters least.</p>;
+  }
+  return (
+    <div className="widen">
+      <p className="hint">Only {result.total_matches} found. Widen the search?</p>
+      <div className="chips">
+        {options.map((o) => (
+          <button key={JSON.stringify(o.limits)} type="button" className="chip widen-option" disabled={busy} onClick={() => onWiden(o)}>
+            {wideningText(o.limits, result.searched_as as Record<string, number | null>)} · <strong>{o.matches} homes</strong>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

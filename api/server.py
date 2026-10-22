@@ -91,6 +91,8 @@ class App:
                             hard_limits=HardLimits(**limits), preferences=preferences, confirmed_by_user=True)
         result = search(self.adapter, criteria, limit=max(1, min(int(limit), MAX_LIMIT)))
         result["searched_as"] = limits
+        if result["total_matches"] < interview.THIN:  # thin: code's ways to widen, each counted (D50, D63)
+            result["if_eased"] = interview.eased(criteria, self.adapter.listings())
         result["data"] = "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
         return result
 

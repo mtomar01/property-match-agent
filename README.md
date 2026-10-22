@@ -34,6 +34,8 @@ For changes to the app, run `npm run dev` in `app/` with the server running: Vit
 
 Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents. Search and the card's rules are code and cost nothing.
 
+The header of the results says which listings were searched ("synthetic listings" or "private personal-use snapshot"). When a search finds fewer than 5 homes, code counts a few ways to widen it and the app shows them as buttons; a click reruns the search with exactly those numbers (D63).
+
 ## Labelling real listings (private data, your machine only)
 
 ```bash

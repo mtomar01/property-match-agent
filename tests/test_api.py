@@ -82,3 +82,14 @@ def test_an_empty_message_is_refused(api):
     ask, _ = api
     status, out = ask("/api/chat", {"text": "  "})
     assert status == 400 and "message" in out["error"]
+
+
+def test_a_thin_search_comes_back_with_ways_to_widen_it(api):
+    ask, _ = api
+    thin = dict(card(max_price_eur=190000, min_size_m2=80, max_size_m2=80, property_types=["apartment"]),
+                budget_around=True, ideally=["size"])
+    status, out = ask("/api/search", {"card": thin})
+    assert status == 200 and out["total_matches"] < 5
+    together = out["if_eased"]["together"]
+    assert together["limits"] == {"max_price_eur": 230000, "min_price_eur": 155000, "min_size_m2": 65, "max_size_m2": 97}
+    assert together["matches"] >= 5

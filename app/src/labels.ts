@@ -74,3 +74,28 @@ export function floorText(floor: string | null): string {
 
 const euro = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 export const money = (value: number | null | undefined) => (value == null ? "–" : euro.format(value));
+
+// "Price €155,000 to €230,000 and size 65 to 97 m²": what a widening would search, in words.
+export function wideningText(patch: Record<string, number | string[]>, searched: Record<string, number | null | undefined>): string {
+  const parts: string[] = [];
+  const merged = { ...searched, ...patch } as Record<string, unknown>;
+  if ("max_price_eur" in patch || "min_price_eur" in patch) {
+    parts.push(`price ${money(merged.min_price_eur as number)} to ${money(merged.max_price_eur as number)}`);
+  }
+  if ("min_size_m2" in patch || "max_size_m2" in patch) {
+    const lo = merged.min_size_m2 as number | undefined, hi = merged.max_size_m2 as number | undefined;
+    parts.push(lo != null && hi != null ? `size ${lo} to ${hi} m²` : lo != null ? `size from ${lo} m²` : `size up to ${hi} m²`);
+  }
+  if ("min_bedrooms" in patch) parts.push(`${patch.min_bedrooms}+ bedrooms`);
+  if ("max_bedrooms" in patch) parts.push(`up to ${patch.max_bedrooms} bedrooms`);
+  if ("property_types" in patch) {
+    const added = (patch.property_types as string[]).filter((t) => !((searched.property_types as unknown as string[]) ?? []).includes(t));
+    parts.push(`add ${added.map((t) => TYPES.find(([code]) => code === t)?.[1].toLowerCase() ?? t).join(", ")}`);
+  }
+  if ("areas" in patch) {
+    const all = patch.areas as string[];
+    parts.push(`add ${all[all.length - 1]}`);
+  }
+  const text = parts.join(" and ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

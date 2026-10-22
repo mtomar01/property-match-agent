@@ -117,3 +117,6 @@ tbody tr:hover { background: var(--bg); }
 a { color: var(--accent); }
 
 @media (prefers-reduced-motion: no-preference) { button { transition: background-color .15s, border-color .15s; } }
+
+.widen { display: grid; gap: 8px; background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; }
+.widen-option { background: var(--surface); text-align: left; }

@@ -196,34 +196,51 @@ def check_supply(args: dict, listings: list) -> dict:
 
 
 def eased(criteria: Criteria, listings: list) -> dict:
-    """Each hard limit eased a little, one at a time, with the count it would give. Code picks the steps (D50)."""
-    limits, out = criteria.hard_limits, {}
-    rent = criteria.intent == "rent"
-    step = 50 if rent else 5000
+    """Ways to widen a thin search, each with the count it would give. Code picks the steps (D50, D63).
 
-    def count(**update) -> int:
-        looser = criteria.model_copy(update={"hard_limits": limits.model_copy(update=update)}) if update else criteria
+    One limit at a time, a step past what the search already runs on: the top
+    price up 10%, the lowest down 10%, sizes 10% wider, a bedroom either way,
+    another type or area. Then "together": every number widened one step at
+    once, for when no single change reaches 5 (Mike, D63). Each option carries
+    the exact limits it would set, so a click in the app or a yes in the chat
+    applies precisely what was counted.
+    """
+    limits, out = criteria.hard_limits, {}
+    step = 50 if (limits.max_price_eur or 0) < 10_000 else 5000
+
+    def count(patch: dict) -> int:
+        top = {k: v for k, v in patch.items() if k == "areas"}
+        hard = {k: v for k, v in patch.items() if k != "areas"}
+        looser = criteria.model_copy(update={"hard_limits": limits.model_copy(update=hard), **top})
         return len(apply_hard_limits(listings, looser).matches)
 
+    def option(patch: dict, to=None) -> dict:
+        return {"to": to if to is not None else next(iter(patch.values())), "limits": patch, "matches": count(patch)}
+
+    numbers: dict = {}
     if limits.max_price_eur:
-        to = max(limits.max_price_eur + step, round(limits.max_price_eur * (1 + EASE) / step) * step)
-        out["max_price_eur"] = {"to": to, "matches": count(max_price_eur=to)}
+        numbers["max_price_eur"] = max(limits.max_price_eur + step, round(limits.max_price_eur * (1 + EASE) / step) * step)
+    if limits.min_price_eur:
+        numbers["min_price_eur"] = min(limits.min_price_eur - step, round(limits.min_price_eur * (1 - EASE) / step) * step)
     if limits.min_size_m2:
-        to = min(limits.min_size_m2 - 1, round(limits.min_size_m2 * (1 - EASE)))
-        out["min_size_m2"] = {"to": to, "matches": count(min_size_m2=to)}
+        numbers["min_size_m2"] = min(limits.min_size_m2 - 1, round(limits.min_size_m2 * (1 - EASE)))
     if limits.max_size_m2:
-        to = max(limits.max_size_m2 + 1, round(limits.max_size_m2 * (1 + EASE)))
-        out["max_size_m2"] = {"to": to, "matches": count(max_size_m2=to)}
+        numbers["max_size_m2"] = max(limits.max_size_m2 + 1, round(limits.max_size_m2 * (1 + EASE)))
     if limits.min_bedrooms:
-        out["min_bedrooms"] = {"to": limits.min_bedrooms - 1, "matches": count(min_bedrooms=limits.min_bedrooms - 1)}
+        numbers["min_bedrooms"] = limits.min_bedrooms - 1
+    if limits.max_bedrooms is not None:
+        numbers["max_bedrooms"] = limits.max_bedrooms + 1
+    for name, value in numbers.items():
+        out[name] = option({name: value})
+    if len(numbers) > 1:
+        out["together"] = option(dict(numbers), to="every number one step wider")
     for kind, wider in WIDER_TYPES.items():
         if kind in limits.property_types:
             for extra in (t for t in wider if t not in limits.property_types):
-                out[f"add_type:{extra}"] = {"to": extra, "matches": count(property_types=[*limits.property_types, extra])}
+                out[f"add_type:{extra}"] = option({"property_types": [*limits.property_types, extra]}, to=extra)
     if criteria.areas:
         for area in (a for a in SEARCH_AREAS if a not in criteria.areas):
-            wider = criteria.model_copy(update={"areas": [*criteria.areas, area]})
-            out[f"add_area:{area}"] = {"to": area, "matches": len(apply_hard_limits(listings, wider).matches)}
+            out[f"add_area:{area}"] = option({"areas": [*criteria.areas, area]}, to=area)
     return out
 
 

@@ -72,7 +72,14 @@ export interface Summary {
   synthetic: boolean;
 }
 
+// One way to widen a thin search, counted by code (agent/interview.py, eased).
+export interface Widening {
+  limits: Record<string, number | string[]>;
+  matches: number;
+}
+
 export interface SearchResult {
+  if_eased?: Record<string, Widening>;
   total_matches: number;
   returned: number;
   results: Summary[];
