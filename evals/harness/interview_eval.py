@@ -269,13 +269,28 @@ def _asked(turn: dict) -> set[str]:
     return set(out.get("asking_about") or []) if out.get("action") == "ask" and has_question else set()
 
 
+# Basic facts a card needs. Asking for one counts, but so does the user giving it before the assistant
+# got round to asking, as long as the card ends up right (Mike, D48). Clarifying questions ("is 200 the
+# ceiling?") still have to be asked.
+BASIC = {"intent": "intent", "budget": "max_price_eur", "areas": "areas", "bedrooms": "min_bedrooms"}
+
+
+def volunteered(topic: str, expected: dict, final: dict) -> bool:
+    name = BASIC.get(topic)
+    if name is None:
+        return False
+    if name in ("intent", "areas"):
+        return field_outcomes(expected, final)[name] == "correct" and not _blank(expected.get(name))
+    return _outcome((expected.get("hard_limits") or {}).get(name), (final.get("hard_limits") or {}).get(name)) == "correct"
+
+
 def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     log = transcript["log"]
     replies = [t for t in log if t["role"] == "assistant" and t.get("output")]
     asked = set().union(*(_asked(t) for t in replies)) if replies else set()
-    out = {f"ask:{topic}": topic in asked for topic in chat["must_ask"]}
-    user_numbers = set().union(*(numbers_in(t["text"]) for t in log if t["role"] == "user")) if log else set()
     final = transcript["final"] or {}
+    out = {f"ask:{topic}": topic in asked or volunteered(topic, chat["expected_criteria"], final) for topic in chat["must_ask"]}
+    user_numbers = set().union(*(numbers_in(t["text"]) for t in log if t["role"] == "user")) if log else set()
     for item in chat["must_say"]:
         kind, _, arg = item.partition(":")
         if kind == "reply_in":

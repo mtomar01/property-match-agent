@@ -440,3 +440,10 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   - en_13, property type: the model kept "studio", said no studio in Egaleo is listed, and offered to open it to apartments. It marked that reply as "confirm", so the harness's fixed "yes" kept the card. The label expects studio or apartment, which the user never asked for.
   - en_20, must_ask budget: the model asked intent and area first (two questions a reply), and the script gave the budget before it was asked.
 - **Development score:** v2 was shaped on these 40 chats, as prompt v3 was on the 100 listings. The honest number needs new chats written by someone who hasn't seen the prompt.
+
+## D48. Your rules for the three interview misses
+
+- **"Flat" means an apartment or a maisonette**, never a detached house or a building. en_01 and en_11 now expect both types. "Διαμέρισμα" still means apartment only, until you say otherwise.
+- **"Studio" means a small apartment of about 30 to 40 m²**, so en_13 expects studio or apartment, with a size preference of up to 40 m² (a preference, because "around" isn't a limit).
+- **A basic fact the user gives unasked counts:** for intent, budget, area and bedrooms, must_ask also passes when the user gave it before the assistant asked, as long as the card ends up right. Clarifying questions ("is 200 the ceiling?") still have to be asked.
+- **Next:** prompt v3 with these rules, run once you've decided on the narrowing question (one optional question when more than 50 listings match).

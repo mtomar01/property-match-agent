@@ -166,3 +166,13 @@ def test_the_simulated_user_knows_what_it_already_said():
     sim = Scripted([{"reply": "No preference."}])
     ev.simulated_answer(chat, "Anything else?", "en", sim, None, ["One bedroom in Peristeri.", "Yes."])
     assert "<you_already_said>\n- One bedroom in Peristeri.\n- Yes.\n</you_already_said>" in sim.bodies[0]["messages"][0]["content"]
+
+
+def test_a_basic_fact_the_user_gave_unasked_counts_but_a_clarification_must_be_asked():
+    chat = {"must_ask": ["budget", "budget_ceiling"], "must_say": [], "must_not_invent": [],
+            "expected_criteria": card(max_price_eur=200000)}
+    log = [{"role": "user", "text": "Buying, up to 200k.", "source": "script", "language": "en"},
+           {"role": "assistant", "output": answer("Here's the card. Right?", "confirm", criteria=card(max_price_eur=200000))}]
+    result = ev.behaviours(chat, {"log": log, "final": card(max_price_eur=200000)})
+    assert result == {"ask:budget": True, "ask:budget_ceiling": False}
+    assert ev.behaviours(chat, {"log": log, "final": card(max_price_eur=250000)})["ask:budget"] is False

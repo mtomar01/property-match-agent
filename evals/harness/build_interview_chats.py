@@ -6,6 +6,8 @@ with, and the behaviours to check (must_ask, must_say, must_not_invent).
 
 The chats are hand-written; this file is the readable source for the JSONL.
 "New build" is year_built from five years back, 2021 in these chats, in both languages (D46).
+Mike's rules (D48): "flat" means an apartment or a maisonette, never a detached house or a building;
+"studio" means a small apartment of about 30 to 40 m², so studio or apartment, with a size preference up to 40 m².
 
 Run: uv run python -m evals.harness.build_interview_chats evals/datasets/interview_chats.jsonl
 """
@@ -181,7 +183,7 @@ chat("el_20", "el", "Απλώς χαζεύει", ["vague_start"],
 chat("en_01", "en", "Spec demo user", ["spec_demo"],
      ["Find me a two bedroom flat in Egaleo under €200k with a balcony."],
      {},
-     crit("buy", ["Egaleo"], {"max_price_eur": 200000, "min_bedrooms": 2, "property_types": ["apartment"]}, [pref("balcony", 0.6, equals=True)]),
+     crit("buy", ["Egaleo"], {"max_price_eur": 200000, "min_bedrooms": 2, "property_types": ["apartment", "maisonette"]}, [pref("balcony", 0.6, equals=True)]),
      must_say=["reply_in:en"], must_not_invent=["min_size_m2", "exclude_floors"],
      notes="The demo query from the spec. 'Under €200k' is read as up to 200,000; a balcony is a wish, not a limit.")
 
@@ -246,7 +248,7 @@ chat("en_10", "en", "Big, cheap and central", ["conflicting_asks"],
 chat("en_11", "en", "Thinks in monthly payments", ["budget_as_payment"],
      ["My bank says I can afford 900 a month. What can I get in Peristeri?", "Let's say the flat itself up to 210k."],
      {"budget": "900 €/month, then 210,000 € price"},
-     crit("buy", ["Peristeri"], {"max_price_eur": 210000}),
+     crit("buy", ["Peristeri"], {"max_price_eur": 210000, "property_types": ["apartment", "maisonette"]}),
      must_ask=["total_budget"], must_say=["no_mortgage_advice", "reply_in:en"], must_not_invent=["max_price_eur_from_payment"])
 
 chat("en_12", "en", "Growing family", ["multiple_limits"],
@@ -258,7 +260,7 @@ chat("en_12", "en", "Growing family", ["multiple_limits"],
 chat("en_13", "en", "Parent buying for a student", ["implicit_area"],
      ["A small studio for my daughter, she's starting at the University of West Attica. Under 90k.", "Yes, Egaleo is perfect."],
      {"area": "Near the university; Egaleo is fine when suggested"},
-     crit("buy", ["Egaleo"], {"max_price_eur": 90000, "property_types": ["studio", "apartment"]}),
+     crit("buy", ["Egaleo"], {"max_price_eur": 90000, "property_types": ["studio", "apartment"]}, [pref("size_m2", 0.6, max=40)]),
      must_ask=["confirm_area"], must_say=["reply_in:en"],
      notes="The agent may suggest Egaleo because of the campus, but must confirm before using it.")
 
