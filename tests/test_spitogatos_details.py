@@ -73,11 +73,11 @@ def test_ticked_features_are_yes_and_missing_ones_stay_unknown():
         assert name not in bare  # unknown, never False
 
 
-def test_under_construction_has_no_year_and_counts_as_new_build():
+def test_under_construction_has_no_year_and_counts_as_unfinished():
     table = TABLE.replace("Έτος κατασκευής\n1979", "Έτος κατασκευής\nΥπό κατασκευή")
     details = parse_details(page(**{"Χαρακτηριστικά": table}))
     assert "year_built" not in details.fields
-    assert details.extras["under_construction"] and details.fields["condition"] == "new_build"
+    assert details.extras["under_construction"] and details.fields["condition"] == "unfinished"
 
 
 def test_unfinished_beats_new_build():
@@ -91,3 +91,27 @@ def test_energy_exempt_and_no_heating():
     fields = parse_details(page(**{"Χαρακτηριστικά": table})).fields
     assert fields["energy_class"] == "exempt"
     assert (fields["heating_type"], fields["heating_fuel"]) == ("none", None)
+
+
+def test_available_later_means_still_being_built_and_completion_is_the_year():
+    table = TABLE.replace("Έτος κατασκευής\n1979", "Έτος κατασκευής\n2026") + "\nΔιαθέσιμο από\n30/12/2027"
+    details = parse_details(page(**{"Χαρακτηριστικά": table, "Κατασκευή": "Νεόδμητο"}))
+    assert details.fields["year_built"] == 2027 and details.fields["condition"] == "unfinished"
+    assert details.extras["expected_completion"] == "2027-12-30"
+
+
+def test_available_later_on_an_old_home_is_not_construction():
+    table = TABLE + "\nΔιαθέσιμο από\n01/03/2027"  # built 1979, perhaps rented until then
+    details = parse_details(page(**{"Χαρακτηριστικά": table}))
+    assert details.fields["year_built"] == 1979 and "under_construction" not in details.extras
+
+
+def test_parking_tick_is_a_parking_spot_and_a_private_garden_is_a_balcony():
+    details = parse_details(page(**{"Εξωτερικά χαρακτηριστικά": "Parking\nΙδιωτικός Κήπος"}))
+    assert details.fields["parking"] == "space" and details.fields["balcony"] is True
+
+
+def test_a_future_year_built_is_still_being_built():
+    table = TABLE.replace("Έτος κατασκευής\n1979", "Έτος κατασκευής\n2027")
+    details = parse_details(page(**{"Χαρακτηριστικά": table}))
+    assert details.fields["year_built"] == 2027 and details.fields["condition"] == "unfinished"

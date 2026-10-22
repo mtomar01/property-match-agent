@@ -4,7 +4,7 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 
 ## The golden rules
 
-1. **Label what the listing says, not what you think is true.** Anywhere on the page counts: the table, the ticked features and the text. If the text says 2 bedrooms and the floor plan shows 3, label 2 and add a note.
+1. **Label what the listing says, not what you think is true.** Anywhere on the page counts: the table, the ticked features and the text. If the text says 2 bedrooms and the floor plan shows 3, label 2 and add a note. Photos don't count, for now (D31).
 2. **Unknown is a valid answer.** If the listing doesn't say, the label is blank (`null`). Never fill a gap with a likely value. The model is scored on saying "unknown" correctly too.
 3. **When the listing contradicts itself, the label is unknown** (D25). Leave the field blank and write both values in the notes, such as "table 2ος, text 3ος". Two exceptions: the **price** and the **size**, where the table wins (note the text's figure).
 4. **Ticked is yes, crossed out is no, and unknown means nowhere on the page** (D29). On Spitogatos the advertiser crosses a feature out deliberately, so a crossed-out lift is a "no". A feature is unknown (blank) only when it's in none of the three places: not in the feature list (ticked or crossed out), not in the table, not in the description. Until your offline tool shows crossed-out features, set "no" there only when the text says so.
@@ -20,13 +20,15 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 | `bedrooms` | Separate rooms for sleeping, as stated. "1 with room for a second" is 1. A γκαρσονιέρα with no bedroom stated is 0. | "1 υπνοδωμάτιο με δυνατότητα δεύτερου" is 1 |
 | `bathrooms` | Full bathrooms only. **A WC is not a bathroom.** | "1 μπάνιο, 1 WC" is 1 |
 | `floor` | Use the glossary in `core/greek.py`. **υπερυψωμένο ισόγειο is raised_ground**, even when the table says Ισόγειο (more specific, not a conflict). A maisonette takes its lowest level. A ρετιρέ with a floor number takes the number; `top` is only for a ρετιρέ with no number. A floor that's just "όροφος" with no number is blank. | "Μεζονέτα 4ος, 5ος" is `4` |
-| `year_built` | The year construction finished. **Under construction:** the stated delivery year, and the condition is `new_build`. No delivery year stated: blank. | "παράδοση 12/2027" is 2027 |
+| `year_built` | The year construction finished. **Still being built:** the expected completion year, and the condition is `unfinished` (D31). No completion year stated: blank. | "παράδοση 12/2027" is 2027, unfinished |
 | `renovated_year` | Only a full or major renovation. **"ανακαινισμένο" without a year is blank**, with condition `renovated`. Partial work (just windows or the kitchen) is blank, with a note. | "μερική ανακαίνιση 2025, στα κουφώματα" is blank |
 | `energy_class` | Latin letters: Γ is C, Ζ is F, Η is G. **Α++ is A+** (the official scale stops at Α+). Εξαιρείται is `exempt`. Υπό έκδοση or σε εξέλιξη is `pending`. Not mentioned is blank. | "ΠΕΑ: Ε" is E |
-| `heating` | αυτόνομη and ατομική are both `independent`. A heat pump (αντλία θερμότητας or θέρμανσης) is fuel `heat_pump`. A fan coil with no fuel named is fuel `other`. "Προεγκατάσταση" (only the pipes) is not heating: blank, with a note. | "Ατομική με Αντλία θερμότητας" is independent, heat_pump |
-| `parking` | `pilotis` for any spot under the building (πιλοτή), even when the text calls it a θέση στάθμευσης; `garage` (closed or underground); `space` (an open-air spot); `none`. Parking shown with no type in the text stays blank. | "θέση στάθμευσης στην πιλοτή" is pilotis |
+| `heating` | αυτόνομη and ατομική are both `independent`. A heat pump (αντλία θερμότητας or θέρμανσης) is fuel `heat_pump`. **A fan coil, in the text or the table, is a heat pump** (D31). "Προεγκατάσταση" (only the pipes) is not heating: blank, with a note. | "Αυτόνομη (Fan coil)" is independent, heat_pump |
+| `parking` | **θέση στάθμευσης, πάρκινγκ, parking or γκαράζ anywhere on the page means a parking spot** (D31). Pick `space`, or `pilotis` or `garage` when the text says so; `none` when crossed out or the text says there is none. Parking is scored as has or hasn't, so the type is detail. | "θέση στάθμευσης στην πιλοτή" is pilotis (has parking) |
 | `lift` | **"no" if the lift stops below the home's floor,** or there's only a goods lift (αναβατόριο), or a shaft with no cabin. | "ασανσέρ μέχρι τον 3ο", flat on the 4th, is no |
-| `metro_walk_min` | Only when minutes or metres are stated. Metres become minutes at 80 m per minute, rounded up. "Near the metro" with no number is blank. | "500 μέτρα από σταθμό μετρό" is 7 |
+| `balcony` | **Any private outdoor space**: μπαλκόνι, βεράντα, ιδιωτικός κήπος, αυλή and the like (D31). A shared garden (κοινόχρηστος κήπος) is not. | "αποκλειστική χρήση κήπου" is yes |
+| `storage` | Yes when the text mentions an αποθήκη, or it's ticked. | "αποθήκη στο υπόγειο" is yes |
+| `metro_walk_min` | **Only when the description gives the distance to a station** (D31). Type the minutes, or the metres as written: a value above 60 is read as metres and turned into minutes at 80 m a minute. "Near the metro" with no number is blank. | "500 μ. από τον σταθμό μετρό" is 500 (7 minutes) |
 | `condition` | `needs_work`, `unfinished` (ημιτελές), `new_build`, `renovated`, or blank. | "Χρήζει ολικής ανακαίνισης" is needs_work |
 
 ## Things no field holds yet

@@ -157,9 +157,10 @@ _HEATING_TYPES = [
 ]
 
 # Ordered, first match wins. "fan coil" comes first because "coil" contains "oil".
+# A fan coil system runs on a heat pump in these listings (D31).
 _HEATING_FUELS = [
-    ("fan coil", "other"),
-    ("fancoil", "other"),
+    ("fan coil", "heat_pump"),
+    ("fancoil", "heat_pump"),
     ("φυσικο αεριο", "gas"),
     ("φυσικου αεριου", "gas"),
     ("natural gas", "gas"),

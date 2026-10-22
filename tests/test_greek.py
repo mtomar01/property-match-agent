@@ -75,7 +75,8 @@ def test_energy_class_shown_in_greek():
         # Found on real detail pages: the table says "θέρμανσης", not "θερμότητας".
         ("Ατομική θέρμανση (Αντλία Θέρμανσης)", "independent", "heat_pump"),
         # "coil" contains "oil", which once turned every fan coil into oil heating.
-        ("Αυτόνομη (Fan coil)", "independent", "other"),
+        # A fan coil is read as a heat pump (D31).
+        ("Αυτόνομη (Fan coil)", "independent", "heat_pump"),
         ("Χωρίς θέρμανση", "none", None),
     ],
 )

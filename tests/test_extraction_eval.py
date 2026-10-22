@@ -1,0 +1,91 @@
+"""Answer key, extraction scoring and the code-only baseline, on invented data only."""
+
+import json
+
+import pytest
+
+from evals.harness import answer_key
+from evals.harness.agreement_sets import choose_hardest
+from evals.harness.code_baseline import from_description, predict
+from evals.harness.extraction_eval import outcome, score
+from evals.harness.labels import ExtractionLabel
+
+
+def label(listing, labeller="mt", prefilled=("price_eur",), **fields):
+    return ExtractionLabel.model_validate({
+        "listing_id": listing, "labeller": labeller, "labelled_at": "2026-10-21", "round": 1,
+        "fields": fields, "prefilled": list(prefilled),
+    })
+
+
+def write(path, labels):
+    path.write_text("".join(json.dumps(l.model_dump(mode="json"), ensure_ascii=False) + "\n" for l in labels), encoding="utf-8")
+
+
+def test_outcomes_separate_wrong_invented_and_missed():
+    assert outcome("lift", None, None) == "correct"  # both unknown is an answer
+    assert outcome("lift", True, False) == "wrong"
+    assert outcome("lift", None, True) == "invented"
+    assert outcome("lift", True, None) == "missed"
+    assert outcome("parking", "pilotis", "space") == "correct"  # has or hasn't (D31)
+    assert outcome("metro_walk_min", 650, 9) == "correct"  # 650 m is 9 minutes
+
+
+def test_score_splits_table_fields_from_text_fields():
+    key = [label("spitogatos:1", price_eur=100000, lift=True), label("spitogatos:2", price_eur=200000)]
+    result = score(key, {"spitogatos:1": {"price_eur": 100000, "lift": None}})
+    assert result.groups["structured"]["correct"] == 1 and result.groups["structured"]["missed"] == 1
+    assert result.per_field["lift"]["missed"] == 1
+    assert result.missing_predictions == ["spitogatos:2"]
+
+
+def test_freeze_writes_once_and_load_checks_the_checksum(tmp_path):
+    src = tmp_path / "hosted_batch1_x.jsonl"
+    write(src, [label("spitogatos:2", price_eur=1), label("spitogatos:1", price_eur=2)])
+    path = answer_key.freeze(1, [src], out_dir=tmp_path)
+    labels, manifest = answer_key.load(1, tmp_path)
+    assert [l.listing_id for l in labels] == ["spitogatos:1", "spitogatos:2"]  # sorted, stable
+    assert manifest["origin"]["spitogatos:1"]["rules"] == "before D29"
+    with pytest.raises(FileExistsError):
+        answer_key.freeze(1, [src], out_dir=tmp_path)
+    path.write_text(path.read_text(encoding="utf-8").replace('"price_eur": 2', '"price_eur": 3'), encoding="utf-8")
+    with pytest.raises(ValueError, match="changed"):
+        answer_key.load(1, tmp_path)
+
+
+def test_freeze_refuses_a_listing_labelled_twice(tmp_path):
+    a, b = tmp_path / "hosted_batch3_a.jsonl", tmp_path / "hosted_batch4_b.jsonl"
+    write(a, [label("spitogatos:1")])
+    write(b, [label("spitogatos:1")])
+    with pytest.raises(ValueError, match="appears in"):
+        answer_key.freeze(1, [a, b], out_dir=tmp_path)
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("Διαθέτει θέση στάθμευσης και αποθήκη.", {"parking": "space", "storage": True}),
+    ("Πάρκινγκ στην πιλοτή.", {"parking": "pilotis"}),
+    ("Χωρίς πάρκινγκ, δεν διαθέτει ανελκυστήρα.", {"parking": "none", "lift": False}),
+    ("Μεγάλη βεράντα και ιδιωτικός κήπος.", {"balcony": True}),
+    ("Μόλις 2.000 μέτρα από τον σταθμό μετρό.", {"metro_walk_min": 25}),
+    ("8 λεπτά με τα πόδια από το μετρό.", {"metro_walk_min": 8}),
+    ("Φωτεινό και ήσυχο.", {}),
+])
+def test_description_rules(text, expected):
+    assert from_description(text) == expected
+
+
+def test_description_fills_only_what_the_table_left_blank():
+    record = {"source_id": "1", "seen": "2026-10-20", "sections": {
+        "Περιγραφή": "Χωρίς ασανσέρ. Αποθήκη στο υπόγειο.", "Χαρακτηριστικά": "Τιμή\n€100.000",
+        "Εσωτερικό": "Ασανσέρ"}}
+    fields = predict(record, {"bedrooms": 2})
+    assert fields["lift"] is True  # the tick stands; the conflict is the model's job (D25)
+    assert fields["storage"] is True and fields["bedrooms"] == 2 and fields["price_eur"] == 100000
+
+
+def test_round2_takes_the_listings_code_read_worst_from_the_other_labeller():
+    origin = {f"spitogatos:{i}": {"labeller": "a" if i < 5 else "b"} for i in range(10)}
+    errors = {"spitogatos:1": 5, "spitogatos:3": 2, "spitogatos:7": 4, "spitogatos:9": 1}
+    chosen = choose_hardest(origin, errors, size=2)
+    assert chosen["b"] == ["spitogatos:1", "spitogatos:3"]
+    assert chosen["a"] == ["spitogatos:7", "spitogatos:9"]

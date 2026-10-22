@@ -69,6 +69,24 @@ class LabelFields(_Strict):
 
 
 LABEL_FIELDS = tuple(LabelFields.model_fields)
+PARKING_PRESENT = ("pilotis", "space", "garage")
+
+
+def comparable(name: str, value):
+    """The form in which two answers for one field are compared (D31).
+
+    Parking is scored as has or hasn't: a parking spot under any name counts,
+    and its type is detail. Minutes to the metro accept the distance as the
+    listing states it: a value above 60 is metres, turned into minutes at
+    80 m a minute, rounded up. Flags compare as a set.
+    """
+    if name == "parking":
+        return "yes" if value in PARKING_PRESENT else ("no" if value == "none" else None)
+    if name == "metro_walk_min" and isinstance(value, (int, float)) and value > 60:
+        return -(-int(value) // 80)
+    if name == "flags":
+        return sorted(value or [])
+    return value
 
 
 class OldPrice(_Strict):

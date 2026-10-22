@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import date
 
 from core import greek
 
@@ -45,13 +46,15 @@ EXTERIOR = "Εξωτερικά χαρακτηριστικά"
 CONSTRUCTION = "Κατασκευή"
 SUITABLE = "Κατάλληλο για"
 
+DATE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
 EURO = re.compile(r"€\s*([\d.]+(?:,\d+)?)")
 AREA = re.compile(r"^\(?([\d.,]+)\s*τ\.μ\.\)?$")
 COUNT = re.compile(r"^\((\d+)\)$")
 TOTAL_FLOORS = re.compile(r"\s*\(Σύνολο ορόφων:\s*(\d+)\)")
 
 # Κατασκευή ticks, most limiting first: an unfinished home that is also
-# marked new build is still unfinished.
+# marked new build is still unfinished. A home still being built is
+# unfinished too, with its expected completion as the year built (D31).
 CONDITION_TICKS = (
     ("Ημιτελές", "unfinished"),
     ("Χρήζει ανακαίνισης", "needs_work"),
@@ -154,6 +157,20 @@ def parse_details(record: dict) -> DetailFields:
         f["year_built"] = int(year)
     elif year and "κατασκευή" in year:
         x["under_construction"] = True
+    # "Available from" a date after the page was read, on a home built this year
+    # or later (or with no year), means it's still being built: that date is
+    # the expected completion (D31).
+    available = DATE.search(first("Διαθέσιμο από") or "")
+    seen = date.fromisoformat(record["seen"]) if record.get("seen") else None
+    if available and seen:
+        ready = date(int(available.group(3)), int(available.group(2)), int(available.group(1)))
+        if ready > seen and (f.get("year_built") is None or f["year_built"] >= seen.year - 1):
+            x["under_construction"] = True
+            x["expected_completion"] = ready.isoformat()
+            f["year_built"] = ready.year
+    # A year built after the page was read is an expected completion too.
+    if seen and f.get("year_built") and f["year_built"] > seen.year:
+        x["under_construction"] = True
     renovated = first("Έτος ανακαίνισης")
     if renovated and renovated.isdigit():
         f["renovated_year"] = int(renovated)
@@ -190,15 +207,17 @@ def parse_details(record: dict) -> DetailFields:
         if storage_m2:
             x["storage_m2"] = storage_m2[0]
     balcony_m2 = [number(AREA.match(i).group(1)) for i in exterior if AREA.match(i)]
-    if "Βεράντα" in exterior or balcony_m2:
+    # Any private outdoor space counts as a balcony (D31).
+    if "Βεράντα" in exterior or "Ιδιωτικός Κήπος" in exterior or balcony_m2:
         f["balcony"] = True
         if balcony_m2:
             x["balcony_m2"] = balcony_m2[0]
     spaces = [int(COUNT.match(i).group(1)) for i in exterior if COUNT.match(i)]
     if "Parking" in exterior or spaces:
-        # The tick says there is parking, not which kind, so the label field
-        # (pilotis, garage, space) stays with the description.
+        # A tick means a parking spot. Parking is scored as has or hasn't
+        # (D31); a type named in the text is detail for the model to add.
         x["parking_ticked"] = True
+        f["parking"] = "space"
         if spaces:
             x["parking_spaces"] = spaces[0]
 
@@ -213,8 +232,8 @@ def parse_details(record: dict) -> DetailFields:
         f["flags"] = flags
 
     condition = next((value for tick, value in CONDITION_TICKS if tick in construction), None)
-    if condition is None and x.get("under_construction"):
-        condition = "new_build"
+    if x.get("under_construction"):
+        condition = "unfinished"
     if condition:
         f["condition"] = condition
     if "Ρετιρέ" in construction:

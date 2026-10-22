@@ -1,6 +1,6 @@
 # Next steps
 
-Updated 21 October 2026.
+Updated 22 October 2026.
 
 ## Where we are
 
@@ -17,13 +17,10 @@ Updated 21 October 2026.
 
 ## Next steps
 
-1. **Agreement check (D30): done.** 89.6% overall (target 95%): table fields 98%, free-text fields 59%. Most disagreements are amenities GB answered and you left blank.
-2. **Your notes** on how the page and description should be read. They shape the code that reads the table and the extraction prompt.
-3. **Freeze the answer key:** copy the labels as they stand into one versioned file (answer key v1) that every eval run uses. The pages stay editable; later rounds become v2.
-4. **Extraction eval harness:** scores any set of predictions against the frozen key, per field, with "unknown" scored as an answer, split into pre-filled and free-text fields. First run: the code-only baseline.
-5. **Then the model** (needs the API key): the extraction prompt on Haiku 5.5, Sonnet 5.5 for comparison.
-6. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
-7. **Optional:** revisit the 100 pages for the crossed-out lists, so code can pre-fill "no".
+1. **Cross-check round 2 (D32):** "Mike's Cross-Check 2" and "GB's Cross-Check 2", the 20 listings each where the code-only baseline was most wrong, with the D31 rules. When both are done I score agreement and build answer key v2 (D31 rules applied).
+2. **First model run (Haiku 5.5),** once you approve the spend: the extraction prompt with the glossary and the D31 rules, scored against the key next to the code-only baseline (98.7% table fields, 73.1% text fields). Then Sonnet 5.5 for comparison.
+3. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+4. **Optional:** revisit the 100 pages for the crossed-out lists, so code can read "no" from the page.
 
 ## v1 features, after the evals
 
@@ -36,7 +33,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 ## Open decisions for you
 
 1. **xe.gr.** Save 20 to 30 listing pages from your own browser (Save Page As, "Webpage, HTML only") into one folder and share it with me. I'll add an offline xe parser. Or skip xe.gr for now; the synthetic set covers it.
-2. **Anthropic API key.** Needed from v1. Set it as `ANTHROPIC_API_KEY` where we run, with a spending limit in the Console.
+2. **Anthropic API key.** Received and working. It's stored outside the repo in this environment only. Set a monthly spend limit in the Console, and approve the first model run.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 4. **The crossed-out revisit** (step 8 above): your go-ahead, whenever it's useful.
 

@@ -114,3 +114,11 @@ def test_selection_page_keeps_full_order_numbers_and_no_labels(tmp_path):
     assert all(set(item) <= set(HOSTED_KEYS) for item in payload["items"])
     with pytest.raises(ValueError):
         build_hosted_selection(["spitogatos:1"], "x", tmp_path / "bad.html", raw_path, snap_path)
+
+
+def test_parking_compares_as_has_or_hasnt_and_metro_accepts_metres():
+    from evals.harness.labels import comparable
+
+    assert comparable("parking", "pilotis") == comparable("parking", "space") == "yes"
+    assert comparable("parking", "none") == "no" and comparable("parking", None) is None
+    assert comparable("metro_walk_min", 650) == 9 and comparable("metro_walk_min", 8) == 8
