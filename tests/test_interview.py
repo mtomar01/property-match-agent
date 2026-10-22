@@ -103,9 +103,9 @@ def test_a_chat_follows_the_script_then_confirms_or_asks_the_simulated_user():
     assert [e["source"] for e in t["log"] if e["role"] == "user"] == ["script", "script", "confirm"]
     assert t["confirmed"] and t["final"]["areas"] == ["Peristeri"]
     asking = Scripted([answer("Any floor you'd rule out?", asking=["floor"])] * 4)
-    sim = Scripted([{"reply": "No preference."}, {"reply": "No preference."}])
+    sim = Scripted([{"facts_used": [], "reply": "No preference."}] * 2)
     t = ev.simulate(dict(chat, turns=["Peristeri, up to 200k."]), asking, [], cache_dir=None, sim_client=sim)
-    assert [e["source"] for e in t["log"] if e["role"] == "user"] == ["script", "simulated", "simulated"]
+    assert [e["source"] for e in t["log"] if e["role"] == "user"] == ["script", "simulated, no fact", "simulated, no fact"]
     assert not t["confirmed"]
 
 
@@ -163,7 +163,7 @@ def test_a_card_the_search_cant_run_on_goes_back_to_the_model_once():
 
 def test_the_simulated_user_knows_what_it_already_said():
     chat = {"chat_id": "x", "language": "en", "persona": "p", "turns": ["One bedroom in Peristeri."], "user_facts": {}}
-    sim = Scripted([{"reply": "No preference."}])
+    sim = Scripted([{"facts_used": [], "reply": "No preference."}])
     ev.simulated_answer(chat, "Anything else?", "en", sim, None, ["One bedroom in Peristeri.", "Yes."])
     assert "<you_already_said>\n- One bedroom in Peristeri.\n- Yes.\n</you_already_said>" in sim.bodies[0]["messages"][0]["content"]
 
@@ -186,3 +186,11 @@ def test_a_wide_search_comes_with_a_breakdown_code_counted():
     narrow = interview.check_supply({"intent": "buy", "areas": ["Egaleo"], "hard_limits": {}}, listings)
     assert narrow["matches"] <= interview.WIDE and "breakdown" not in narrow
     assert ev.quotes_tool_number(f"{wide['breakdown']['with_balcony']} of them have a balcony.", [wide], set())
+
+
+def test_a_simulated_answer_with_no_fact_behind_it_becomes_no_preference():
+    chat = {"chat_id": "x", "language": "el", "persona": "p", "turns": ["Μέχρι 150.000 στο Χαϊδάρι."], "user_facts": {"budget": "150.000 €"}}
+    assert ev.guarded("Τουλάχιστον τρία υπνοδωμάτια.", [], chat, chat["turns"], "el") == ("Δεν έχω προτίμηση.", True)
+    assert ev.guarded("Θέλω 3 υπνοδωμάτια.", ["budget"], chat, chat["turns"], "el")[1] is True  # a number nobody gave
+    assert ev.guarded("Ναι, μέχρι 150.000.", ["budget"], chat, chat["turns"], "el") == ("Ναι, μέχρι 150.000.", False)
+    assert set(ev.sim_schema(chat)["properties"]["facts_used"]["items"]["enum"]) == {"budget", "already_said"}

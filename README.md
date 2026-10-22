@@ -70,6 +70,8 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 |---|---|---|---|---|---|---|
 | v1 | Interview, Sonnet 5.5, prompt v1 (D46) | 40 | 88.8% | 0 | 15 of 16, 16 on the wrong side | 98.8% |
 | v1 | Interview, prompt v2: stated numbers are hard limits, card repair in code (D47) | 40 | **98.8%** | **1** | 16 of 16 | 98.8% |
+| v1 | Interview, prompt v2 rescored on Mike's flat and studio labels (D48) | 40 | 98.1% | 0 | 16 of 17 | 100% |
+| v1 | Interview, prompt v3: narrowing question over 50 matches (D49) | 40 | 97.5% | 2, both from the simulated user | 17 of 17 | 98.8% |
 
 The interview set shaped prompt v2, so these are development scores (D47).
 

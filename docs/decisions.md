@@ -447,3 +447,12 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **"Studio" means a small apartment of about 30 to 40 m²**, so en_13 expects studio or apartment, with a size preference of up to 40 m² (a preference, because "around" isn't a limit).
 - **A basic fact the user gives unasked counts:** for intent, budget, area and bedrooms, must_ask also passes when the user gave it before the assistant asked, as long as the card ends up right. Clarifying questions ("is 200 the ceiling?") still have to be asked.
 - **Next:** prompt v3 with these rules, run once you've decided on the narrowing question (one optional question when more than 50 listings match).
+
+## D49. The narrowing question, prompt v3 and the simulated user's guard
+
+- **Your rule:** when more than 50 listings pass, the assistant asks one optional question to narrow them: a deal breaker or a big plus. Code adds a breakdown to check_supply (bedrooms, size bands, how many have parking, a balcony, a lift), so the question uses real numbers: "124 match: 57 have 0 to 1 bedrooms, 50 have 2, 10 have 3 or more".
+- **Prompt v3** also carries D48 ("flat", "διαμέρισμα", "studio"), always checks supply before a card, and treats a reply that offers a choice as a question.
+- **Result, all 40 chats** ($1.36, 3.4 cents a chat): fields 97.5%, **2 invented hard limits**, preferences 17 of 17, behaviours 98.8%. The narrowing question went to all 18 wide chats and to none of the others. No field was missed in a wide chat. It cost 0.45 more questions and about 1 cent more a chat, and on these chats it couldn't add anything, because the simulated user has no extra wishes to give.
+- **Why the misses happened:** three of the four came from the simulated user. It invented "at least three bedrooms, we're a family" and "at least two" (el_13, el_19), and it said "you choose whichever works best", after which the assistant dropped the 120 m² minimum (el_11) and widened the area (en_03, where the snapshot has no rentals at all).
+- **The guard, in code:** the simulated user now names the facts its answer rests on. An answer with none, or with a number nobody gave, is replaced by a fixed "no preference" and marked in the transcript.
+- **Prompt v4:** only the user loosens a hard limit, areas included, and only by saying which one and how; "you choose" or "no preference" isn't that. A snapshot with no listings of a kind is a data gap: say so once and keep the card. check_supply's note says the same.

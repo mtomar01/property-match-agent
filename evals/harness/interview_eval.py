@@ -65,9 +65,25 @@ SIM_SYSTEM = """You play a person looking for a home, in a test of a property se
 Answer the assistant's latest message in one or two short sentences, in the language given.
 Use only your facts and what you've already said; never contradict what you've already said.
 If it asks about something those don't cover, or suggests a change they don't cover, say you have no preference.
-If it shows a summary and asks whether it's right, say yes. Never add a wish, a limit or a detail of your own."""
-SIM_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["reply"],
-              "properties": {"reply": {"type": "string"}}}
+If it shows a summary and asks whether it's right, say yes. Never add a wish, a limit or a detail of your own.
+In facts_used, list the facts your answer rests on ("already_said" for what you've said before). If none, leave it empty."""
+NO_PREFERENCE = {"en": "No preference.", "el": "Δεν έχω προτίμηση."}
+
+
+def sim_schema(chat: dict) -> dict:
+    """The simulated user names the facts behind its answer; code drops an answer with none (D49)."""
+    sources = [*chat["user_facts"], "already_said"]
+    return {"type": "object", "additionalProperties": False, "required": ["facts_used", "reply"],
+            "properties": {"facts_used": {"type": "array", "items": {"type": "string", "enum": sources}},
+                           "reply": {"type": "string"}}}
+
+
+def guarded(reply: str, facts_used: list[str], chat: dict, said: list[str], lang: str) -> tuple[str, bool]:
+    """Keep the simulated answer only if it rests on a fact and every number in it was given before."""
+    allowed = set().union(*(numbers_in(str(v)) for v in chat["user_facts"].values()), *(numbers_in(t) for t in said))
+    if not facts_used or not numbers_in(reply) <= allowed:
+        return NO_PREFERENCE[lang], True
+    return reply, False
 
 
 # ---------------------------------------------------------------------------
@@ -90,12 +106,14 @@ def simulated_answer(chat: dict, said: str, lang: str, client, cache_dir: Path |
                                                       f"<you_already_said>\n{earlier}\n</you_already_said>\n"
                                                       f"<language>{'Greek' if lang == 'el' else 'English'}</language>\n"
                                                       f"<assistant_said>{said}</assistant_said>")}],
-            "output_config": {"format": {"type": "json_schema", "schema": SIM_SCHEMA}}}
+            "output_config": {"format": {"type": "json_schema", "schema": sim_schema(chat)}}}
     response = interview.call(client, body, cache_dir)
     text = "".join(b["text"] for b in response["content"] if b["type"] == "text")
     if response["stop_reason"] != "end_turn" or not text:
         raise SimulatedUserError(f"the simulated user gave no answer (stop reason {response['stop_reason']})")
-    return json.loads(text)["reply"], response
+    answer = json.loads(text)
+    reply, dropped = guarded(answer["reply"], answer["facts_used"], chat, already or chat["turns"], lang)
+    return reply, dict(response, dropped=dropped, original=answer["reply"] if dropped else None)
 
 
 class SimulatedUserError(RuntimeError):
@@ -122,7 +140,7 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
             llm.add_usage(usage["simulated_user"], response["usage"])
             if not response["cached"]:
                 llm.add_usage(usage["simulated_user_paid"], response["usage"])
-            source, extra = "simulated", extra + 1
+            source, extra = ("simulated, no fact" if response.get("dropped") else "simulated"), extra + 1
         else:
             break
         log.append({"role": "user", "text": text, "source": source, "language": lang})
