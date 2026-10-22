@@ -197,7 +197,7 @@ def call(client, body: dict, cache_dir: Path | None) -> dict:
     response = client.messages.create(**body)
     saved = {"content": _blocks(response.content), "stop_reason": response.stop_reason,
              "usage": llm.usage_dict(response.usage)}
-    if path:
+    if path and response.stop_reason != "max_tokens":  # a cut-off answer isn't kept, so a retry can pay to fix it
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(saved, ensure_ascii=False, indent=1), encoding="utf-8")
     return dict(saved, cached=False)

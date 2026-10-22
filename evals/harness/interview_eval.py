@@ -82,14 +82,20 @@ def language(text: str) -> str:
 
 def simulated_answer(chat: dict, said: str, lang: str, client, cache_dir: Path | None) -> tuple[str, dict]:
     facts = json.dumps(chat["user_facts"], ensure_ascii=False)
-    body = {"model": SIM_MODEL, "max_tokens": 300, "system": SIM_SYSTEM,
+    body = {"model": SIM_MODEL, "max_tokens": 1500, "system": SIM_SYSTEM,  # Haiku 5.5 can think first: leave room
             "messages": [{"role": "user", "content": (f"<persona>{chat['persona']}</persona>\n<facts>{facts}</facts>\n"
                                                       f"<language>{'Greek' if lang == 'el' else 'English'}</language>\n"
                                                       f"<assistant_said>{said}</assistant_said>")}],
             "output_config": {"format": {"type": "json_schema", "schema": SIM_SCHEMA}}}
     response = interview.call(client, body, cache_dir)
     text = "".join(b["text"] for b in response["content"] if b["type"] == "text")
+    if response["stop_reason"] != "end_turn" or not text:
+        raise SimulatedUserError(f"the simulated user gave no answer (stop reason {response['stop_reason']})")
     return json.loads(text)["reply"], response
+
+
+class SimulatedUserError(RuntimeError):
+    pass
 
 
 def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, version: str = interview.PROMPT_VERSION,
@@ -375,8 +381,19 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
     chats = [c for c in load_chats() if not only or c["chat_id"] in only][:limit]
     listings = listings if listings is not None else SnapshotAdapter(SNAPSHOT).listings()
     client = client or llm.client()
+    def one(chat):
+        try:
+            return simulate(chat, client, listings, model, version)
+        except Exception as err:  # noqa: BLE001 - one broken chat is a finding, not the end of the run
+            return {"chat_id": chat["chat_id"], "model": model, "prompt": version, "log": [], "final": None,
+                    "final_valid": False, "confirmed": False, "usage": {}, "cost_usd": 0.0, "paid_usd": 0.0,
+                    "error": f"{type(err).__name__}: {err}"}
+
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        transcripts = list(pool.map(lambda c: simulate(c, client, listings, model, version), chats))
+        transcripts = list(pool.map(one, chats))
+    for t in transcripts:
+        if t.get("error"):
+            print(f"  {t['chat_id']} failed: {t['error']}")
     scores = [score_chat(c, t) for c, t in zip(chats, transcripts)]
     summary = summarise(scores)
     name = f"{version}-{model.replace('claude-', '')}" + ("" if not (only or limit) else "-partial")
