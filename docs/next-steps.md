@@ -17,7 +17,7 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview clean test (now):** you and GB each write 5 new chats on the "Interview Chats" page, in your own words, without looking at the prompt or the 40 chats. Then prompt v4 runs on them once, unchanged.
+1. **Interview clean test: your rules for the cards (D52).** The first run scored 43.5% as labelled, but 24 of 35 misses are limits the cards add that nobody said. Decide which of those are product rules, then the saved transcripts are rescored for free.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
@@ -26,7 +26,8 @@ Updated 22 October 2026, after answer key v4.
 - Prompt v1: fields 88.8%, 0 invented hard limits; stated bedroom counts became preferences. Prompt v2: fields 98.8%, 1 invented hard limit, behaviours 98.8%, 2.3 cents a chat.
 - Prompt v3 with the narrowing question: fields 97.5%, 2 invented hard limits, both from the simulated user (D49).
 - Prompt v4, suggest easing one limit and ask (D50): fields 100%, 0 invented hard limits, 0 unasked loosenings, behaviours 100%.
-- Spent about $6.00 of the $100 in total.
+- Clean test, 10 new chats (D52): 43.5% as labelled; see the decision list.
+- Spent about $7.10 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 
@@ -92,7 +93,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D51.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D52.
 
 ## For the desktop app demo
 

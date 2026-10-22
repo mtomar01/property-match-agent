@@ -73,8 +73,9 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v1 | Interview, prompt v2 rescored on Mike's flat and studio labels (D48) | 40 | 98.1% | 0 | 16 of 17 | 100% |
 | v1 | Interview, prompt v3: narrowing question over 50 matches (D49) | 40 | 97.5% | 2, both from the simulated user | 17 of 17 | 98.8% |
 | v1 | **Interview, prompt v4**: suggest easing one limit under 5 matches, change only after a yes (D50) | 40 | **100%** | **0** | 16 of 17 | 100% |
+| v1 | Interview clean test: 10 new chats by Mike and GB, prompt v4 unchanged, as labelled (D52) | 10 | 43.5% | 2 | 4 of 7 | 66.7% |
 
-The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4.
+The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
 Results files are in `evals/results/`. A mutation test checks the eval fails when the hard-limit filter is switched off.
 

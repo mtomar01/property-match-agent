@@ -474,3 +474,17 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **xe.gr: skipped for now.** It comes back when we add areas.
 - **Possible expansions** now have their own list, `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buyer, a rented field, lift reaches the floor, delivery date, condition as a filter, either/or musts.
 - **API key:** stays until the project is done, then delete it and make a new one.
+
+## D52. The interview clean test, first run
+
+- **What ran:** prompt v4, unchanged, on the 10 chats you and GB wrote (5 each, 8 Greek, 1 of them Greeklish, 2 English). Cost $1.10, 11 cents a chat: these conversations run longer than the 40 (4.5 replies, 6 questions a chat), so my "under 50 cents" was wrong.
+- **One scoring fix first:** Greeklish ("Kalispera chat, tha ithela…") now counts as Greek in the language check. Without it, a Greek reply to a Greeklish message would fail. The model never sees this check.
+- **As labelled:** fields **43.5%**, 2 invented hard limits, asks 22 of 38, every reply in the user's language, narrowing asked in all 5 wide chats and no others, no limit loosened without a yes.
+- **What the 35 field misses are,** checked against the chat text:
+  - **24 are limits the cards add that the user never said.** A minimum price on 9 of 10 cards; a few percent above the stated budget (around 200 to 220k, 900 to 950, a 350k loan to 400k); size ranges nobody mentioned; extra types (loft or maisonette for "διαμέρισμα", against D51); extra floors ruled out ("no basement and ground" also ruling out semi-basement and raised ground).
+  - **3 are slips in the cards:** "για αγορά" labelled as an investment (gb_3), and "2 δωμάτια" and "3 δωμάτια" left off two cards (gb_4, gb_5).
+  - **4 are real system misses:** a "500-600" rent turned into a soft preference, so the card had no price ceiling at all (gb_2); "σε όροφο" not turned into ruling out the ground floors (gb_2); "τουλάχιστον 2 δωμάτια" left off after the rooms-or-bedrooms question went round in circles (gb_1); "studios are fine" not turned into studio as a type (mike_2).
+  - **3 are judgement calls:** whether a "700-800" range sets a minimum, and whether "ιδανικά 30 to 50 m²" is a limit or a wish.
+  - **1 is the harness:** no chat filled in "if it asks about anything else", so the simulated user could never confirm investor mode (mike_5).
+- **Other findings:** parking and a lift stated in gb_1 didn't reach the card; one card had "renovated_year equals true", which code should refuse (a year needs a number); two chats ended unconfirmed because the assistant kept asking and the simulated user had no facts to answer from.
+- **Why I haven't rescored:** the cards follow different rules from the ones the system was built to (only what the user says; D46 to D51), so 43.5% mostly measures that gap. Once you settle the rules, the saved transcripts are rescored for free.
