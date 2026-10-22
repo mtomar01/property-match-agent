@@ -198,7 +198,7 @@ def build_round4(size: int = 5, key_version: int = 2, run_name: str = "haiku_v2+
 
 
 def build_round5(size: int = 10, run_name: str = "haiku_v2+crossed-fill", seed: int = 2026) -> dict[str, Path]:
-    """One verify page for both labellers: listings where the system says unknown for lift, parking and storage (D37).
+    """Verify pages, half each: listings where the system says unknown for lift, parking and storage (D37).
 
     Those three are the features a crossed-out list answers, so a listing with
     all three unknown is where reading the list would help most. Picked at
@@ -212,10 +212,17 @@ def build_round5(size: int = 10, run_name: str = "haiku_v2+crossed-fill", seed: 
     pool = sorted(i for i, f in system.items()
                   if i not in skip and all(f.get(name) is None for name in ("lift", "parking", "storage")))
     chosen = sorted(random.Random(seed).sample(pool, min(size, len(pool))))
+    # Split in two (your call): listings each labeller never labelled first, as in round 4.
+    from evals.harness import answer_key
+
+    _, manifest = answer_key.load(2)
+    labelled = {i: {entry["labeller"] for entry in manifest["origin"][i]["labels"]} for i in chosen}
+    split = choose_round4(chosen, ["gb", "mike"], labelled, size // 2, seed)
     (OUT / "sets_round5.json").write_text(json.dumps({"size": size, "seed": seed, "pool": len(pool), "listings": chosen,
-                                                      "system": run_name}, indent=2), encoding="utf-8")
-    return {"both": build_hosted_selection(chosen, "Crossed-Out Check", OUT / "check-5.html", round_no=5,
-                                           revisit=True, system=system)}
+                                                      "relabel": split, "system": run_name}, indent=2), encoding="utf-8")
+    return {who: build_hosted_selection(ids, f"{display(who)}'s Check 5", OUT / f"check-5-{who}.html", round_no=5,
+                                        revisit=True, system=system)
+            for who, ids in split.items()}
 
 
 if __name__ == "__main__":

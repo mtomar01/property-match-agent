@@ -17,7 +17,7 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Check 5 (D37):** "Crossed-Out Check", 10 listings where the system says unknown for lift, parking and storage. You both use the same page; share it with GB by email.
+1. **Check 5 (D37):** "Mike's Check 5" and "GB's Check 5", 5 listings each where the system says unknown for lift, parking and storage. Share GB's page by email.
 2. **Then the other 50 pages** for their crossed-out lists, if Check 5 shows the unknowns are crossed-out "no"s. Check 4 already found exactly that on #53.
 3. **Sonnet 5.5 run** (about $1.50) on key v2, to see whether a bigger model earns its cost on the text fields.
 4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.

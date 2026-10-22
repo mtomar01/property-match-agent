@@ -127,4 +127,7 @@ def test_round5_takes_only_listings_with_lift_parking_and_storage_all_unknown(tm
     monkeypatch.setattr(extraction_eval, "PRIVATE", tmp_path)
     monkeypatch.setattr(agreement_sets, "OUT", tmp_path)
     monkeypatch.setattr(agreement_sets, "build_hosted_selection", lambda ids, *a, **k: ids)
-    assert agreement_sets.build_round5(size=10, run_name="x") == {"both": ["spitogatos:0"]}
+    from evals.harness import answer_key
+    monkeypatch.setattr(answer_key, "load", lambda v: ([], {"origin": {"spitogatos:0": {"labels": [{"labeller": "gb"}]}}}))
+    pages = agreement_sets.build_round5(size=10, run_name="x")
+    assert pages == {"gb": [], "mike": ["spitogatos:0"]} or pages == {"gb": ["spitogatos:0"], "mike": []}
