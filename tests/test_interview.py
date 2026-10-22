@@ -228,3 +228,23 @@ def test_a_suggestion_to_ease_a_limit_gets_a_fixed_no_preference():
                       answer("Keeping it. Search?", "confirm", criteria=card(areas=["Peristeri"]))])
     t = ev.simulate(chat, agent, [], cache_dir=None, sim_client=Scripted([]))  # the model user is never called
     assert [(e["source"], e["text"]) for e in t["log"] if e["role"] == "user"][1] == ("fixed, easing", "No preference.")
+
+
+def test_a_chat_from_the_writing_page_becomes_an_eval_chat():
+    from evals.harness.interview_clean_test import to_chat
+
+    doc = {"chat_no": 2, "language": "el", "turns": ["Ψάχνω κάτι στο Περιστέρι, γύρω στις 200.", "Μέχρι 200 το πολύ.", "", ""],
+           "facts": "Bedrooms: δύο\nΔεν θέλω ισόγειο", "intent": "buy", "areas": ["Peristeri"], "not_covered": "Κουκάκι, Πατήσια",
+           "hard_limits": {"max_price_eur": 200000}, "property_types": [], "exclude_floors": ["ground"],
+           "preferences": [{"feature": "balcony", "bound": "yes", "value": "", "weight": "0.7"},
+                           {"feature": "energy_class", "bound": "min", "value": "c", "weight": "0.6"},
+                           {"feature": "metro_walk_min", "bound": "max", "value": "", "weight": "0.6"}],
+           "must": ["budget_ceiling", "say:tradeoff_with_numbers"], "notes": ""}
+    chat = to_chat(doc, "mike")
+    assert chat["chat_id"] == "clean_mike_2" and chat["turns"] == doc["turns"][:2]
+    assert chat["user_facts"] == {"bedrooms": "δύο", "fact_2": "Δεν θέλω ισόγειο"}
+    assert chat["expected_criteria"]["hard_limits"] == {"max_price_eur": 200000, "exclude_floors": ["ground"]}
+    assert chat["expected_criteria"]["preferences"] == [{"feature": "balcony", "weight": 0.7, "equals": True},
+                                                        {"feature": "energy_class", "weight": 0.6, "min": "C"}]
+    assert chat["must_ask"] == ["budget_ceiling"]
+    assert chat["must_say"] == ["reply_in:el", "tradeoff_with_numbers", "area_not_covered:Κουκάκι", "area_not_covered:Πατήσια"]

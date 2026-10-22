@@ -497,8 +497,8 @@ def load_chats(path: Path = CHATS) -> list[dict]:
 
 def run(only: list[str] | None = None, limit: int | None = None, model: str = interview.MODEL,
         version: str = interview.PROMPT_VERSION, client=None, listings: list | None = None, write: bool = True,
-        workers: int = 4) -> dict:
-    chats = [c for c in load_chats() if not only or c["chat_id"] in only][:limit]
+        workers: int = 4, chats_path: Path = CHATS, set_name: str | None = None) -> dict:
+    chats = [c for c in load_chats(chats_path) if not only or c["chat_id"] in only][:limit]
     listings = listings if listings is not None else SnapshotAdapter(SNAPSHOT).listings()
     client = client or llm.client()
     def one(chat):
@@ -516,7 +516,7 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
             print(f"  {t['chat_id']} failed: {t['error']}")
     scores = [score_chat(c, t) for c, t in zip(chats, transcripts)]
     summary = summarise(scores)
-    name = f"{version}-{model.replace('claude-', '')}" + ("" if not (only or limit) else "-partial")
+    name = (f"{set_name}-" if set_name else "") + f"{version}-{model.replace('claude-', '')}" + ("" if not (only or limit) else "-partial")
     print(report(summary, scores, name))
     print(f"  paid this run ${sum(t['paid_usd'] for t in transcripts):.3f}")
     if write:

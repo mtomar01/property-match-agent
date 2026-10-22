@@ -1,0 +1,92 @@
+"""The interview clean test (D51): chats Mike and GB wrote on the "Interview Chats" page.
+
+The page saves each chat under chats/<writer id>/items/chat_<n>. Pull them with
+the ArtifactData tool into a folder (pulled/<writer>/.../chat_<n>.json), then
+this turns them into the same JSONL as evals/datasets/interview_chats.jsonl and
+runs the eval on them with the prompt unchanged.
+
+Run: uv run python -m evals.harness.interview_clean_test build PULLED_DIR
+     uv run python -m evals.harness.interview_clean_test run        # pays for the calls
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+from evals.harness.build_label_tool import ROOT
+
+OUT = ROOT / "data" / "private" / "interview_clean" / "chats.jsonl"
+NUMBER_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms")
+
+
+def facts(text: str) -> dict[str, str]:
+    """'Bedrooms: two at least' lines become {'bedrooms': 'two at least'}; a line without a colon keeps a number."""
+    out = {}
+    for i, line in enumerate(l.strip() for l in (text or "").splitlines()):
+        if not line:
+            continue
+        key, sep, value = line.partition(":")
+        name = re.sub(r"\W+", "_", key.strip().lower()).strip("_") if sep else f"fact_{i + 1}"
+        out[name or f"fact_{i + 1}"] = value.strip() if sep else line
+    return out
+
+
+def preference(p: dict) -> dict | None:
+    bound, value = p.get("bound"), (p.get("value") or "").strip()
+    out = {"feature": p["feature"], "weight": float(p.get("weight") or 0.6)}
+    if bound in ("yes", "no"):
+        return dict(out, equals=bound == "yes")
+    if not value:
+        return None
+    number = re.sub(r"[^\d.]", "", value.replace(",", "."))
+    out[bound] = value.upper() if p["feature"] == "energy_class" else (float(number) if "." in number else int(number))
+    return out
+
+
+def to_chat(doc: dict, writer: str) -> dict:
+    turns = [t.strip() for t in doc.get("turns") or [] if t and t.strip()]
+    limits = {k: v for k, v in (doc.get("hard_limits") or {}).items() if k in NUMBER_FIELDS and v}
+    if doc.get("property_types"):
+        limits["property_types"] = doc["property_types"]
+    if doc.get("exclude_floors"):
+        limits["exclude_floors"] = doc["exclude_floors"]
+    must = doc.get("must") or []
+    not_covered = [a.strip() for a in re.split(r"[,;/]| or | ή ", doc.get("not_covered") or "") if a.strip()]
+    return {
+        "chat_id": f"clean_{writer}_{doc['chat_no']}", "language": doc.get("language") or "en",
+        "persona": f"Written by {writer}", "tests": ["clean_test"], "turns": turns,
+        "user_facts": facts(doc.get("facts", "")),
+        "expected_criteria": {"intent": doc.get("intent") or None, "areas": doc.get("areas") or [], "hard_limits": limits,
+                              "preferences": [p for p in map(preference, doc.get("preferences") or []) if p],
+                              "open_questions": []},
+        "must_ask": [m for m in must if not m.startswith("say:")],
+        "must_say": [f"reply_in:{doc.get('language') or 'en'}"] + [m[4:] for m in must if m.startswith("say:")]
+                    + [f"area_not_covered:{a}" for a in not_covered],
+        "must_not_invent": [], "notes": doc.get("notes", ""),
+    }
+
+
+def build(pulled: Path, out: Path = OUT) -> Path:
+    chats = []
+    for writer_dir in sorted(p for p in pulled.iterdir() if p.is_dir()):
+        for f in sorted(writer_dir.rglob("chat_*.json")):
+            doc = json.loads(f.read_text(encoding="utf-8"))
+            doc = doc.get("data", doc)
+            if doc.get("turns") and any(t.strip() for t in doc["turns"]) and doc.get("intent"):
+                chats.append(to_chat(doc, writer_dir.name))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in chats), encoding="utf-8")
+    return out
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["build"]:
+        print(f"Wrote {build(Path(sys.argv[2])).relative_to(ROOT)}")
+    elif sys.argv[1:2] == ["run"]:
+        from evals.harness import interview_eval
+        interview_eval.run(chats_path=OUT, set_name="clean")
+    else:
+        print(__doc__)

@@ -17,9 +17,8 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview clean test:** 10 new chats written by you and GB, in your own words, that the prompt has never seen. For each: the opening message, the answers you'd give, and the card you'd expect.
-2. **Top floor (your call):** let floor_level take "top", since listings already mark a ρετιρέ, instead of a floor number.
-3. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+1. **Interview clean test (now):** you and GB each write 5 new chats on the "Interview Chats" page, in your own words, without looking at the prompt or the 40 chats. Then prompt v4 runs on them once, unchanged.
+2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
 
@@ -84,17 +83,16 @@ Updated 22 October 2026, after answer key v4.
 
 The extraction prompt (Haiku 5.5) with the glossary, `extract_listing` on the server, the conflict rule from D25 in code, the interview prompt (Sonnet 5.5), the criteria card, the table view (React, D20).
 
-## Candidate fields the real pages asked for
+## Possible expansions
 
-Not in the schema yet; the labels note them so we can count them first: **rented** (a tenant in place), **lift reaches the floor**, **delivery date** for homes being built. Each is a real trap for a buyer (D24).
+In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buyer, and listing fields such as rented, lift reaches the floor and delivery date (D51).
 
-## Open decisions for you
+## Open items
 
-1. **xe.gr.** Save 20 to 30 listing pages from your own browser (Save Page As, "Webpage, HTML only") into one folder and share it with me. I'll add an offline xe parser. Or skip xe.gr for now; the synthetic set covers it.
-2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
-3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
+1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
+2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D50.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D51.
 
 ## For the desktop app demo
 

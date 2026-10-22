@@ -1,0 +1,421 @@
+<title>Interview Chats</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&display=swap">
+<!--
+  Property Match Agent: the page where Mike and GB each write 5 new interview
+  chats for the clean test (D51). Each writer's chats go to the artifact's db
+  under chats/<their id>/items/chat_<n>; only the owner reads everyone's.
+  evals/harness/interview_clean_test.py turns them into the JSONL format of
+  evals/datasets/interview_chats.jsonl.
+-->
+<style>
+/* Layout: a writing desk. Five chat tabs on top; the chat on the left, the card it should end with on the right. */
+:root {
+  --bg: #f3f4ef;
+  --surface: #ffffff;
+  --ink: #1d231f;
+  --muted: #5b665e;
+  --line: #d6dbd2;
+  --accent: #1f6a58;
+  --accent-ink: #ffffff;
+  --tag: #e6ebe3;
+  --ok: #2c7a4b;
+  --warn: #a14b17;
+  --warn-soft: #f7e6da;
+  --font: "Commissioner", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a17; --surface: #1f2420; --ink: #e8ece6; --muted: #a2ada4; --line: #333b35;
+    --accent: #6cc3a8; --accent-ink: #0f241d; --tag: #2a312c; --ok: #74c793; --warn: #f0a070; --warn-soft: #3a2a20;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a17; --surface: #1f2420; --ink: #e8ece6; --muted: #a2ada4; --line: #333b35;
+  --accent: #6cc3a8; --accent-ink: #0f241d; --tag: #2a312c; --ok: #74c793; --warn: #f0a070; --warn-soft: #3a2a20;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 40px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select, textarea { font: inherit; color: var(--ink); }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 6px 12px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button:disabled { opacity: .55; cursor: default; }
+input, select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+textarea { width: 100%; resize: vertical; min-height: 64px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding-block: 14px 12px; border-bottom: 1px solid var(--line);
+}
+.top h1 { font-size: 20px; font-weight: 700; }
+.progress { color: var(--muted); font-variant-numeric: tabular-nums; }
+.status { margin-left: auto; font-size: 13px; color: var(--muted); }
+.status.saved { color: var(--ok); }
+.status.error { color: var(--warn); }
+.intro { max-width: 70ch; color: var(--muted); display: grid; gap: 6px; }
+.intro p { margin: 0; }
+.intro strong { color: var(--ink); }
+.notice { background: var(--warn-soft); color: var(--ink); border-radius: 8px; padding: 10px 14px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { display: inline-flex; align-items: center; gap: 8px; }
+.tab[aria-selected="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); flex: none; }
+.tab.done .dot { background: var(--ok); }
+.tab.started .dot { background: var(--warn); }
+.desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .desk { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 16px; min-width: 0; }
+.panel h2 { font-size: 16px; font-weight: 700; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > label, .field > .label { font-weight: 600; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.choice { display: inline-flex; align-items: flex-start; gap: 6px; font-weight: 400; }
+.choice input { flex: none; margin-top: 4px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
+.grid2 input { width: 100%; font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.prefs { display: grid; gap: 8px; }
+.pref { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.1fr) auto; gap: 6px; align-items: center; }
+@media (max-width: 560px) { .pref { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .pref .remove { justify-self: start; } }
+.pref select, .pref input { width: 100%; }
+.remove { border: none; background: none; color: var(--muted); padding: 4px 6px; }
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 14px; }
+.missing { font-size: 13px; color: var(--warn); margin: 0; }
+.turns { display: grid; gap: 10px; }
+.turn { display: grid; gap: 4px; }
+.turn label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: no-preference) { .tab, button { transition: border-color .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Interview Chats</h1>
+    <span class="progress" id="progress">0 of 5 written</span>
+    <span class="status" id="status" role="status">Connecting…</span>
+  </header>
+
+  <section class="intro">
+    <p><strong>Write 5 chats the way a real buyer or renter would talk to the assistant.</strong> Use your own words, in Greek or English. Please don't look at the assistant's prompt or the 40 existing chats first: these chats test it on things it has never seen.</p>
+    <p>Mix in a few hard ones as they come naturally: a vague budget, two people's wishes, an area we don't cover, a monthly payment instead of a price. The search covers Egaleo, Peristeri and Chaidari. Everything saves as you type.</p>
+  </section>
+
+  <p class="notice" id="offline" hidden>Saving isn't available in this view. Open the page from its link while signed in to Claude, then write the chats.</p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Chats"></nav>
+
+  <div class="desk">
+    <section class="panel" aria-labelledby="conv-h">
+      <h2 id="conv-h">The conversation</h2>
+      <div class="field">
+        <span class="label">Language</span>
+        <div class="row">
+          <label class="choice"><input type="radio" name="language" id="lang-el" value="el"> Ελληνικά</label>
+          <label class="choice"><input type="radio" name="language" id="lang-en" value="en"> English</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="opening">Your first message</label>
+        <textarea id="opening" rows="3" placeholder="Γεια σας, ψάχνω…"></textarea>
+      </div>
+      <div class="field">
+        <span class="label">Your next messages, in order (optional)</span>
+        <p class="hint">Answers to the questions you expect, or a change of mind. They're sent in this order whatever the assistant asks, so write them as replies to what a good assistant would ask.</p>
+        <div class="turns">
+          <div class="turn"><label for="turn-2">Second message</label><textarea id="turn-2" rows="2"></textarea></div>
+          <div class="turn"><label for="turn-3">Third message</label><textarea id="turn-3" rows="2"></textarea></div>
+          <div class="turn"><label for="turn-4">Fourth message</label><textarea id="turn-4" rows="2"></textarea></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="facts">If it asks about anything else, what would you answer?</label>
+        <p class="hint">One fact per line, for example "Bedrooms: two at least" or "Parking: doesn't matter". Leave it empty if you'd have no preference.</p>
+        <textarea id="facts" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <span class="label">What should the assistant do before it searches?</span>
+        <div class="checks" id="must"></div>
+      </div>
+      <div class="field">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" rows="2" placeholder="Anything else it should or shouldn't do"></textarea>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="card-h">
+      <h2 id="card-h">The card it should end with</h2>
+      <div class="field">
+        <span class="label">Buy or rent</span>
+        <div class="row">
+          <label class="choice"><input type="radio" name="intent" id="intent-buy" value="buy"> Buy to live in</label>
+          <label class="choice"><input type="radio" name="intent" id="intent-rent" value="rent"> Rent</label>
+          <label class="choice"><input type="radio" name="intent" id="intent-invest" value="invest"> Buy as an investment</label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Areas</span>
+        <div class="row" id="areas"></div>
+        <p class="hint">None ticked means any of the three.</p>
+        <label for="not-covered" class="hint">Areas the user names that we don't cover</label>
+        <input id="not-covered" placeholder="e.g. Κουκάκι">
+      </div>
+      <div class="field">
+        <span class="eyebrow">Hard limits: never broken</span>
+        <div class="grid2">
+          <div class="field"><label for="max_price_eur">Highest price (€)</label><input id="max_price_eur" inputmode="numeric"></div>
+          <div class="field"><label for="min_price_eur">Lowest price (€)</label><input id="min_price_eur" inputmode="numeric"></div>
+          <div class="field"><label for="min_size_m2">At least (m²)</label><input id="min_size_m2" inputmode="numeric"></div>
+          <div class="field"><label for="max_size_m2">At most (m²)</label><input id="max_size_m2" inputmode="numeric"></div>
+          <div class="field"><label for="min_bedrooms">Bedrooms, at least</label><input id="min_bedrooms" inputmode="numeric"></div>
+        </div>
+        <p class="hint">For rent, the price is the monthly rent.</p>
+      </div>
+      <div class="field">
+        <span class="label">Property types (only if the user names them)</span>
+        <div class="row" id="types"></div>
+      </div>
+      <div class="field">
+        <span class="label">Floors ruled out</span>
+        <div class="row" id="floors"></div>
+      </div>
+      <div class="field">
+        <span class="eyebrow">Nice to haves: used for ranking, never as a filter</span>
+        <div class="prefs" id="prefs"></div>
+        <div><button type="button" id="add-pref">Add a nice to have</button></div>
+      </div>
+      <p class="missing" id="missing" hidden></p>
+    </section>
+  </div>
+
+  <div class="nav">
+    <button type="button" id="prev">Previous chat</button>
+    <button type="button" class="primary" id="next">Next chat</button>
+  </div>
+</div>
+
+<script>
+const CHATS = 5;
+const AREAS = [["Egaleo", "Egaleo (Αιγάλεω)"], ["Peristeri", "Peristeri (Περιστέρι)"], ["Chaidari", "Chaidari (Χαϊδάρι)"]];
+const TYPES = [["apartment", "Apartment (διαμέρισμα)"], ["maisonette", "Maisonette"], ["studio", "Studio (γκαρσονιέρα)"],
+               ["detached_house", "House (μονοκατοικία)"], ["loft", "Loft"], ["building", "Whole building"]];
+const FLOORS = [["basement", "Basement"], ["semi_basement", "Semi-basement"], ["ground", "Ground"],
+                ["raised_ground", "Raised ground"], ["mezzanine", "Mezzanine"]];
+const FEATURES = [["balcony", "Balcony", "yesno"], ["parking", "Parking", "yesno"], ["lift", "Lift", "yesno"],
+                  ["storage", "Storage room", "yesno"], ["metro_walk_min", "Minutes to the metro on foot", "num"],
+                  ["floor_level", "Floor number", "num"], ["year_built", "Year built", "num"],
+                  ["renovated_year", "Year renovated", "num"], ["energy_class", "Energy class (letter)", "letter"],
+                  ["size_m2", "Size (m²)", "num"], ["bedrooms", "Bedrooms", "num"], ["bathrooms", "Bathrooms", "num"],
+                  ["price_eur", "Price (€)", "num"], ["dual_aspect", "Dual aspect (διαμπερές)", "yesno"],
+                  ["corner", "Corner (γωνιακό)", "yesno"], ["whole_floor", "Whole floor (οροφοδιαμέρισμα)", "yesno"]];
+const WEIGHTS = [["0.9", "A must"], ["0.7", "Strong wish"], ["0.6", "Would like"], ["0.3", "A bonus"]];
+const MUST = [
+  ["intent", "Ask whether it's to buy or rent"], ["budget", "Ask the budget"], ["areas", "Ask which area"],
+  ["bedrooms", "Ask how many bedrooms"], ["budget_ceiling", "Ask whether a number is the ceiling (\"around 200\")"],
+  ["total_budget", "Ask the home's price, after a monthly payment"], ["budget_includes_costs", "Ask the price without costs and taxes"],
+  ["rooms_meaning", "Ask whether rooms means bedrooms"], ["metro_minutes", "Ask how many minutes to the metro"],
+  ["year_built", "Ask for a year (\"not too old\")"], ["stairs_requirement", "Ask what stairs allow (ground floor or lift)"],
+  ["which_covered_area", "Ask which covered area, after one we don't cover"], ["confirm_area", "Confirm an area it suggests"],
+  ["confirm_investor_mode", "Confirm investor mode"], ["say:no_mortgage_advice", "Say it can't give mortgage advice"],
+  ["say:no_investment_advice", "Say it can't give investment advice"], ["say:tradeoff_with_numbers", "Show a trade-off with numbers"],
+];
+const $ = id => document.getElementById(id);
+const TEXT_FIELDS = ["opening", "turn-2", "turn-3", "turn-4", "facts", "notes", "not-covered"];
+const NUMBERS = ["max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms"];
+
+let current = 1, db = null, uid = null;
+const chats = {};
+const blank = n => ({ chat_no: n, language: "", turns: ["", "", "", ""], facts: "", notes: "", intent: "", areas: [],
+  not_covered: "", hard_limits: {}, property_types: [], exclude_floors: [], preferences: [], must: [] });
+for (let n = 1; n <= CHATS; n++) chats[n] = blank(n);
+
+function checkbox(container, name, value, label) {
+  const id = `${name}-${value}`.replace(/[^a-z0-9_-]/gi, "_");
+  const wrap = document.createElement("label");
+  wrap.className = "choice";
+  const box = document.createElement("input");
+  box.type = "checkbox"; box.id = id; box.value = value; box.name = name;
+  wrap.append(box, " " + label);
+  container.append(wrap);
+}
+AREAS.forEach(([v, l]) => checkbox($("areas"), "area", v, l));
+TYPES.forEach(([v, l]) => checkbox($("types"), "type", v, l));
+FLOORS.forEach(([v, l]) => checkbox($("floors"), "floor", v, l));
+MUST.forEach(([v, l]) => checkbox($("must"), "must", v, l));
+
+function isDone(c) { return c.opening_ok && c.intent && c.language; }
+function started(c) { return c.turns.some(t => t.trim()) || c.intent; }
+
+function renderTabs() {
+  const tabs = $("tabs");
+  tabs.replaceChildren();
+  let done = 0;
+  for (let n = 1; n <= CHATS; n++) {
+    const c = chats[n];
+    c.opening_ok = !!c.turns[0].trim();
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tab"; b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(n === current));
+    if (isDone(c)) { b.classList.add("done"); done++; } else if (started(c)) b.classList.add("started");
+    const dot = document.createElement("span"); dot.className = "dot";
+    b.append(dot, `Chat ${n}`);
+    b.addEventListener("click", () => { current = n; render(); });
+    tabs.append(b);
+  }
+  $("progress").textContent = `${done} of ${CHATS} written`;
+  $("prev").disabled = current === 1;
+  $("next").textContent = current === CHATS ? "Back to chat 1" : "Next chat";
+}
+
+function prefRow(p, i) {
+  const row = document.createElement("div");
+  row.className = "pref";
+  const feature = document.createElement("select");
+  feature.id = `pref-feature-${i}`; feature.setAttribute("aria-label", "Feature");
+  FEATURES.forEach(([v, l]) => feature.append(new Option(l, v)));
+  feature.value = p.feature;
+  const kind = (FEATURES.find(f => f[0] === p.feature) || FEATURES[0])[2];
+  const bound = document.createElement("select");
+  bound.id = `pref-bound-${i}`; bound.setAttribute("aria-label", "Bound");
+  const bounds = kind === "yesno" ? [["yes", "Yes"], ["no", "No"]] : kind === "letter" ? [["min", "Or better"]] : [["min", "At least"], ["max", "At most"]];
+  bounds.forEach(([v, l]) => bound.append(new Option(l, v)));
+  bound.value = bounds.some(b => b[0] === p.bound) ? p.bound : bounds[0][0];
+  const value = document.createElement("input");
+  value.id = `pref-value-${i}`; value.setAttribute("aria-label", "Value");
+  value.placeholder = kind === "letter" ? "e.g. C" : "number";
+  value.value = p.value ?? ""; value.hidden = kind === "yesno";
+  const weight = document.createElement("select");
+  weight.id = `pref-weight-${i}`; weight.setAttribute("aria-label", "How much it matters");
+  WEIGHTS.forEach(([v, l]) => weight.append(new Option(l, v)));
+  weight.value = p.weight || "0.6";
+  const remove = document.createElement("button");
+  remove.type = "button"; remove.className = "remove"; remove.textContent = "Remove";
+  remove.setAttribute("aria-label", "Remove this nice to have");
+  const update = () => {
+    const c = chats[current];
+    c.preferences[i] = { feature: feature.value, bound: bound.value, value: value.value.trim(), weight: weight.value };
+    if (feature.value !== p.feature) { p.feature = feature.value; renderPrefs(); }
+    save();
+  };
+  [feature, bound, weight].forEach(el => el.addEventListener("change", update));
+  value.addEventListener("input", update);
+  remove.addEventListener("click", () => { chats[current].preferences.splice(i, 1); renderPrefs(); save(); });
+  row.append(feature, bound, value, weight, remove);
+  if (kind === "yesno") { const spacer = document.createElement("span"); spacer.setAttribute("aria-hidden", "true"); row.insertBefore(spacer, weight); }
+  return row;
+}
+function renderPrefs() {
+  const list = $("prefs");
+  list.replaceChildren(...chats[current].preferences.map(prefRow));
+  if (!chats[current].preferences.length) {
+    const empty = document.createElement("p"); empty.className = "hint"; empty.textContent = "None yet.";
+    list.append(empty);
+  }
+}
+
+function render() {
+  const c = chats[current];
+  $("lang-el").checked = c.language === "el"; $("lang-en").checked = c.language === "en";
+  $("opening").value = c.turns[0]; $("turn-2").value = c.turns[1]; $("turn-3").value = c.turns[2]; $("turn-4").value = c.turns[3];
+  $("facts").value = c.facts; $("notes").value = c.notes; $("not-covered").value = c.not_covered;
+  ["buy", "rent", "invest"].forEach(v => { $(`intent-${v}`).checked = c.intent === v; });
+  document.querySelectorAll("input[name=area]").forEach(b => { b.checked = c.areas.includes(b.value); });
+  document.querySelectorAll("input[name=type]").forEach(b => { b.checked = c.property_types.includes(b.value); });
+  document.querySelectorAll("input[name=floor]").forEach(b => { b.checked = c.exclude_floors.includes(b.value); });
+  document.querySelectorAll("input[name=must]").forEach(b => { b.checked = c.must.includes(b.value); });
+  NUMBERS.forEach(k => { $(k).value = c.hard_limits[k] ?? ""; });
+  renderPrefs(); renderTabs(); renderMissing();
+}
+function renderMissing() {
+  const c = chats[current], gaps = [];
+  if (!c.turns[0].trim()) gaps.push("the first message");
+  if (!c.language) gaps.push("the language");
+  if (!c.intent) gaps.push("buy or rent");
+  $("missing").hidden = !gaps.length;
+  $("missing").textContent = gaps.length ? `Still needed: ${gaps.join(", ")}.` : "";
+}
+
+function readForm() {
+  const c = chats[current];
+  c.language = $("lang-el").checked ? "el" : $("lang-en").checked ? "en" : "";
+  c.turns = [$("opening").value, $("turn-2").value, $("turn-3").value, $("turn-4").value];
+  c.facts = $("facts").value; c.notes = $("notes").value; c.not_covered = $("not-covered").value;
+  c.intent = ["buy", "rent", "invest"].find(v => $(`intent-${v}`).checked) || "";
+  c.areas = [...document.querySelectorAll("input[name=area]:checked")].map(b => b.value);
+  c.property_types = [...document.querySelectorAll("input[name=type]:checked")].map(b => b.value);
+  c.exclude_floors = [...document.querySelectorAll("input[name=floor]:checked")].map(b => b.value);
+  c.must = [...document.querySelectorAll("input[name=must]:checked")].map(b => b.value);
+  c.hard_limits = {};
+  NUMBERS.forEach(k => { const v = $(k).value.replace(/[^\d]/g, ""); if (v) c.hard_limits[k] = Number(v); });
+}
+
+const timers = {}, chains = {};
+function setStatus(text, kind) { const s = $("status"); s.textContent = text; s.className = "status" + (kind ? " " + kind : ""); }
+function save() {
+  renderTabs(); renderMissing();
+  if (!db) return;
+  const n = current;
+  setStatus("Saving…");
+  clearTimeout(timers[n]);
+  timers[n] = setTimeout(() => {
+    const c = chats[n];
+    const rec = { chat_no: n, language: c.language, turns: c.turns, facts: c.facts, notes: c.notes, intent: c.intent,
+      areas: c.areas, not_covered: c.not_covered, hard_limits: c.hard_limits, property_types: c.property_types,
+      exclude_floors: c.exclude_floors, preferences: c.preferences.filter(p => p.feature), must: c.must,
+      updated_at: new Date().toISOString() };
+    chains[n] = (chains[n] || Promise.resolve())
+      .then(() => db.collection("chats/" + uid + "/items").doc("chat_" + n).set(rec))
+      .then(() => setStatus("Saved", "saved"))
+      .catch(() => setStatus("Not saved. Check you're signed in, then type again.", "error"));
+  }, 600);
+}
+
+document.querySelectorAll("input, textarea").forEach(el => {
+  if (el.closest("#prefs")) return;
+  el.addEventListener(el.type === "radio" || el.type === "checkbox" ? "change" : "input", () => { readForm(); save(); });
+});
+$("add-pref").addEventListener("click", () => {
+  chats[current].preferences.push({ feature: "balcony", bound: "yes", value: "", weight: "0.6" });
+  renderPrefs(); save();
+});
+$("prev").addEventListener("click", () => { if (current > 1) { current--; render(); window.scrollTo({ top: 0 }); } });
+$("next").addEventListener("click", () => { current = current === CHATS ? 1 : current + 1; render(); window.scrollTo({ top: 0 }); });
+
+render();
+
+(async () => {
+  const claude = window.claude;
+  const [dbNs, userNs] = claude && claude.use ? await Promise.all([claude.use("db"), claude.use("user")]) : [null, null];
+  if (!dbNs || !userNs) { $("offline").hidden = false; setStatus("Not saving", "error"); return; }
+  uid = await userNs.id();
+  if (!uid) { $("offline").hidden = false; setStatus("Sign in to save", "error"); return; }
+  db = dbNs;
+  setStatus("Connected", "saved");
+  let first = true;
+  const unsubscribe = db.collection("chats/" + uid + "/items").onSnapshot(snap => {
+    for (const d of snap.docs) {
+      if (!d.exists) continue;
+      const data = JSON.parse(JSON.stringify(d.data()));  // snapshots are frozen: keep an editable copy
+      const n = data.chat_no;
+      if (!n || !chats[n]) continue;
+      if (!first && n === current && document.activeElement && document.activeElement.closest(".desk")) continue;
+      chats[n] = Object.assign(blank(n), data);
+    }
+    first = false;
+    render();
+  }, () => setStatus("Your saved chats couldn't load. Reload the page.", "error"));
+  window.addEventListener("pagehide", () => unsubscribe());
+})();
+</script>

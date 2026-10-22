@@ -466,3 +466,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Result, all 40 chats** ($1.29, 3.2 cents a chat): fields **100%**, **0 invented hard limits**, **0 unasked loosenings**, preferences 16 of 17, weights 13 of 13, behaviours 100%. Narrowing asked in 18 of 18 wide chats and no others; easing suggested with code's numbers in both thin chats. The one miss is en_18's "top floor ideally": floor 3 or above, where the label says 4.
 - **Still a development score:** v2 to v4 were shaped on these 40 chats. The clean test is 10 new chats you and GB write.
 - **Say:** "The model suggests, code counts, the user decides. A limit only moves when the user says yes to a specific change."
+
+## D51. Your answers on the open list (22 October)
+
+- **Clean test for the interview:** yes. You and GB each write 5 new chats on the "Interview Chats" page (round 7), without looking at the prompt or the 40 chats. For each: the messages in order, what you'd answer if asked anything else, the card it should end with, and what the assistant should ask or say. Each writer's chats save under their own id; only the owner reads everyone's. `interview_clean_test.py` turns them into the eval's format, and prompt v4 runs on them once, unchanged.
+- **"Top floor" stays a floor number.** A ρετιρέ is the last floor of its building, and that can be the 1st floor, so "top" says nothing about height. Someone who wants the top floor wants height, so floor_level with a number is the right proxy. The en_18 label (4 and up) stays.
+- **xe.gr: skipped for now.** It comes back when we add areas.
+- **Possible expansions** now have their own list, `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buyer, a rented field, lift reaches the floor, delivery date, condition as a filter, either/or musts.
+- **API key:** stays until the project is done, then delete it and make a new one.
