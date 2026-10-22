@@ -488,3 +488,16 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   - **1 is the harness:** no chat filled in "if it asks about anything else", so the simulated user could never confirm investor mode (mike_5).
 - **Other findings:** parking and a lift stated in gb_1 didn't reach the card; one card had "renovated_year equals true", which code should refuse (a year needs a number); two chats ended unconfirmed because the assistant kept asking and the simulated user had no facts to answer from.
 - **Why I haven't rescored:** the cards follow different rules from the ones the system was built to (only what the user says; D46 to D51), so 43.5% mostly measures that gap. Once you settle the rules, the saved transcripts are rescored for free.
+
+## D53. Your rules for prices, rooms and types (interview v5, built, not run)
+
+- **"Around X" means X plus or minus 10%.** The model only marks that the user said "around" (budget_around); code widens the price. A range the user gave ("περίπου 500-600") widens the same way.
+- **A lowest price, set by code:** when the user gave none, 80% of the top price for a home to live in or to rent, 50% for an investment, rounded to €5,000 (€50 for a monthly rent). It keeps out wrecks and ads with no real price, it's shown on the card, and the user can change it. The user's own minimum always wins. "Around 200" therefore searches €180k to €220k.
+- **Why code and not the model:** the rules are arithmetic, so they live in one tested function (`search_card`). The model writes down what it heard, so a card can't drift by 10% each turn, and the eval checks the model on what it heard.
+- **"Δωμάτια" means bedrooms,** written on the card ("3 υπνοδωμάτια") so the user can correct it, with no question. Listing words like δυάρι keep counting the living room.
+- **"Διαμέρισμα" is apartment only.** When an apartment search is thin, code adds "add a maisonette" and "add a loft" to the easing options, with their counts, and the assistant asks first.
+- **Also in v5:** "σε όροφο" rules out the ground floors; a stated range sets both prices; code refuses a confirmed card with no top price (gb_2 had none) and a preference of the wrong kind (a year needs a number, a balcony a yes or no; mike_3 had "renovated_year: true").
+- **Ranking:** a ρετιρέ with no floor number used to count as the highest floor. Following D51 its height is now unknown.
+- **Eval:** "around" is scored as its own field; switching a card to "around" without the user's yes counts as loosening a limit. Three dev chats changed by these rules: el_01 and en_02 no longer need the ceiling question, el_09 no longer needs rooms or bedrooms.
+- **Harness:** the simulated user now confirms what it has already said ("για επένδυση" in mike_5 couldn't confirm investor mode before).
+- **Not run yet,** at your request. The clean cards need your answers first (below, in chat).
