@@ -533,3 +533,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **"Ιδανικά" before a list:** a size or a bedroom count stays a limit, widened by code, 10% either side for size and one bedroom either side; anything else is a wish. "Ideally 30 to 50 m² with 1 bedroom" searches 27 to 55 m² and 0 to 2 bedrooms. That needs a maximum bedroom limit, now in the search's own filter (`max_bedrooms`), which "up to 2 bedrooms" also uses.
 - **"Ιδανικά" before a price means "around"** (you confirmed): a price can't be a wish, because a card needs a top price (D53). mike_3's "idanika ... mexri 200000" searches €180k to €220k.
 - **Eval:** "ideally" is scored as its own field, like "around"; adding it to a card without a yes counts as loosening; a confirmed card with investor mode counts as confirming it.
+
+## D57. Interview v6, run on both sets
+
+- **The 40 chats** ($1.66, 4.2 cents a chat): fields **100%**, **0 invented hard limits**, preferences **17 of 17** (el_17's "after 2015" now stays 2015), behaviours **100%**, narrowing in 3 of 3 wide chats, easing with code's numbers in 3 of 3 thin chats, no limit loosened without a yes.
+- **The clean 10** ($1.08, 11 cents a chat): fields **92.1%** (v5 82.9%, v4 43.5% as written), 1 invented hard limit, preferences 12 of 13, behaviours **100%**, rentals 3 of 3. All three investment chats now end in investor mode, confirmed on the card.
+- **What's left on the clean 10:**
+  - **mike_3, a real miss:** the assistant caught "idanika" before the price (around, so €180k to €220k) but not before the size and bedrooms, so they stayed exact. It then found 2 listings and suggested raising the size to 55 m², the margin the rule would have given.
+  - **mike_2, a judgement call:** "one bedroom but studios are fine" became "up to 1 bedroom", which takes studios in; the card says apartment or studio with no bedroom limit. Both say roughly the same, but the eval counts the first as an invented limit.
+  - **mike_4, a judgement call:** "high floors" became floor 4 and up; the card says 3.
+  - **Weights:** 3 of 6 checked weights agree; reported, not scored.
+- **Two measurement fixes, rescored for free:** "which of our three areas?" counts as asking for the areas (mike_3); a change counts as confirmed on the first card shown after it, with a question in between allowed (en_19 asked first whether €220k is the bank's figure, the D54 loan rule).
+- **Where to stop:** the dev set is at 100% and the clean set's remaining misses are one real slip and two judgement calls. Another round would be tuning to 10 chats we've now read closely. The next honest test is new chats nobody has seen.

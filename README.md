@@ -76,6 +76,8 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v1 | Interview clean test: 10 new chats by Mike and GB, prompt v4 unchanged, as labelled (D52) | 10 | 43.5% | 2 | 4 of 7 | 66.7% |
 | v1 | **Interview, prompt v5**: Mike's price, rooms and type rules in code, the purpose question, rentals not yet (D53 to D55) | 40 | **100%** | **0** | 16 of 17 | **100%** |
 | v1 | **Interview clean test, prompt v5**, cards rewritten to the settled rules (D54, D55) | 10 | **82.9%** | **0** | 12 of 13 | 97.1% |
+| v1 | **Interview, prompt v6**: investor mode on the card, "ιδανικά" margins in code, a bedroom maximum (D56, D57) | 40 | **100%** | **0** | 17 of 17 | **100%** |
+| v1 | **Interview clean test, prompt v6** (D57) | 10 | **92.1%** | 1 | 12 of 13 | **100%** |
 
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 

@@ -332,6 +332,8 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     replies = [t for t in log if t["role"] == "assistant" and t.get("output")]
     asked = set().union(*(_asked(t) for t in replies)) if replies else set()
     final = transcript["final"] or {}
+    if "which_covered_area" in asked:  # "which of our three areas?" asks for the areas either way (D57)
+        asked = asked | {"areas"}
     if "purpose" in asked:  # choosing "investment" in answer to the purpose question is choosing investor mode (D54)
         asked = asked | {"confirm_investor_mode"}
     if any(t["output"]["action"] == "confirm" and t["output"]["criteria"].get("intent") == "invest" for t in replies):
@@ -361,10 +363,12 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
             confirmed_rent = any(t["output"]["action"] == "confirm" and t["output"]["criteria"].get("intent") == "rent" for t in replies)
             out[item] = said and not confirmed_rent
         elif item == "confirm_change":
+            # The first card shown after the change has to show it; a question in between is fine (D57).
             last_script = max(i for i, t in enumerate(log) if t["role"] == "user" and t["source"] == "script")
-            after = next((t for t in log[last_script + 1:] if t["role"] == "assistant" and t.get("output")), None)
+            after = next((t for t in log[last_script + 1:] if t["role"] == "assistant" and t.get("output")
+                          and t["output"]["action"] == "confirm"), None)
             new_price = (final.get("hard_limits") or {}).get("max_price_eur")
-            out[item] = bool(after and after["output"]["action"] == "confirm" and new_price
+            out[item] = bool(after and new_price
                              and quotes_tool_number(after["output"]["reply"], [{"matches": new_price}], set()))
         else:
             out[item] = False  # an unknown check fails loudly in the report

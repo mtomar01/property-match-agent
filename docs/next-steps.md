@@ -17,7 +17,7 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview v6 (D56): built, not run.** Your four calls are in; one reading to confirm ("ιδανικά" before a price means around). Then v6 runs on the 40 and the 10, about $2.50.
+1. **Interview: done for now (D57).** 40 chats at 100%; your 10 at 92.1% with one real slip and two judgement calls left. The next honest test is new chats nobody has seen.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
 
 ## Interview eval (22 October, D46, D47)
@@ -28,7 +28,8 @@ Updated 22 October 2026, after answer key v4.
 - Prompt v4, suggest easing one limit and ask (D50): fields 100%, 0 invented hard limits, 0 unasked loosenings, behaviours 100%.
 - Clean test, 10 new chats (D52): 43.5% as labelled; see the decision list.
 - Prompt v5 (D55): 40 chats 100% fields and behaviours; clean 10: 82.9% fields, 0 invented hard limits.
-- Spent about $9.60 of the $100 in total.
+- Prompt v6 (D57): 40 chats 100%; clean 10 at 92.1% fields, behaviours 100%.
+- Spent about $12.30 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 
@@ -94,7 +95,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D56.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D57.
 
 ## For the desktop app demo
 
