@@ -1,0 +1,571 @@
+{
+ "eval": "interview",
+ "name": "clean-interview_v5-sonnet-5-5",
+ "ran_at": "2026-10-22T13:33:50+00:00",
+ "model": "claude-sonnet-5-5",
+ "prompt": "interview_v5",
+ "simulated_user": "claude-haiku-5-5",
+ "targets": {
+  "field_accuracy": 0.95,
+  "invented_hard_limits": 0,
+  "unasked_loosenings": 0
+ },
+ "summary": {
+  "chats": 10,
+  "field_accuracy": 0.8286,
+  "fields": {
+   "correct": 29,
+   "wrong": 3,
+   "missed": 3,
+   "invented": 0
+  },
+  "invented_hard_limits": 0,
+  "preferences": {
+   "expected": 13,
+   "correct": 12,
+   "wrong_bound": 1,
+   "missed": 0,
+   "split": 3,
+   "extra": 1
+  },
+  "weights_agree": "2 of 6",
+  "behaviours": {
+   "ask": "27 of 36",
+   "rent_not_supported": "3 of 3",
+   "reply_in": "10 of 10"
+  },
+  "behaviour_pass_rate": 0.8163,
+  "confirmed": 6,
+  "valid_cards": 10,
+  "mean_questions": 5.2,
+  "mean_replies": 4.5,
+  "tool_calls": 43,
+  "card_repairs": 0,
+  "narrowing": {
+   "wide_chats": 5,
+   "asked_when_wide": 2,
+   "asked_when_not_wide": 0
+  },
+  "easing": {
+   "thin_chats": 0,
+   "suggested_with_numbers": 0
+  },
+  "unasked_loosenings": 0,
+  "cost_usd": 1.0636,
+  "mean_cost_per_chat_usd": 0.1064
+ },
+ "chats": [
+  {
+   "chat_id": "clean_gb_1",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "correct",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "min_bedrooms": "correct",
+    "budget_around": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "bathrooms",
+     "expected": [
+      "min",
+      2
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    },
+    {
+     "feature": "parking",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    },
+    {
+     "feature": "lift",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    }
+   ],
+   "behaviours": {
+    "ask:intent": true,
+    "ask:budget": true,
+    "ask:areas": true,
+    "ask:bedrooms": true,
+    "ask:purpose": true,
+    "reply_in:el": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 4,
+   "questions": 3,
+   "tool_calls": 7,
+   "repairs": 0,
+   "wide": false,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.1251
+  },
+  {
+   "chat_id": "clean_gb_2",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {},
+   "preferences": [],
+   "behaviours": {
+    "ask:intent": true,
+    "ask:budget": false,
+    "ask:areas": true,
+    "ask:bedrooms": true,
+    "ask:total_budget": false,
+    "reply_in:el": true,
+    "rent_not_supported": true
+   },
+   "confirmed": false,
+   "unsupported": true,
+   "valid_card": true,
+   "assistant_replies": 6,
+   "questions": 7,
+   "tool_calls": 5,
+   "repairs": 0,
+   "wide": true,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.1407
+  },
+  {
+   "chat_id": "clean_gb_3",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "wrong",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "property_types": "correct"
+   },
+   "preferences": [],
+   "behaviours": {
+    "ask:intent": false,
+    "ask:budget": true,
+    "ask:areas": true,
+    "ask:confirm_investor_mode": true,
+    "ask:purpose": true,
+    "reply_in:el": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 5,
+   "questions": 8,
+   "tool_calls": 4,
+   "repairs": 0,
+   "wide": true,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.1032
+  },
+  {
+   "chat_id": "clean_gb_4",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {},
+   "preferences": [],
+   "behaviours": {
+    "ask:intent": true,
+    "ask:budget": true,
+    "ask:areas": true,
+    "ask:bedrooms": false,
+    "ask:total_budget": false,
+    "ask:stairs_requirement": false,
+    "reply_in:el": true,
+    "rent_not_supported": true
+   },
+   "confirmed": false,
+   "unsupported": true,
+   "valid_card": true,
+   "assistant_replies": 5,
+   "questions": 5,
+   "tool_calls": 12,
+   "repairs": 0,
+   "wide": true,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.2312
+  },
+  {
+   "chat_id": "clean_gb_5",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "correct",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "min_bedrooms": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "bathrooms",
+     "expected": [
+      "min",
+      2
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    },
+    {
+     "feature": "parking",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    }
+   ],
+   "behaviours": {
+    "ask:intent": true,
+    "ask:budget": true,
+    "ask:areas": true,
+    "ask:bedrooms": true,
+    "ask:purpose": true,
+    "reply_in:el": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 4,
+   "questions": 6,
+   "tool_calls": 2,
+   "repairs": 0,
+   "wide": false,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.0471
+  },
+  {
+   "chat_id": "clean_mike_1",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {},
+   "preferences": [],
+   "behaviours": {
+    "ask:bedrooms": false,
+    "ask:year_built": false,
+    "ask:stairs_requirement": false,
+    "reply_in:el": true,
+    "rent_not_supported": true
+   },
+   "confirmed": false,
+   "unsupported": true,
+   "valid_card": true,
+   "assistant_replies": 5,
+   "questions": 5,
+   "tool_calls": 0,
+   "repairs": 0,
+   "wide": false,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.0651
+  },
+  {
+   "chat_id": "clean_mike_2",
+   "language": "en",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "wrong",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "property_types": "correct",
+    "exclude_floors": "correct",
+    "budget_around": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "renovated_year",
+     "expected": [
+      "min",
+      2016
+     ],
+     "result": "correct",
+     "weight": "disagrees"
+    },
+    {
+     "feature": "bedrooms",
+     "predicted": [
+      "min",
+      1
+     ],
+     "result": "extra"
+    }
+   ],
+   "behaviours": {
+    "ask:confirm_investor_mode": true,
+    "reply_in:en": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 4,
+   "questions": 4,
+   "tool_calls": 1,
+   "repairs": 0,
+   "wide": false,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.055
+  },
+  {
+   "chat_id": "clean_mike_3",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "correct",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "min_size_m2": "missed",
+    "max_size_m2": "missed",
+    "min_bedrooms": "missed",
+    "property_types": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "renovated_year",
+     "expected": [
+      "min",
+      2016
+     ],
+     "result": "correct",
+     "weight": "agrees"
+    },
+    {
+     "feature": "size_m2",
+     "predicted": [
+      "min",
+      30
+     ],
+     "result": "split"
+    },
+    {
+     "feature": "size_m2",
+     "predicted": [
+      "max",
+      50
+     ],
+     "result": "split"
+    },
+    {
+     "feature": "bedrooms",
+     "predicted": [
+      "min",
+      1
+     ],
+     "result": "split"
+    }
+   ],
+   "behaviours": {
+    "ask:areas": true,
+    "reply_in:el": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 5,
+   "questions": 4,
+   "tool_calls": 6,
+   "repairs": 0,
+   "wide": true,
+   "narrowing_asked": true,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.1596
+  },
+  {
+   "chat_id": "clean_mike_4",
+   "language": "en",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "correct",
+    "areas": "correct",
+    "max_price_eur": "correct",
+    "min_size_m2": "correct",
+    "min_bedrooms": "correct",
+    "property_types": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "balcony",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "disagrees"
+    },
+    {
+     "feature": "floor_level",
+     "expected": [
+      "min",
+      3
+     ],
+     "result": "wrong_bound",
+     "predicted": [
+      [
+       "min",
+       4
+      ]
+     ]
+    }
+   ],
+   "behaviours": {
+    "ask:budget_ceiling": true,
+    "ask:purpose": true,
+    "reply_in:en": true
+   },
+   "confirmed": true,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 3,
+   "questions": 4,
+   "tool_calls": 3,
+   "repairs": 0,
+   "wide": false,
+   "narrowing_asked": false,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.0465
+  },
+  {
+   "chat_id": "clean_mike_5",
+   "language": "el",
+   "tests": [
+    "clean_test"
+   ],
+   "fields": {
+    "intent": "wrong",
+    "areas": "correct",
+    "max_price_eur": "correct"
+   },
+   "preferences": [
+    {
+     "feature": "balcony",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "disagrees"
+    },
+    {
+     "feature": "lift",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "correct",
+     "weight": "disagrees"
+    },
+    {
+     "feature": "metro_walk_min",
+     "expected": [
+      "max",
+      10
+     ],
+     "result": "correct",
+     "weight": "unchecked"
+    },
+    {
+     "feature": "renovated_year",
+     "expected": [
+      "min",
+      2016
+     ],
+     "result": "correct",
+     "weight": "agrees"
+    }
+   ],
+   "behaviours": {
+    "ask:areas": true,
+    "ask:metro_minutes": true,
+    "ask:confirm_investor_mode": true,
+    "reply_in:el": true
+   },
+   "confirmed": false,
+   "unsupported": false,
+   "valid_card": true,
+   "assistant_replies": 4,
+   "questions": 6,
+   "tool_calls": 3,
+   "repairs": 0,
+   "wide": true,
+   "narrowing_asked": true,
+   "easing": {
+    "thin": false,
+    "suggested": false
+   },
+   "unasked_loosenings": [],
+   "cost_usd": 0.0901
+  }
+ ],
+ "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only"
+}

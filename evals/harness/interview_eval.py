@@ -558,9 +558,9 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
     return {"summary": summary, "scores": scores, "transcripts": transcripts}
 
 
-def rescore(name: str) -> dict:
+def rescore(name: str, chats_path: Path = CHATS) -> dict:
     """Score saved transcripts against the current labels and rules. No calls."""
-    chats = {c["chat_id"]: c for c in load_chats()}
+    chats = {c["chat_id"]: c for c in load_chats(chats_path)}
     transcripts = [json.loads(line) for line in (PRIVATE / f"transcripts-{name}.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     scores = [score_chat(chats[t["chat_id"]], t) for t in transcripts]
     summary = summarise(scores)
@@ -571,7 +571,7 @@ def rescore(name: str) -> dict:
 if __name__ == "__main__":
     args = sys.argv[1:]
     if "--rescore" in args:
-        rescore(args[args.index("--rescore") + 1])
+        rescore(args[args.index("--rescore") + 1], Path(args[args.index("--chats") + 1]) if "--chats" in args else CHATS)
         sys.exit(0)
     only = args[args.index("--only") + 1].split(",") if "--only" in args else None
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None

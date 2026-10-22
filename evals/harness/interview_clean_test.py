@@ -119,7 +119,8 @@ def fixed(chat: dict) -> tuple[dict, str | None]:
     chat = json.loads(json.dumps(chat))
     if chat["expected_criteria"]["intent"] == "rent":
         chat["must_say"].append("rent_not_supported")
-        return chat, "rentals aren't supported yet: the assistant says so; the card isn't scored"
+        chat["must_ask"] = []  # no rental search yet, so no rental questions either
+        return chat, "rentals aren't supported yet: the assistant says so; the card and its questions aren't scored"
     change = FIXES.get(chat["chat_id"])
     if not change:
         return chat, None
