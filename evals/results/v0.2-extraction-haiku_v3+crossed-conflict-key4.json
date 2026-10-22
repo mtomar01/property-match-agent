@@ -1,0 +1,205 @@
+{
+  "eval": "extraction",
+  "name": "haiku_v3+crossed-conflict",
+  "ran_at": "2026-10-22T10:13:37+00:00",
+  "listings": 100,
+  "answer_key": {
+    "version": 4,
+    "sha256": "825e7864ab102e1659206af9ced9ac07a9f38b6df4d216e4e85e98fa2156a9be"
+  },
+  "targets": {
+    "structured": 0.98,
+    "free_text": 0.85
+  },
+  "groups": {
+    "structured": {
+      "correct": 1580,
+      "wrong": 9,
+      "invented": 0,
+      "missed": 15,
+      "accuracy": 0.985
+    },
+    "free_text": {
+      "correct": 470,
+      "wrong": 3,
+      "invented": 13,
+      "missed": 10,
+      "accuracy": 0.9476
+    }
+  },
+  "per_field": {
+    "listing_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "price_eur": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "size_m2": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "property_type": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 2,
+      "accuracy": 0.98
+    },
+    "bedrooms": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 1,
+      "missed": 1,
+      "accuracy": 0.98
+    },
+    "bathrooms": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 1,
+      "missed": 1,
+      "accuracy": 0.98
+    },
+    "floor_class": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 2,
+      "accuracy": 0.98
+    },
+    "year_built": {
+      "correct": 93,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 6,
+      "accuracy": 0.93
+    },
+    "renovated_year": {
+      "correct": 94,
+      "wrong": 0,
+      "invented": 4,
+      "missed": 2,
+      "accuracy": 0.94
+    },
+    "condition": {
+      "correct": 88,
+      "wrong": 4,
+      "invented": 3,
+      "missed": 5,
+      "accuracy": 0.88
+    },
+    "energy_class": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.99
+    },
+    "heating_type": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "heating_fuel": {
+      "correct": 98,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 2,
+      "accuracy": 0.98
+    },
+    "parking": {
+      "correct": 98,
+      "wrong": 1,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.98
+    },
+    "lift": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.99
+    },
+    "balcony": {
+      "correct": 95,
+      "wrong": 2,
+      "invented": 3,
+      "missed": 0,
+      "accuracy": 0.95
+    },
+    "storage": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "flags": {
+      "correct": 95,
+      "wrong": 4,
+      "invented": 1,
+      "missed": 0,
+      "accuracy": 0.95
+    },
+    "area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "sub_area": {
+      "correct": 100,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 0,
+      "accuracy": 1.0
+    },
+    "metro_walk_min": {
+      "correct": 99,
+      "wrong": 0,
+      "invented": 0,
+      "missed": 1,
+      "accuracy": 0.99
+    }
+  },
+  "data": "real listings, private; totals only",
+  "model": "claude-haiku-5-5",
+  "prompt": "extraction_v3",
+  "failed_calls": 0,
+  "usage": {
+    "input_tokens": 88421,
+    "output_tokens": 133521,
+    "cache_creation_input_tokens": 20124,
+    "cache_read_input_tokens": 482976
+  },
+  "cost_usd": 0.0829,
+  "spent_this_run_usd": 0.0,
+  "merge_rule": "conflict",
+  "conflicts_blanked": {
+    "year_built": 2,
+    "heating_fuel": 2,
+    "condition": 2,
+    "floor_class": 2,
+    "bedrooms": 1,
+    "property_type": 2,
+    "lift": 1,
+    "energy_class": 1,
+    "renovated_year": 1,
+    "bathrooms": 1
+  },
+  "crossed_out_lists": true
+}

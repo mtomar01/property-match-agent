@@ -102,8 +102,62 @@ def build(out_path: Path = OUT) -> Path:
     return out_path
 
 
+def apply(decisions_dir: Path, version: int = 4, base: int = 3, out_dir: Path = answer_key.LABELS) -> Path:
+    """Answer key v4: key v3 with the check's decisions applied, each change recorded (D43)."""
+    import hashlib
+    from datetime import datetime, timezone
+
+    out = out_dir / f"answer_key_v{version}.jsonl"
+    if out.exists():
+        raise FileExistsError(f"{out.name} exists; versions are never overwritten")
+    labels, manifest = answer_key.load(base, out_dir)
+    decisions = [json.loads(f.read_text(encoding="utf-8")) for f in sorted(decisions_dir.rglob("*.json"))]
+    decisions = [d.get("data", d) for d in decisions]
+    by_listing: dict[str, list[dict]] = {}
+    for d in decisions:
+        by_listing.setdefault(d["listing_id"], []).append(d)
+    rows, origin, changed = [], {}, 0
+    for label in labels:
+        updates, evidence, record = {}, dict(label.evidence), []
+        for d in by_listing.get(label.listing_id, []):
+            if d["choice"] == "key":
+                record.append({"field": d["field"], "kept": d["key_value"]})
+                continue
+            value = d["proposed_value"] if d["choice"] == "proposed" else _parse_other(d["field"], d["other"])
+            updates[d["field"]] = value
+            evidence[d["field"]] = f"Answer key check, {d['choice']} (D43)"
+            record.append({"field": d["field"], "from": d["key_value"], "to": value, "choice": d["choice"]})
+            changed += 1
+        if updates:
+            label = label.model_copy(update={"fields": label.fields.model_copy(update=updates), "evidence": evidence})
+        rows.append(label.model_dump(mode="json"))
+        origin[label.listing_id] = dict(manifest["origin"][label.listing_id], key_check=record)
+    text = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows)
+    out.write_text(text, encoding="utf-8")
+    (out_dir / f"answer_key_v{version}.manifest.json").write_text(json.dumps({
+        "version": version, "frozen_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "listings": len(rows),
+        "derived_from": {"version": base, "sha256": manifest["sha256"]},
+        "rule": "D43: the answer key check's decisions applied", "changed_by_check": changed,
+        "decisions": len(decisions), "combined": True, "origin": origin,
+    }, indent=2), encoding="utf-8")
+    return out
+
+
+def _parse_other(field: str, text: str):
+    text = (text or "").strip().lower()
+    if field == "storage":
+        return text in ("yes", "ναι", "true")
+    if field == "metro_walk_min":
+        digits = re.sub(r"[^0-9]", "", text)
+        return int(digits) if digits else None
+    return text.replace(" ", "_") or None
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["build"]:
+    if sys.argv[1:2] == ["apply"]:
+        print(f"Froze {apply(Path(sys.argv[2])).relative_to(ROOT)}")
+    elif sys.argv[1:2] == ["build"]:
         path = build()
         print(f"{len(items())} values, page at {path.relative_to(ROOT)}")
     else:

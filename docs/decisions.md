@@ -386,3 +386,9 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **What:** one page, "Answer Key Check", with the 21 values where answer key v3 and the listing seem to disagree: 12 metro (8 blanks where the description gives a distance, the 650 m that belongs to a university, two "500 m" typed as 5 minutes, and one 8 minutes the system can't find), 6 floors (ground against υπερυψωμένο ισόγειο) and 3 storage (εσωτερική αποθήκη). Each shows the listing link, the few words from its description that matter, the key's value and the proposed one. You pick, or type another value; each choice saves at once. Floor and storage have a "use the proposed value for all" button, because each is one rule.
 - **Why this shape:** the proposed value is the system's reading, but metro is written the way the listing gives it (790 m rather than 10 minutes), so code converts and the key stops holding home-made conversions. The page carries short quotes only, never a whole description (the spirit of D28).
 - **Next:** your choices become answer key v4, with every change recorded.
+
+## D43. Answer key v4 from the key check
+
+- **GB's decisions on the 21 values:** the proposed value on 20 (all 6 floors as raised ground, all 3 storage as yes, 11 metro values with metres as written), the key's value on 1 (8 minutes where "600 μέτρα" covers the town hall and the metro stop together).
+- **Answer key v4** is key v3 with those 20 changes; the manifest lists each change per listing (from, to, choice) and the one kept, and every changed value carries a note in its evidence.
+- **Results on key v4, all 100 listings** (no new model calls): Haiku v3 + code 99.3% on table fields, **94.8%** on text-only fields; code alone 99.1% and 93.1%; Sonnet v2 + code 99.4% and 95.0%, still eleven times the cost.
