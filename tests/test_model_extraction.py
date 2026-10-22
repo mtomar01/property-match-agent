@@ -147,3 +147,24 @@ def test_a_long_listing_gets_one_retry_with_more_room_and_failures_are_retried_l
 def test_cost_follows_the_price_list():
     usage = {"input_tokens": 1_000_000, "output_tokens": 1_000_000, "cache_read_input_tokens": 1_000_000}
     assert llm.cost_usd("claude-haiku-5-5", usage) == pytest.approx(0.10 + 0.50 + 0.01)
+
+
+def test_v3_adds_kilometres_and_the_station_glossary_without_touching_v2():
+    assert "metro_km" in schema("extraction_v3")["properties"] and "metro_km" not in schema("extraction_v2")["properties"]
+    assert "Ανθούπολη" in system_prompt("extraction_v3") and "Ανθούπολη" not in system_prompt("extraction_v2")
+    assert "Κηφισιά" in system_prompt("extraction_v3") and "Αεροδρόμιο" in system_prompt("extraction_v3")
+    walk = list(walk_nodes(schema("extraction_v3")))
+    assert len([n for n in walk if isinstance(n.get("type"), list)]) <= 16
+
+
+def walk_nodes(schema_node):
+    yield schema_node
+    for value in schema_node.values():
+        if isinstance(value, dict):
+            yield from walk_nodes(value)
+
+
+def test_kilometres_become_minutes_in_code():
+    assert parse_reading(blank_reading(metro_km=0.6))["metro_walk_min"] == 8  # 600 m at 80 m a minute
+    assert parse_reading(blank_reading(metro_km=0.6, metro_metres=450))["metro_walk_min"] == 6  # metres as written win
+    assert parse_reading(blank_reading(metro_km=40))["metro_walk_min"] is None  # out of range: unknown

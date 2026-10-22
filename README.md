@@ -50,6 +50,7 @@ The rules are in `docs/labelling-guide.md`.
 | v0.2 | Answer key v2: code only, crossed-out lists, all 100 | 100 | 99.4% | 85.7% | 39 |
 | v0.2 | **Answer key v3** (crossed-out blanks filled by rule, D39): Haiku 5.5 + code | 100 | 98.9% | **91.7%** | 22 |
 | v0.2 | Answer key v3: Sonnet 5.5 + code (11x the cost, same score) | 100 | 98.9% | 91.7% | 23 |
+| v0.2 | Answer key v3: Haiku 5.5 + code, **prompt v3** (metro, D40) | 100 | 98.9% | **91.9%** | 22 |
 | v0.2 | Answer key v3: code only | 100 | 99.4% | 90.5% | 15 |
 
 Most of Haiku's "invented" values come with a quote from the description that the key left blank, and 73 of its misses are "no" answers from the crossed-out feature list, which isn't in the text. Key v1 limited what this eval could show (D33); answer key v2 combines every round's labels (D35).

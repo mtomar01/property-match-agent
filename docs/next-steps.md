@@ -17,10 +17,15 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Two small rule questions** for the remaining disagreements: is υπερυψωμένο ισόγειο "raised ground" (the guide) or "ground" (what 6 labels say)? And should the 3 older "no storage" labels with εσωτερική αποθήκη in the text follow D34 in a key v4?
-2. **A clean test set:** prompt v2 and the merge rules were shaped on these 100, so 91.7% is a development score. A fresh batch from Spitogatos, labelled blind, gives the honest number. Your go-ahead, since it touches the live site.
-3. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
-4. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view.
+1. **Minutes with no "on foot":** does "5 λεπτά από το μετρό" count as walking? Prompt v3 now skips it. If yes, a one-line v4 (about $0.08).
+2. **Key check (waiting, your call):** the metro blanks and the 650 that should be 1500; raised ground against ground (6); older "no storage" labels with εσωτερική αποθήκη (3).
+3. **A clean test set:** prompts and merge rules were shaped on these 100, so 91.9% is a development score. A fresh batch, labelled blind, gives the honest number (touches the live site).
+4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+5. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+
+## Prompt v3 (22 October, D40)
+
+- Kilometres field, all 66 Athens metro stations in the glossary, rules for vehicles and several distances. Text fields 91.9%, metro 87%. $0.083; $1.09 spent in total.
 
 ## Answer key v3 and the model comparison (22 October, D39)
 
@@ -68,7 +73,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D39.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D40.
 
 ## For the desktop app demo
 

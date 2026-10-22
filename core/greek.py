@@ -293,7 +293,7 @@ def normalise_area(raw: str | None) -> str | None:
 # Glossary (served as an MCP resource and pasted into the extraction prompt)
 # ---------------------------------------------------------------------------
 
-GLOSSARY: list[dict[str, str]] = [
+GLOSSARY_BASE: list[dict[str, str]] = [
     {"greek": "υπόγειο", "meaning": "basement", "normalised": "floor class basement"},
     {"greek": "ημιυπόγειο", "meaning": "semi-basement", "normalised": "floor class semi_basement"},
     {"greek": "ισόγειο", "meaning": "ground floor", "normalised": "floor class ground"},
@@ -324,3 +324,34 @@ GLOSSARY: list[dict[str, str]] = [
     {"greek": "αναβατόριο", "meaning": "goods lift", "normalised": "lift no"},
     {"greek": "WC", "meaning": "toilet only", "normalised": "not a bathroom"},
 ]
+
+# Every Athens metro station in operation (66; Lines 1 to 3), checked against the
+# published station list on 22 October 2026. Line 4 is under construction and
+# not listed. Five interchanges appear on two lines. Used by extraction prompt
+# v3 on (D40) and kept here so search can use the same list later.
+METRO_STATIONS: dict[str, list[str]] = {
+    "Γραμμή 1 (πράσινη γραμμή, ηλεκτρικός, ΗΣΑΠ)": [
+        "Πειραιάς", "Νέο Φάληρο", "Μοσχάτο", "Καλλιθέα", "Ταύρος", "Πετράλωνα", "Θησείο", "Μοναστηράκι",
+        "Ομόνοια", "Βικτώρια", "Αττική", "Άγιος Νικόλαος", "Κάτω Πατήσια", "Άγιος Ελευθέριος", "Άνω Πατήσια",
+        "Περισσός", "Πευκάκια", "Νέα Ιωνία", "Ηράκλειο", "Ειρήνη", "Νεραντζιώτισσα", "Μαρούσι", "ΚΑΤ", "Κηφισιά",
+    ],
+    "Γραμμή 2 (κόκκινη γραμμή)": [
+        "Ανθούπολη", "Περιστέρι", "Άγιος Αντώνιος", "Σεπόλια", "Αττική", "Σταθμός Λαρίσης", "Μεταξουργείο",
+        "Ομόνοια", "Πανεπιστήμιο", "Σύνταγμα", "Ακρόπολη", "Συγγρού-Φιξ", "Νέος Κόσμος", "Άγιος Ιωάννης", "Δάφνη",
+        "Άγιος Δημήτριος", "Ηλιούπολη", "Άλιμος", "Αργυρούπολη", "Ελληνικό",
+    ],
+    "Γραμμή 3 (μπλε γραμμή)": [
+        "Δημοτικό Θέατρο", "Πειραιάς", "Μανιάτικα", "Νίκαια", "Κορυδαλλός", "Αγία Βαρβάρα", "Αγία Μαρίνα",
+        "Αιγάλεω", "Ελαιώνας", "Κεραμεικός", "Μοναστηράκι", "Σύνταγμα", "Ευαγγελισμός", "Μέγαρο Μουσικής",
+        "Αμπελόκηποι", "Πανόρμου", "Κατεχάκη", "Εθνική Άμυνα", "Χολαργός", "Νομισματοκοπείο", "Αγία Παρασκευή",
+        "Χαλάνδρι", "Δουκίσσης Πλακεντίας", "Παλλήνη", "Παιανία-Κάντζα", "Κορωπί", "Αεροδρόμιο",
+    ],
+}
+
+METRO_GLOSSARY: list[dict[str, str]] = [
+    *({"greek": f"{line}: " + ", ".join(stations), "meaning": "Athens metro stations", "normalised": "a metro station"}
+      for line, stations in METRO_STATIONS.items()),
+    {"greek": "χλμ., χιλιόμετρα", "meaning": "kilometres", "normalised": "metro_km"},
+    {"greek": "με το αυτοκίνητο, με όχημα, με λεωφορείο", "meaning": "by car or bus", "normalised": "not minutes on foot"},
+]
+GLOSSARY: list[dict[str, str]] = GLOSSARY_BASE + METRO_GLOSSARY

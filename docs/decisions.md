@@ -360,3 +360,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **A caution for interviews:** prompt v2 and the merge rules were shaped by reading these 100 listings' errors, so 91.7% is the score on a development set. A fresh batch, labelled blind, is the clean test.
 - **Spend so far:** $1.01 of the $100 (Haiku runs $0.155, the Sonnet run $0.85).
 - **Say:** "I ran the bigger model and it tied. That's a result: the cheap model is the right one here, and I can show why with numbers."
+
+## D40. Prompt v3: the metro, and every Athens station
+
+- **Why not a phrase list:** Haiku already found a metro distance in 23 of the 25 descriptions that give one; most metro "errors" were blanks in the key. A list of phrases would make the model behave like the regex and miss whatever isn't on the list. So v3 fixes the specific gaps instead.
+- **What v3 changes:** a kilometres field ("0,8 χλμ.") that code turns into metres and then minutes, so code still does the arithmetic; all 66 Athens metro stations on Lines 1 to 3 and the line names (πράσινη, ηλεκτρικός, ΗΣΑΠ, κόκκινη, μπλε) in the glossary, because you plan to search more areas. They're kept once in `core/greek.py` (`METRO_STATIONS`, checked against the published station list on 22 October 2026; Line 4 is still being built), so search can use the same list. Rules written down: a station named instead of the word μετρό counts; an area's name alone doesn't, even when a station shares it; minutes by car or bus aren't on foot; when a sentence gives several distances, only the metro's.
+- **No test listing in the prompt:** my first draft quoted three of our listings word for word; I replaced them with invented examples, because the spec keeps worked examples out of the test set. A check found no new quote from the 100 listings in the prompt.
+- **Versions stay reproducible:** v1 and v2 keep the glossary and fields they ran with, so their cached answers still match (re-running v2 cost $0).
+- **Result on key v3:** text-only fields 91.9% (v2 91.7%), metro 87% (85%), table fields 98.9%. Kilometres fixed (and that listing's balcony). Haiku already took the metro's 1500 m over a university's 650 m; the key's 650 is wrong and waits for the key check. A few other fields flipped between runs (two condition answers, one flag): the API has no temperature setting, so small run-to-run noise is expected.
+- **Open:** "on foot" made v3 skip minutes that don't say how ("μόλις 5 λεπτά από το Μετρό", "10 λεπτά από τον σταθμό «Άγιος Αντώνιος»"). Whether those count as walking is your call.
+- **Not doing:** walking distance from the map pin, scrapped (your call). The key check for the metro blanks waits.
+- **Cost:** $0.083. Spend so far $1.09 of the $100.
+- **Say:** "I didn't tell the model where to look; I fixed what it couldn't express. It had nowhere to put kilometres."

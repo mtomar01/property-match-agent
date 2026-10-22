@@ -125,3 +125,12 @@ def test_condition():
     assert greek.normalise_condition("Χρήζει ολικής ανακαίνισης") == "needs_work"
     assert greek.normalise_condition("ΝΕΟΔΜΗΤΟ") == "new_build"
     assert greek.normalise_condition("ανακαινισμένο το 2019") == "renovated"
+
+
+def test_every_athens_metro_station_is_listed_once_per_line():
+    from core.greek import METRO_STATIONS
+
+    sizes = [len(stations) for stations in METRO_STATIONS.values()]
+    assert sizes == [24, 20, 27]  # Lines 1, 2, 3 (October 2026)
+    assert len({s for stations in METRO_STATIONS.values() for s in stations}) == 66  # five interchanges
+    assert all(len(set(stations)) == len(stations) for stations in METRO_STATIONS.values())

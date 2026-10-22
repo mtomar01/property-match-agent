@@ -21,6 +21,7 @@ from core/greek.py, the same table the MCP server serves.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from core import greek, pii
@@ -29,7 +30,7 @@ from evals.harness.labels import LABEL_FIELDS, PARKING_PRESENT, comparable
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "extraction_v2"
+PROMPT_VERSION = "extraction_v3"
 MAX_TOKENS = 2000
 
 FLOORS = list(greek.SPECIAL_FLOORS) + [str(n) for n in range(1, 13)]
@@ -43,10 +44,16 @@ _CHOICES = {
     "parking": Parking.__args__,
 }
 _INTEGERS = ("price_eur", "bedrooms", "bathrooms", "year_built", "renovated_year", "metro_minutes", "metro_metres")
+_NUMBERS = ("size_m2", "metro_km")
 _BOOLEANS = ("lift", "balcony", "storage")
 READ_FIELDS = ("price_eur", "size_m2", "property_type", "bedrooms", "bathrooms", "floor_class", "year_built",
                "renovated_year", "condition", "energy_class", "heating_type", "heating_fuel", "parking", "lift",
-               "balcony", "storage", "flags", "metro_minutes", "metro_metres")
+               "balcony", "storage", "flags", "metro_minutes", "metro_metres", "metro_km")
+EARLY = ("extraction_v1", "extraction_v2")  # before v3 there was no kilometres field and no metro glossary (D40)
+
+
+def read_fields(version: str = PROMPT_VERSION) -> tuple[str, ...]:
+    return tuple(f for f in READ_FIELDS if f != "metro_km") if version in EARLY else READ_FIELDS
 
 
 # v2 dropped "good": the labelling guide has no such condition, so v1 offering
@@ -57,14 +64,14 @@ CONDITIONS_BY_VERSION = {"extraction_v1": Condition.__args__,
 
 def _property(name: str, version: str) -> dict:
     if name == "condition":
-        return {"enum": [*CONDITIONS_BY_VERSION[version], None]}
+        return {"enum": [*CONDITIONS_BY_VERSION.get(version, CONDITIONS_BY_VERSION["extraction_v2"]), None]}
     if name in _CHOICES:
         return {"enum": [*_CHOICES[name], None]}
     if name in _BOOLEANS:
         return {"enum": [True, False, None]}
     if name in _INTEGERS:
         return {"type": ["integer", "null"]}
-    if name == "size_m2":
+    if name in _NUMBERS:
         return {"type": ["number", "null"]}
     if name == "flags":
         return {"type": "array", "items": {"enum": list(Flag.__args__)}}
@@ -77,16 +84,17 @@ def schema(version: str = PROMPT_VERSION) -> dict:
     Evidence comes first, so the model quotes before it answers: each value then
     rests on words it has just copied from the listing.
     """
+    fields = read_fields(version)
     return {
         "type": "object",
         "properties": {
             "evidence": {"type": "array", "items": {
                 "type": "object",
-                "properties": {"field": {"enum": list(READ_FIELDS)}, "quote": {"type": "string"}},
+                "properties": {"field": {"enum": list(fields)}, "quote": {"type": "string"}},
                 "required": ["field", "quote"], "additionalProperties": False}},
-            **{name: _property(name, version) for name in READ_FIELDS},
+            **{name: _property(name, version) for name in fields},
         },
-        "required": ["evidence", *READ_FIELDS],
+        "required": ["evidence", *fields],
         "additionalProperties": False,
     }
 
@@ -94,13 +102,14 @@ def schema(version: str = PROMPT_VERSION) -> dict:
 SCHEMA = schema()
 
 
-def glossary_text() -> str:
-    return "\n".join(f"- {row['greek']}: {row['meaning']} ({row['normalised']})" for row in greek.GLOSSARY)
+def glossary_text(version: str = PROMPT_VERSION) -> str:
+    rows = greek.GLOSSARY_BASE if version in EARLY else greek.GLOSSARY
+    return "\n".join(f"- {row['greek']}: {row['meaning']} ({row['normalised']})" for row in rows)
 
 
 def system_prompt(version: str = PROMPT_VERSION) -> str:
     template = (PROMPTS / f"{version}.md").read_text(encoding="utf-8")
-    return template.replace("{{GLOSSARY}}", glossary_text())
+    return template.replace("{{GLOSSARY}}", glossary_text(version))
 
 
 def user_message(description: str, seen: str | None) -> str:
@@ -164,7 +173,10 @@ def parse_reading(raw: dict) -> dict:
 
     minutes = _in_range(fields.pop("metro_minutes"), 1, 60)
     metres = _in_range(fields.pop("metro_metres"), 20, 5000)
-    fields["metro_walk_min"] = minutes if minutes is not None else (-(-metres // METRES_PER_MINUTE) if metres else None)
+    km = _in_range(fields.pop("metro_km"), 0.02, 5)
+    if metres is None and km is not None:
+        metres = km * 1000  # code does the arithmetic (D40)
+    fields["metro_walk_min"] = minutes if minutes is not None else (math.ceil(metres / METRES_PER_MINUTE) if metres else None)
 
     evidence = {}
     for item in raw.get("evidence") or []:
