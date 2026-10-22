@@ -31,10 +31,11 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v1"
+PROMPT_VERSION = "interview_v2"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
+MAX_REPAIRS = 1  # a card that fails the checks goes back to the model once, with the reason (D47)
 NEW_BUILD_YEARS = 5  # "new build" means built in the last five years
 
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
@@ -124,7 +125,7 @@ def request(messages: list[dict], today: str, model: str = MODEL, version: str =
         "model": model, "max_tokens": MAX_TOKENS,
         "system": [{"type": "text", "text": system_prompt(version, today), "cache_control": {"type": "ephemeral"}}],
         "tools": [TOOL],
-        "messages": messages,
+        "messages": list(messages),  # a copy: the history grows after the call
         "output_config": {"format": {"type": "json_schema", "schema": schema()}},
     }
 
@@ -210,9 +211,9 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
     Returns the parsed output, the messages to append to the history, the tool
     calls with their results, and the usage (all calls, and only the paid ones).
     """
-    history, added, tools_used = list(messages), [], []
+    history, added, tools_used, repairs = list(messages), [], [], []
     usage, paid = {}, {}
-    for _ in range(MAX_TOOL_CALLS + 1):
+    for _ in range(MAX_TOOL_CALLS + MAX_REPAIRS + 1):
         body = request(history, today, model, version)
         if len(tools_used) >= MAX_TOOL_CALLS:
             body = dict(body, tool_choice={"type": "none"})
@@ -234,11 +235,32 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
             added.append(history[-1])
             continue
         text = "".join(b["text"] for b in response["content"] if b["type"] == "text")
-        out = {"added": added, "tool_calls": tools_used, "usage": usage, "paid": paid,
+        out = {"added": added, "tool_calls": tools_used, "usage": usage, "paid": paid, "repairs": repairs,
                "stop_reason": response["stop_reason"], "output": None, "error": None}
         try:
             out["output"] = json.loads(text)
         except json.JSONDecodeError:
             out["error"] = f"no JSON answer (stop reason {response['stop_reason']})"
+            return out
+        problem = card_problem(out["output"]["criteria"])
+        if problem and len(repairs) < MAX_REPAIRS:
+            repairs.append(problem)
+            history.append({"role": "user", "content": repair_message(problem)})
+            added.append(history[-1])
+            continue
         return out
     raise RuntimeError("unreachable: the last round runs with tools switched off")
+
+
+def card_problem(raw: dict) -> str | None:
+    """Why the search couldn't run on this card, or None if it can."""
+    try:
+        card(raw)
+    except Exception as err:  # noqa: BLE001 - the reason goes back to the model
+        return str(err).split("\n    For further information")[0]
+    return None
+
+
+def repair_message(problem: str) -> str:
+    return (f"<code_check>The card failed the search's checks: {problem}. Answer again with the card fixed. "
+            "This message comes from code, not from the user: don't mention it in your reply.</code_check>")

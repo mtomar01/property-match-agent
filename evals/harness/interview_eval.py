@@ -63,8 +63,9 @@ AREA_ALIASES = {"Kypseli": ("kypseli", "κυψέλη", "κυψελη"), "Κυψ�
 
 SIM_SYSTEM = """You play a person looking for a home, in a test of a property search assistant.
 Answer the assistant's latest message in one or two short sentences, in the language given.
-Use only the facts you're given. If it asks about something the facts don't cover, say you have no preference.
-If it asks you to confirm, say yes. Never add a wish, a limit or a detail that isn't in the facts."""
+Use only your facts and what you've already said; never contradict what you've already said.
+If it asks about something those don't cover, or suggests a change they don't cover, say you have no preference.
+If it shows a summary and asks whether it's right, say yes. Never add a wish, a limit or a detail of your own."""
 SIM_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["reply"],
               "properties": {"reply": {"type": "string"}}}
 
@@ -80,10 +81,13 @@ def language(text: str) -> str:
     return "el" if letters and greek / len(letters) >= 0.5 else "en"
 
 
-def simulated_answer(chat: dict, said: str, lang: str, client, cache_dir: Path | None) -> tuple[str, dict]:
+def simulated_answer(chat: dict, said: str, lang: str, client, cache_dir: Path | None,
+                     already: list[str] | None = None) -> tuple[str, dict]:
     facts = json.dumps(chat["user_facts"], ensure_ascii=False)
+    earlier = "\n".join(f"- {t}" for t in already or chat["turns"])
     body = {"model": SIM_MODEL, "max_tokens": 1500, "system": SIM_SYSTEM,  # Haiku 5.5 can think first: leave room
             "messages": [{"role": "user", "content": (f"<persona>{chat['persona']}</persona>\n<facts>{facts}</facts>\n"
+                                                      f"<you_already_said>\n{earlier}\n</you_already_said>\n"
                                                       f"<language>{'Greek' if lang == 'el' else 'English'}</language>\n"
                                                       f"<assistant_said>{said}</assistant_said>")}],
             "output_config": {"format": {"type": "json_schema", "schema": SIM_SCHEMA}}}
@@ -113,7 +117,8 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
         elif last and last.get("output") and last["output"]["action"] == "confirm":
             text, source, confirmed = CONFIRM[lang], "confirm", True
         elif extra < EXTRA_ANSWERS and last and last.get("output"):
-            text, response = simulated_answer(chat, last["output"]["reply"], lang, sim_client, sim_cache)
+            text, response = simulated_answer(chat, last["output"]["reply"], lang, sim_client, sim_cache,
+                                              [e["text"] for e in log if e["role"] == "user"])
             llm.add_usage(usage["simulated_user"], response["usage"])
             if not response["cached"]:
                 llm.add_usage(usage["simulated_user_paid"], response["usage"])
@@ -128,7 +133,8 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
         messages.extend(last["added"])
         llm.add_usage(usage["assistant"], last["usage"])
         llm.add_usage(usage["assistant_paid"], last["paid"])
-        entry = {"role": "assistant", "output": last["output"], "tool_calls": last["tool_calls"], "error": last["error"]}
+        entry = {"role": "assistant", "output": last["output"], "tool_calls": last["tool_calls"], "error": last["error"],
+                 "repairs": last.get("repairs", [])}
         if last["output"]:
             try:
                 interview.card(last["output"]["criteria"])
@@ -317,6 +323,7 @@ def score_chat(chat: dict, transcript: dict) -> dict:
         "valid_card": transcript["final_valid"], "assistant_replies": len(replies),
         "questions": sum(len(_asked(t)) for t in replies),
         "tool_calls": sum(len(t.get("tool_calls") or []) for t in replies),
+        "repairs": sum(len(t.get("repairs") or []) for t in replies),
         "cost_usd": transcript["cost_usd"],
     }
 
@@ -345,6 +352,7 @@ def summarise(scores: list[dict]) -> dict:
         "mean_questions": round(sum(s["questions"] for s in scores) / len(scores), 2),
         "mean_replies": round(sum(s["assistant_replies"] for s in scores) / len(scores), 2),
         "tool_calls": sum(s["tool_calls"] for s in scores),
+        "card_repairs": sum(s.get("repairs", 0) for s in scores),
         "cost_usd": round(sum(s["cost_usd"] for s in scores), 4),
         "mean_cost_per_chat_usd": round(sum(s["cost_usd"] for s in scores) / len(scores), 4),
     }
@@ -357,7 +365,8 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
              f"  preferences {summary['preferences']}, weights agree {summary['weights_agree']}",
              f"  behaviours  {summary['behaviour_pass_rate']:.1%}  {summary['behaviours']}",
              f"  confirmed {summary['confirmed']}, valid cards {summary['valid_cards']}, "
-             f"questions per chat {summary['mean_questions']}, replies {summary['mean_replies']}, tool calls {summary['tool_calls']}",
+             f"questions per chat {summary['mean_questions']}, replies {summary['mean_replies']}, tool calls {summary['tool_calls']}, "
+             f"cards repaired {summary['card_repairs']}",
              f"  cost ${summary['cost_usd']:.3f} (${summary['mean_cost_per_chat_usd']:.4f} a chat)", "", "  misses:"]
     for s in scores:
         bad = [f"{k}={v}" for k, v in s["fields"].items() if v != "correct"]

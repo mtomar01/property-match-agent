@@ -147,3 +147,22 @@ def test_behaviours_need_the_question_the_language_and_the_named_area():
     result = ev.behaviours(chat, {"log": log, "final": card(areas=["Egaleo"])})
     assert result["reply_in:el"] is False and result["area_not_covered:Κυψέλη"] is True
     assert ev.language("Θέλω δύο υπνοδωμάτια στο Egaleo.") == "el" and ev.language("Two bedrooms in Αιγάλεω please") == "en"
+
+
+def test_a_card_the_search_cant_run_on_goes_back_to_the_model_once():
+    bad = card(prefs=[{"feature": "floor_level", "min": "top", "max": None, "equals": None, "weight": 0.7}])
+    good = card(prefs=[{"feature": "floor_level", "min": 4, "max": None, "equals": None, "weight": 0.7}])
+    client = Scripted([answer("Card?", "confirm", criteria=bad), answer("Card?", "confirm", criteria=good)])
+    out = interview.reply(client, [{"role": "user", "content": "x"}], [], "2026-10-22")
+    assert out["output"]["criteria"] == good and len(out["repairs"]) == 1 and "energy_class" in out["repairs"][0]
+    assert "<code_check>" in client.bodies[1]["messages"][-1]["content"]
+    stubborn = Scripted([answer("Card?", "confirm", criteria=bad)] * 2)
+    out = interview.reply(stubborn, [{"role": "user", "content": "x"}], [], "2026-10-22")
+    assert out["output"]["criteria"] == bad and len(stubborn.bodies) == 2  # one repair, then the eval counts it
+
+
+def test_the_simulated_user_knows_what_it_already_said():
+    chat = {"chat_id": "x", "language": "en", "persona": "p", "turns": ["One bedroom in Peristeri."], "user_facts": {}}
+    sim = Scripted([{"reply": "No preference."}])
+    ev.simulated_answer(chat, "Anything else?", "en", sim, None, ["One bedroom in Peristeri.", "Yes."])
+    assert "<you_already_said>\n- One bedroom in Peristeri.\n- Yes.\n</you_already_said>" in sim.bodies[0]["messages"][0]["content"]
