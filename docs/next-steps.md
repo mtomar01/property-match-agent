@@ -17,8 +17,14 @@ Updated 22 October 2026, after answer key v4.
 
 ## Next steps
 
-1. **Interview eval harness (now)** on the 40 chats, with a simulated user that answers only from each chat's facts (Sonnet, about $2.50 to $5 a run).
+1. **Interview eval: three calls for you** (D47): en_11, en_13 and en_20, then a clean test: 10 new chats written by you and GB, in your own words, that the prompt has never seen.
 2. **v1 features:** `extract_listing` on the MCP server with Haiku and the code merge, the interview prompt (Sonnet), the criteria card, the table view. Metro distance comes from the description only; the map-pin distance is scrapped.
+
+## Interview eval (22 October, D46, D47)
+
+- 40 chats: scripted user turns, a simulated user (Haiku) for gaps, scored in code. Sonnet 5.5 with one tool, check_supply, so trade-offs use code's numbers.
+- Prompt v1: fields 88.8%, 0 invented hard limits; stated bedroom counts became preferences. Prompt v2: fields 98.8%, 1 invented hard limit, behaviours 98.8%, 2.3 cents a chat.
+- Spent about $3.40 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 
@@ -85,7 +91,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D45.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D47.
 
 ## For the desktop app demo
 

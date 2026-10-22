@@ -428,3 +428,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **What v1 got wrong:** 16 of the 18 missed fields are one mistake. My prompt said "a hard limit only when stated as one", so "a two bedroom flat" became a preference. One more missed bedroom count came from the simulated user (below), and one missed intent from the prompt. Also: intent left blank when the user gave a price but didn't say "buy" (and an offer to "search both buy and rent", which a card can't do), "top floor" written as a word where the search needs a floor number (the one invalid card), and one question tag defined loosely.
 - **Two harness bugs it showed:** the simulated user didn't know what the script had already said, so it once said "no preference on bedrooms" after the user asked for one bedroom; and it agreed to a change its facts didn't cover. Both fixed before the next run.
 - **Say:** "The interview is scored like a form: every field it fills is checked in code, and the costly mistake, an invented hard limit, has a target of zero."
+
+## D47. Interview prompt v2, card repair in code
+
+- **Prompt v2, from the v1 misses:** a number given for price, size or bedrooms is a hard limit unless the user softens it ("ideally", "if possible"); intent comes from the price (tens of thousands is a purchase, a monthly figure is rent) and is asked only when unclear; floor_level takes floor numbers only, and "top floor" goes in an open question; clearer budget tags. The examples are invented ("a three bedroom house", "no mezzanine"), none from the 40 chats.
+- **Card repair in code:** code checks every card with the search's own models. A card that fails goes back to the model once with the reason, marked as coming from code. If it fails again, it's an error the eval counts. In production that means the search never receives a card it can't run.
+- **Simulated user:** now knows everything the user has already said, and says "no preference" to a change its facts don't cover.
+- **Result, all 40 chats** ($0.93, 2.3 cents a chat): fields **98.8%** (target 95%, v1 88.8%), **1 invented hard limit** (target 0, v1 0), preferences 16 of 16 (v1 15, with 16 on the wrong side), weights 13 of 13, behaviours 98.8%, every card valid and confirmed, no repairs needed. Questions per chat fell from 1.65 to 1.1.
+- **The three misses, for your call:**
+  - en_11, invented property type: "the flat itself up to 210k" became an apartment-only limit. The user means "the home", not a type. I count it as a real miss.
+  - en_13, property type: the model kept "studio", said no studio in Egaleo is listed, and offered to open it to apartments. It marked that reply as "confirm", so the harness's fixed "yes" kept the card. The label expects studio or apartment, which the user never asked for.
+  - en_20, must_ask budget: the model asked intent and area first (two questions a reply), and the script gave the budget before it was asked.
+- **Development score:** v2 was shaped on these 40 chats, as prompt v3 was on the 100 listings. The honest number needs new chats written by someone who hasn't seen the prompt.

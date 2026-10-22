@@ -66,6 +66,13 @@ Most of Haiku's "invented" values come with a quote from the description that th
 
 Answer key quality: two labellers relabelled 20 of each other's listings (40 real listings, kept private). Agreement 89.6% overall against a 95% target: 98% on fields the page's table states, 59% on fields only the text states (D30).
 
+| Version | Eval | Chats | Fields (target 95%) | Invented hard limits (target 0) | Preferences | Behaviours |
+|---|---|---|---|---|---|---|
+| v1 | Interview, Sonnet 5.5, prompt v1 (D46) | 40 | 88.8% | 0 | 15 of 16, 16 on the wrong side | 98.8% |
+| v1 | Interview, prompt v2: stated numbers are hard limits, card repair in code (D47) | 40 | **98.8%** | **1** | 16 of 16 | 98.8% |
+
+The interview set shaped prompt v2, so these are development scores (D47).
+
 Results files are in `evals/results/`. A mutation test checks the eval fails when the hard-limit filter is switched off.
 
 ## Docs
