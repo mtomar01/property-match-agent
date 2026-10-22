@@ -79,6 +79,8 @@ def test_criteria_normalises_areas_and_floors():
 def test_criteria_rejects_unsupported_area():
     with pytest.raises(ValidationError, match="isn't covered"):
         Criteria(user_id="u", intent="buy", areas=["Kypseli"])
+    with pytest.raises(ValidationError, match="isn't covered"):  # an Area for the clean test, not for search (D46)
+        Criteria(user_id="u", intent="buy", areas=["Παγκράτι"])
 
 
 def test_hard_limit_ranges_must_make_sense():

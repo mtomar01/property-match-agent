@@ -35,6 +35,9 @@ Fuel = Literal["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"]
 Parking = Literal["pilotis", "space", "garage", "none"]
 Flag = Literal["whole_floor", "dual_aspect", "corner"]
 Area = Literal["Egaleo", "Peristeri", "Chaidari", "Pagrati"]  # Pagrati added 22 October 2026 (D44)
+# Areas the search covers: the snapshot has listings for these only. Pagrati is an Area for the
+# extraction clean test (D44) but has no search listings, so criteria can't ask for it (D46).
+SEARCH_AREAS: tuple[str, ...] = ("Egaleo", "Peristeri", "Chaidari")
 RejectReason = Literal[
     "too_dark", "too_small", "bad_floor", "needs_work", "too_expensive", "wrong_area", "other"
 ]
@@ -286,8 +289,8 @@ class Criteria(_Strict):
         out = []
         for raw in value or []:
             canonical = greek.normalise_area(raw)
-            if canonical is None:
-                raise ValueError(f"area {raw!r} isn't covered yet (Egaleo, Peristeri, Chaidari)")
+            if canonical is None or canonical not in SEARCH_AREAS:
+                raise ValueError(f"area {raw!r} isn't covered yet ({', '.join(SEARCH_AREAS)})")
             if canonical not in out:
                 out.append(canonical)
         return out

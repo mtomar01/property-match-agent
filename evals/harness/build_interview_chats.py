@@ -5,6 +5,8 @@ simulated user can answer from, the criteria a perfect interview would end
 with, and the behaviours to check (must_ask, must_say, must_not_invent).
 
 The chats are hand-written; this file is the readable source for the JSONL.
+"New build" is year_built from five years back, 2021 in these chats, in both languages (D46).
+
 Run: uv run python -m evals.harness.build_interview_chats evals/datasets/interview_chats.jsonl
 """
 
@@ -106,7 +108,7 @@ chat("el_10", "el", "Ελληνοαυστραλός, αλλάζει γλώσσα
 chat("el_11", "el", "Αγοραστής με αντικρουόμενες απαιτήσεις", ["conflicting_asks"],
      ["Θέλω μεγάλο σπίτι, πάνω από 120 τετραγωνικά, νεόδμητο, κάτω από 150 χιλιάδες, στο Περιστέρι."],
      {"budget": "150.000 €", "size": "120+", "age": "Νεόδμητο αν γίνεται"},
-     crit("buy", ["Peristeri"], {"max_price_eur": 150000, "min_size_m2": 120}, [pref("year_built", 0.6, min=2020)]),
+     crit("buy", ["Peristeri"], {"max_price_eur": 150000, "min_size_m2": 120}, [pref("year_built", 0.6, min=2021)]),
      must_say=["tradeoff_with_numbers", "reply_in:el"],
      notes="New builds in Peristeri run well above 2,500 €/m², so 120 m² under 150k is unlikely. Show the trade-off with numbers instead of returning nothing.")
 
@@ -263,7 +265,7 @@ chat("en_13", "en", "Parent buying for a student", ["implicit_area"],
 chat("en_14", "en", "Only wants new builds", ["no_field"],
      ["New build only, Peristeri, up to 300k, 2 bedrooms."],
      {},
-     crit("buy", ["Peristeri"], {"max_price_eur": 300000, "min_bedrooms": 2}, [pref("year_built", 1.0, min=2023)],
+     crit("buy", ["Peristeri"], {"max_price_eur": 300000, "min_bedrooms": 2}, [pref("year_built", 1.0, min=2021)],
           ["'New build only' can't be a hard filter yet; treat as a strong preference?"]),
      must_say=["reply_in:en"], must_not_invent=["condition"],
      notes="Schema gap: no hard 'condition' limit. Record as a strong preference and say so.")
