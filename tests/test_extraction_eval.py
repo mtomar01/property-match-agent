@@ -129,3 +129,13 @@ def test_key_v3_fills_only_silent_crossed_out_blanks_and_marks_them():
     assert said.fields.parking is None and said.fields.storage is None and names == ["lift"]  # the text wins (D34, D35)
     kept, names = answer_key.fill_crossed_out(label("spitogatos:1", lift=True), crossed, "")
     assert kept.fields.lift is True and "lift" not in names  # a labeller's answer is never overwritten
+
+
+def test_key_check_shows_the_metro_as_the_listing_writes_it():
+    from evals.harness.key_check import metro_as_written, show
+
+    assert metro_as_written("Σταθμός Μετρό Περιστέρι 790 m", 10) == 790
+    assert metro_as_written("0,6 Χιλιόμετρα από μετρό", 8) == 600
+    assert metro_as_written("9 λεπτά με τα πόδια από τον σταθμό", 9) == 9
+    assert show("metro_walk_min", 790) == "790 m (10 min)" and show("metro_walk_min", 9) == "9 min"
+    assert show("storage", False) == "no" and show("floor_class", "raised_ground") == "raised ground"

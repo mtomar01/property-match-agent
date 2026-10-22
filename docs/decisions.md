@@ -380,3 +380,9 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Result on key v3** (no new model calls): Haiku v3 + code 92.1% on text-only fields, metro 88%; code alone 91.3%. Every "με τα πόδια" case kept; the key's two minute-based values both say on foot, so the key needs no change for this rule.
 - **The guide and the labelling pages** now say it.
 - **Say:** "When a rule is crisp, I put it in code. The model reads; code decides what counts."
+
+## D42. The answer key check
+
+- **What:** one page, "Answer Key Check", with the 21 values where answer key v3 and the listing seem to disagree: 12 metro (8 blanks where the description gives a distance, the 650 m that belongs to a university, two "500 m" typed as 5 minutes, and one 8 minutes the system can't find), 6 floors (ground against υπερυψωμένο ισόγειο) and 3 storage (εσωτερική αποθήκη). Each shows the listing link, the few words from its description that matter, the key's value and the proposed one. You pick, or type another value; each choice saves at once. Floor and storage have a "use the proposed value for all" button, because each is one rule.
+- **Why this shape:** the proposed value is the system's reading, but metro is written the way the listing gives it (790 m rather than 10 minutes), so code converts and the key stops holding home-made conversions. The page carries short quotes only, never a whole description (the spirit of D28).
+- **Next:** your choices become answer key v4, with every change recorded.
