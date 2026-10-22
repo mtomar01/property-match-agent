@@ -168,3 +168,22 @@ def test_kilometres_become_minutes_in_code():
     assert parse_reading(blank_reading(metro_km=0.6))["metro_walk_min"] == 8  # 600 m at 80 m a minute
     assert parse_reading(blank_reading(metro_km=0.6, metro_metres=450))["metro_walk_min"] == 6  # metres as written win
     assert parse_reading(blank_reading(metro_km=40))["metro_walk_min"] is None  # out of range: unknown
+
+
+def test_metro_minutes_count_only_on_foot():
+    from agent.extraction import apply_walking_rule
+
+    desc = "Σε ήσυχο σημείο, μόλις 5 λεπτά από το Μετρό. Επίσης 9 λεπτά με τα πόδια από τον σταθμό Μετρό."
+    vague = parse_reading(blank_reading(metro_minutes=5, evidence=[{"field": "metro_minutes", "quote": "μόλις 5 λεπτά από το Μετρό"}]))
+    assert apply_walking_rule(vague, desc)["metro_walk_min"] is None  # no "on foot": doesn't count (D41)
+    walk = parse_reading(blank_reading(metro_minutes=9, evidence=[{"field": "metro_minutes", "quote": "9 λεπτά με τα πόδια από τον σταθμό"}]))
+    assert apply_walking_rule(walk, desc)["metro_walk_min"] == 9
+    metres = parse_reading(blank_reading(metro_metres=500, evidence=[{"field": "metro_metres", "quote": "500 μέτρα από το μετρό"}]))
+    assert apply_walking_rule(metres, "500 μέτρα από το μετρό")["metro_walk_min"] == 7  # a distance counts as written
+
+
+def test_the_baseline_follows_the_on_foot_rule_too():
+    from evals.harness.code_baseline import from_description
+
+    assert from_description("Μόλις 5 λεπτά από το μετρό.") == {}
+    assert from_description("8 λεπτά με τα πόδια από το μετρό.") == {"metro_walk_min": 8}

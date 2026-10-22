@@ -372,3 +372,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Not doing:** walking distance from the map pin, scrapped (your call). The key check for the metro blanks waits.
 - **Cost:** $0.083. Spend so far $1.09 of the $100.
 - **Say:** "I didn't tell the model where to look; I fixed what it couldn't express. It had nowhere to put kilometres."
+
+## D41. Metro minutes count only on foot, enforced in code
+
+- **Your rule:** "μόλις 5 λεπτά από το Μετρό", or any minutes that don't say how, don't count: a 5-minute walk would say so. Metres and kilometres are distances, so they count as written; minutes by car or bus never count (D40).
+- **Why in code, not a v4 prompt:** v3 already followed this most of the time but still took "6 λεπτά απο Μετρό Αιγάλεω". A check in code holds whatever the model does and costs nothing: when the model's metro answer came from minutes, code looks at the words it quoted in the description, plus a few characters either side, for "πόδια", "περπάτημα" or "πεζή". If none is there, the minutes are dropped. The code-only baseline follows the same rule.
+- **Result on key v3** (no new model calls): Haiku v3 + code 92.1% on text-only fields, metro 88%; code alone 91.3%. Every "με τα πόδια" case kept; the key's two minute-based values both say on foot, so the key needs no change for this rule.
+- **The guide and the labelling pages** now say it.
+- **Say:** "When a rule is crisp, I put it in code. The model reads; code decides what counts."

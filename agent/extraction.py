@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import Path
 
 from core import greek, pii
@@ -173,10 +174,11 @@ def parse_reading(raw: dict) -> dict:
 
     minutes = _in_range(fields.pop("metro_minutes"), 1, 60)
     metres = _in_range(fields.pop("metro_metres"), 20, 5000)
-    km = _in_range(fields.pop("metro_km"), 0.02, 5)
+    km = _in_range(fields.pop("metro_km", None), 0.02, 5)
     if metres is None and km is not None:
         metres = km * 1000  # code does the arithmetic (D40)
     fields["metro_walk_min"] = minutes if minutes is not None else (math.ceil(metres / METRES_PER_MINUTE) if metres else None)
+    fields["metro_from"] = "minutes" if minutes is not None else ("distance" if metres else None)
 
     evidence = {}
     for item in raw.get("evidence") or []:
@@ -184,6 +186,30 @@ def parse_reading(raw: dict) -> dict:
         if name in READ_FIELDS and quote and name not in evidence:
             evidence["metro_walk_min" if name.startswith("metro_") else name] = pii.scrub(quote)[:200]
     fields["evidence"] = evidence
+    return fields
+
+
+WALKING = re.compile(r"π[όο]δια|περπ[άα]τ|πεζ[ήηόο]", re.I)
+
+
+def walking_stated(quote: str, description: str) -> bool:
+    """Whether the description says "on foot" next to the minutes the model quoted (D41)."""
+    if not quote:
+        return False
+    at = description.find(quote)
+    span = description[max(0, at - 20): at + len(quote) + 20] if at >= 0 else quote
+    return bool(WALKING.search(span))
+
+
+def apply_walking_rule(fields: dict, description: str) -> dict:
+    """Minutes to the metro count only when the listing says on foot (your rule, D41).
+
+    "μόλις 5 λεπτά από το Μετρό" doesn't say how, and a 5-minute walk would say
+    so. Metres and kilometres are distances, so they count as written. Done in
+    code, so it holds whatever the model does.
+    """
+    if fields.get("metro_from") == "minutes" and not walking_stated(fields.get("evidence", {}).get("metro_walk_min", ""), description):
+        fields = dict(fields, metro_walk_min=None, metro_from=None)
     return fields
 
 

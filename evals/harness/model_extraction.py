@@ -28,7 +28,7 @@ from pathlib import Path
 
 from adapters import spitogatos_features as features
 from agent import llm
-from agent.extraction import MAX_TOKENS, PROMPT_VERSION, ExtractionError, call, merge, parse_reading, request
+from agent.extraction import MAX_TOKENS, PROMPT_VERSION, ExtractionError, apply_walking_rule, call, merge, parse_reading, request
 from evals.harness import extraction_eval
 from evals.harness.build_label_tool import RAW, ROOT, SNAPSHOT
 from evals.harness.code_baseline import from_page
@@ -123,6 +123,7 @@ def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_vers
                 listing_id = f"spitogatos:{record['source_id']}"
                 code = from_page(record, cards.get(listing_id, {}))
                 text = parse_reading(entry["raw"]) if entry.get("raw") else {}
+                text = apply_walking_rule(text, record["sections"].get("Περιγραφή", "")) if text else text
                 fields, blanked = merge(code, text, rule)
                 for field in blanked:
                     conflicts[field] = conflicts.get(field, 0) + 1

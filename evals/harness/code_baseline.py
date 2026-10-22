@@ -38,7 +38,7 @@ LIFT = re.compile(r"ασανσ[έε]ρ|ανελκυστ[ήη]ρ", re.I)
 LIFT_NONE = re.compile(NEGATION + r"\s+(?:\w+\s+){0,3}(?:ασανσ[έε]ρ|ανελκυστ[ήη]ρ)", re.I)
 METRES_TO_METRO = re.compile(r"(\d[\d.,]*)\s*(?:μ\.|μέτρ\w*|m\b)[^.\n]{0,60}?μετρ[όο]", re.I)
 METRO_THEN_METRES = re.compile(r"μετρ[όο][^.\n]{0,40}?(\d[\d.,]*)\s*(?:μ\.|μέτρ\w*|m\b)", re.I)
-MINUTES_TO_METRO = re.compile(r"(\d{1,2})\s*λεπτ\w*[^.\n]{0,40}?μετρ[όο]", re.I)
+MINUTES_TO_METRO = re.compile(r"(\d{1,2})\s*λεπτ\w*[^.\n]{0,40}?(?:μετρ[όο]|σταθμ)", re.I)
 
 
 def _metres(text: str) -> int | None:
@@ -67,8 +67,8 @@ def from_description(text: str) -> dict:
         found["lift"] = True
     minutes = MINUTES_TO_METRO.search(text)
     metres = METRES_TO_METRO.search(text) or METRO_THEN_METRES.search(text)
-    if minutes:
-        found["metro_walk_min"] = int(minutes.group(1))
+    if minutes and re.search(r"π[όο]δια|περπ[άα]τ|πεζ[ήηόο]", minutes.group(0), re.I):
+        found["metro_walk_min"] = int(minutes.group(1))  # minutes count only on foot (D41)
     elif metres and _metres(metres.group(1)):
         found["metro_walk_min"] = -(-_metres(metres.group(1)) // 80)
     return found
