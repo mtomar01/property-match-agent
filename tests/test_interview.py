@@ -176,3 +176,13 @@ def test_a_basic_fact_the_user_gave_unasked_counts_but_a_clarification_must_be_a
     result = ev.behaviours(chat, {"log": log, "final": card(max_price_eur=200000)})
     assert result == {"ask:budget": True, "ask:budget_ceiling": False}
     assert ev.behaviours(chat, {"log": log, "final": card(max_price_eur=250000)})["ask:budget"] is False
+
+
+def test_a_wide_search_comes_with_a_breakdown_code_counted():
+    listings = SnapshotAdapter().listings()  # 54 synthetic listings for sale
+    wide = interview.check_supply({"intent": "buy", "areas": [], "hard_limits": {}}, listings)
+    assert wide["matches"] > interview.WIDE
+    assert sum(wide["breakdown"]["by_bedrooms"].values()) == sum(wide["breakdown"]["by_size"].values()) == wide["matches"]
+    narrow = interview.check_supply({"intent": "buy", "areas": ["Egaleo"], "hard_limits": {}}, listings)
+    assert narrow["matches"] <= interview.WIDE and "breakdown" not in narrow
+    assert ev.quotes_tool_number(f"{wide['breakdown']['with_balcony']} of them have a balcony.", [wide], set())

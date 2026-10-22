@@ -254,6 +254,9 @@ def numbers_in(text: str) -> set[float]:
 def _tool_numbers(result: dict) -> set[float]:
     values = {result.get(k) for k in ("matches", "listings_in_areas", "median_price_eur", "median_price_per_m2", "median_size_m2")}
     values |= set((result.get("if_dropped") or {}).values())
+    split = result.get("breakdown") or {}
+    values |= set((split.get("by_bedrooms") or {}).values()) | set((split.get("by_size") or {}).values())
+    values |= {split.get(k) for k in ("with_parking", "with_balcony", "with_lift")}
     return {float(v) for v in values if isinstance(v, (int, float))}
 
 
@@ -339,6 +342,9 @@ def score_chat(chat: dict, transcript: dict) -> dict:
         "questions": sum(len(_asked(t)) for t in replies),
         "tool_calls": sum(len(t.get("tool_calls") or []) for t in replies),
         "repairs": sum(len(t.get("repairs") or []) for t in replies),
+        # D49: was the search wide (a check over 50), and did it ask the one narrowing question?
+        "wide": any(c["result"].get("matches", 0) > interview.WIDE for t in replies for c in t.get("tool_calls") or []),
+        "narrowing_asked": any("narrowing" in _asked(t) for t in replies),
         "cost_usd": transcript["cost_usd"],
     }
 
@@ -368,6 +374,9 @@ def summarise(scores: list[dict]) -> dict:
         "mean_replies": round(sum(s["assistant_replies"] for s in scores) / len(scores), 2),
         "tool_calls": sum(s["tool_calls"] for s in scores),
         "card_repairs": sum(s.get("repairs", 0) for s in scores),
+        "narrowing": {"wide_chats": sum(s["wide"] for s in scores),
+                      "asked_when_wide": sum(s["wide"] and s["narrowing_asked"] for s in scores),
+                      "asked_when_not_wide": sum(not s["wide"] and s["narrowing_asked"] for s in scores)},
         "cost_usd": round(sum(s["cost_usd"] for s in scores), 4),
         "mean_cost_per_chat_usd": round(sum(s["cost_usd"] for s in scores) / len(scores), 4),
     }
@@ -382,6 +391,7 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
              f"  confirmed {summary['confirmed']}, valid cards {summary['valid_cards']}, "
              f"questions per chat {summary['mean_questions']}, replies {summary['mean_replies']}, tool calls {summary['tool_calls']}, "
              f"cards repaired {summary['card_repairs']}",
+             f"  narrowing {summary['narrowing']}",
              f"  cost ${summary['cost_usd']:.3f} (${summary['mean_cost_per_chat_usd']:.4f} a chat)", "", "  misses:"]
     for s in scores:
         bad = [f"{k}={v}" for k, v in s["fields"].items() if v != "correct"]

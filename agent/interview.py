@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import statistics
+from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import get_args
@@ -31,7 +32,7 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v2"
+PROMPT_VERSION = "interview_v3"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -41,7 +42,8 @@ NEW_BUILD_YEARS = 5  # "new build" means built in the last five years
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
-          "priorities", "other")
+          "priorities", "narrowing", "other")
+WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "property_types",
@@ -167,9 +169,30 @@ def check_supply(args: dict, listings: list) -> dict:
         "median_price_per_m2": round(statistics.median(per_m2)) if per_m2 else None,
         "median_size_m2": round(statistics.median(sizes)) if sizes else None,
     }
+    if len(matches) > WIDE:
+        result["breakdown"] = breakdown(matches)
     if not in_areas:
         result["note"] = f"The snapshot has no {'rental' if kind == 'rent' else 'sale'} listings in these areas yet."
     return result
+
+
+def breakdown(matches: list) -> dict:
+    """How the matches split, so a narrowing question can use real numbers. Code counts; unknowns are counted too."""
+    def band(value, edges, labels):
+        if value is None:
+            return "unknown"
+        return next((label for edge, label in zip(edges, labels) if value < edge), labels[-1])
+
+    bedrooms, sizes = Counter(), Counter()
+    for listing in matches:
+        bedrooms[band(listing.bedrooms, (2, 3), ("0 to 1", "2", "3 or more"))] += 1
+        sizes[band(listing.size_m2, (60, 90), ("under 60 m2", "60 to 89 m2", "90 m2 or more"))] += 1
+    return {
+        "by_bedrooms": dict(bedrooms), "by_size": dict(sizes),
+        "with_parking": sum(1 for l in matches if l.parking in ("pilotis", "space", "garage")),
+        "with_balcony": sum(1 for l in matches if l.balcony is True),
+        "with_lift": sum(1 for l in matches if l.lift is True),
+    }
 
 
 def cache_key(body: dict) -> str:
