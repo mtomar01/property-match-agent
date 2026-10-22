@@ -248,3 +248,10 @@ def test_a_chat_from_the_writing_page_becomes_an_eval_chat():
                                                         {"feature": "energy_class", "weight": 0.6, "min": "C"}]
     assert chat["must_ask"] == ["budget_ceiling"]
     assert chat["must_say"] == ["reply_in:el", "tradeoff_with_numbers", "area_not_covered:Κουκάκι", "area_not_covered:Πατήσια"]
+
+
+def test_greeklish_counts_as_greek():
+    assert ev.language("Kalispera chat, tha ithela ena diamerisma na agorasw") == "el"
+    assert ev.language("den me noiazei o orofos") == "el"
+    assert ev.language("Hi, I'd like a flat in Egaleo with a balcony, up to 200k.") == "en"
+    assert ev.language("From 40 sqm and 2 bedrooms at least") == "en"
