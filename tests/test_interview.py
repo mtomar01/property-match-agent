@@ -21,11 +21,12 @@ def answer(reply="Ok?", action="ask", asking=(), criteria=None, declined=(), not
                                      "preferences": [], "open_questions": []}}
 
 
-def card(intent="buy", areas=(), prefs=(), **limits):
+def card(intent="buy", areas=(), prefs=(), budget_around=False, **limits):
     hard = {n: None for n in interview.HARD_FIELDS}
     hard.update(property_types=[], exclude_floors=[])
     hard.update(limits)
-    return {"intent": intent, "areas": list(areas), "hard_limits": hard, "preferences": list(prefs), "open_questions": []}
+    return {"intent": intent, "areas": list(areas), "hard_limits": hard, "budget_around": budget_around,
+            "preferences": list(prefs), "open_questions": []}
 
 
 class Scripted:
@@ -74,9 +75,10 @@ def test_check_supply_counts_in_code_and_says_what_each_limit_costs():
     listings = SnapshotAdapter().listings()  # the synthetic set
     args = {"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 150000, "min_bedrooms": 3}}
     result = interview.check_supply(args, listings)
-    criteria = Criteria(user_id="t", intent="buy", areas=["Egaleo"], hard_limits=HardLimits(max_price_eur=150000, min_bedrooms=3))
+    criteria = Criteria(user_id="t", intent="buy", areas=["Egaleo"],
+                        hard_limits=HardLimits(max_price_eur=150000, min_price_eur=120000, min_bedrooms=3))  # 80% added by code
     assert result["matches"] == len(apply_hard_limits(listings, criteria).matches)
-    assert set(result["if_dropped"]) == {"max_price_eur", "min_bedrooms"}
+    assert set(result["if_dropped"]) == {"max_price_eur", "min_price_eur", "min_bedrooms"}
     assert all(n >= result["matches"] for n in result["if_dropped"].values())
     assert "error" in interview.check_supply({"intent": "buy", "areas": ["Kypseli"], "hard_limits": {}}, listings)
     assert "note" in interview.check_supply({"intent": "rent", "areas": ["Egaleo"], "hard_limits": {}}, [])
@@ -98,7 +100,7 @@ def test_a_chat_follows_the_script_then_confirms_or_asks_the_simulated_user():
     chat = {"chat_id": "x", "language": "en", "persona": "p", "turns": ["Peristeri, up to 200k.", "Two bedrooms."],
             "user_facts": {"bedrooms": "2"}}
     agent = Scripted([answer("How many bedrooms?", asking=["bedrooms"]),
-                      answer("Here's the card. Shall I search?", action="confirm", criteria=card(areas=["Peristeri"]))])
+                      answer("Here's the card. Shall I search?", action="confirm", criteria=card(areas=["Peristeri"], max_price_eur=200000))])
     t = ev.simulate(chat, agent, [], cache_dir=None)
     assert [e["source"] for e in t["log"] if e["role"] == "user"] == ["script", "script", "confirm"]
     assert t["confirmed"] and t["final"]["areas"] == ["Peristeri"]
@@ -150,8 +152,8 @@ def test_behaviours_need_the_question_the_language_and_the_named_area():
 
 
 def test_a_card_the_search_cant_run_on_goes_back_to_the_model_once():
-    bad = card(prefs=[{"feature": "floor_level", "min": "top", "max": None, "equals": None, "weight": 0.7}])
-    good = card(prefs=[{"feature": "floor_level", "min": 4, "max": None, "equals": None, "weight": 0.7}])
+    bad = card(max_price_eur=150000, prefs=[{"feature": "floor_level", "min": "top", "max": None, "equals": None, "weight": 0.7}])
+    good = card(max_price_eur=150000, prefs=[{"feature": "floor_level", "min": 4, "max": None, "equals": None, "weight": 0.7}])
     client = Scripted([answer("Card?", "confirm", criteria=bad), answer("Card?", "confirm", criteria=good)])
     out = interview.reply(client, [{"role": "user", "content": "x"}], [], "2026-10-22")
     assert out["output"]["criteria"] == good and len(out["repairs"]) == 1 and "energy_class" in out["repairs"][0]
@@ -225,7 +227,7 @@ def test_a_limit_loosened_after_a_yes_from_the_harness_is_caught():
 def test_a_suggestion_to_ease_a_limit_gets_a_fixed_no_preference():
     chat = {"chat_id": "x", "language": "en", "persona": "p", "turns": ["Peristeri, over 120 m², under 150k."], "user_facts": {}}
     agent = Scripted([answer("0 pass. Adding Egaleo gives 2. Shall I?", asking=["ease_limit"]),
-                      answer("Keeping it. Search?", "confirm", criteria=card(areas=["Peristeri"]))])
+                      answer("Keeping it. Search?", "confirm", criteria=card(areas=["Peristeri"], max_price_eur=150000))])
     t = ev.simulate(chat, agent, [], cache_dir=None, sim_client=Scripted([]))  # the model user is never called
     assert [(e["source"], e["text"]) for e in t["log"] if e["role"] == "user"][1] == ("fixed, easing", "No preference.")
 
@@ -255,3 +257,49 @@ def test_greeklish_counts_as_greek():
     assert ev.language("den me noiazei o orofos") == "el"
     assert ev.language("Hi, I'd like a flat in Egaleo with a balcony, up to 200k.") == "en"
     assert ev.language("From 40 sqm and 2 bedrooms at least") == "en"
+
+
+def test_mikes_budget_rules_are_applied_by_code():
+    around = interview.search_card(card(max_price_eur=200000, budget_around=True))["hard_limits"]
+    assert (around["min_price_eur"], around["max_price_eur"]) == (180000, 220000)
+    ceiling = interview.search_card(card(max_price_eur=200000))["hard_limits"]
+    assert (ceiling["min_price_eur"], ceiling["max_price_eur"]) == (160000, 200000)  # 80% for a home to live in
+    invest = interview.search_card(card(intent="invest", max_price_eur=150000))["hard_limits"]
+    assert invest["min_price_eur"] == 75000  # 50% for an investment
+    rent = interview.search_card(card(intent="rent", max_price_eur=900))["hard_limits"]
+    assert rent["min_price_eur"] == 700  # 720, to the nearest €50
+    stated = interview.search_card(card(intent="rent", max_price_eur=800, min_price_eur=700))["hard_limits"]
+    assert stated["min_price_eur"] == 700  # the user's own minimum wins
+    assert interview.search_card(card())["hard_limits"].get("min_price_eur") is None  # no top price, nothing to derive
+
+
+def test_a_confirmed_card_needs_a_top_price():
+    assert "top price" in interview.card_problem(card(), "confirm")
+    assert interview.card_problem(card(), "ask") is None
+    assert interview.card_problem(card(max_price_eur=600), "confirm") is None
+
+
+def test_a_year_needs_a_number_and_a_balcony_a_yes_or_no():
+    year = {"feature": "renovated_year", "min": None, "max": None, "equals": True, "weight": 0.5}
+    assert "needs a number" in interview.card_problem(card(max_price_eur=200000, prefs=[year]), "confirm")
+    balcony = {"feature": "balcony", "min": 1, "max": None, "equals": None, "weight": 0.5}
+    assert "yes or no" in interview.card_problem(card(max_price_eur=200000, prefs=[balcony]), "confirm")
+
+
+def test_a_thin_apartment_search_can_offer_maisonettes_and_lofts():
+    listings = SnapshotAdapter().listings()
+    thin = interview.check_supply({"intent": "buy", "areas": ["Egaleo"], "budget_around": False,
+                                   "hard_limits": {"max_price_eur": 90000, "property_types": ["apartment"]}}, listings)
+    assert thin["matches"] < interview.THIN and {"add_type:maisonette", "add_type:loft"} <= set(thin["if_eased"])
+    assert thin["search_limits"] == {"min_price_eur": 70000, "max_price_eur": 90000}
+
+
+def test_around_is_scored_as_what_the_model_caught_and_a_silent_switch_is_loosening():
+    said = dict(card(max_price_eur=200000), budget_around=True)
+    assert ev.field_outcomes(said, card(max_price_eur=200000))["budget_around"] == "missed"
+    assert "budget_around" not in ev.field_outcomes(card(max_price_eur=200000), card(max_price_eur=200000))
+    log = [{"role": "user", "text": "Up to 200k.", "source": "script", "language": "en"},
+           {"role": "assistant", "output": answer("Card?", "confirm", criteria=card(max_price_eur=200000))},
+           {"role": "user", "text": "No preference.", "source": "simulated, no fact", "language": "en"},
+           {"role": "assistant", "output": answer("Card?", "confirm", criteria=dict(card(max_price_eur=200000), budget_around=True))}]
+    assert ev.unasked_loosenings(log) == ["budget_around"]

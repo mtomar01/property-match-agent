@@ -248,6 +248,9 @@ PreferenceFeature = Literal[
 ]
 
 
+YES_NO_FEATURES = ("balcony", "lift", "parking", "storage", "dual_aspect", "corner", "whole_floor")  # D53
+
+
 class Preference(_Strict):
     """A weighted wish. Scored, never filtered.
 
@@ -267,6 +270,10 @@ class Preference(_Strict):
     def _has_target(self) -> "Preference":
         if self.min is None and self.max is None and self.equals is None:
             raise ValueError("a preference needs min, max or equals")
+        if self.feature in YES_NO_FEATURES and (self.min is not None or self.max is not None):
+            raise ValueError(f"{self.feature} is yes or no: use equals")
+        if self.feature not in YES_NO_FEATURES and self.equals is not None:
+            raise ValueError(f"{self.feature} needs a number (min or max), not yes or no")
         for bound in (self.min, self.max):
             if isinstance(bound, str) and (self.feature != "energy_class" or bound not in ENERGY_LETTERS):
                 raise ValueError("text bounds are only for energy_class letters, A+ to G")

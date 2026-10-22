@@ -19,8 +19,7 @@ ENERGY_ORDER = ["G", "F", "E", "D", "C", "B", "B+", "A", "A+"]
 
 def _value(listing: Listing, feature: str):
     if feature == "floor_level":
-        if listing.floor.floor_class == "top":
-            return 99.0  # a top floor satisfies any minimum floor
+        # A ρετιρέ is its building's last floor, which can be the 1st (Mike, D51): with no number, its height is unknown.
         return greek.floor_level(listing.floor.floor_class)
     if feature == "energy_class":
         value = listing.energy_class.value

@@ -32,7 +32,7 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v4"
+PROMPT_VERSION = "interview_v5"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -46,6 +46,9 @@ TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
 EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one more covered area
+MARGIN = 0.10  # "around X" means X minus to X plus 10% (Mike, D53)
+LOWEST_SHARE = {"buy": 0.8, "rent": 0.8, "invest": 0.5}  # lowest price, as a share of the top: keeps out wrecks and no-price ads (Mike, D53)
+WIDER_TYPES = {"apartment": ("maisonette", "loft")}  # types to offer when an apartment search is thin (Mike, D53)
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "property_types",
@@ -74,6 +77,7 @@ def _criteria_core() -> dict:
         "intent": {"enum": [*get_args(Intent), None]},  # the same nullable enum form as extraction
         "areas": {"type": "array", "items": {"type": "string", "enum": list(SEARCH_AREAS)}},
         "hard_limits": _hard_limits_schema(),
+        "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
     }
 
 
@@ -87,7 +91,7 @@ def schema() -> dict:
     }
     criteria = {
         "type": "object", "additionalProperties": False,
-        "required": ["intent", "areas", "hard_limits", "preferences", "open_questions"],
+        "required": ["intent", "areas", "hard_limits", "budget_around", "preferences", "open_questions"],
         "properties": {**_criteria_core(), "preferences": {"type": "array", "items": preference},
                        "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
@@ -108,7 +112,7 @@ TOOL = {
     "description": ("Count the listings in the snapshot that pass these hard limits, and how many would pass if each "
                     "limit were dropped. Code does the counting. Use it before showing a card whose asks may be hard "
                     "to meet together."),
-    "input_schema": {"type": "object", "additionalProperties": False, "required": ["intent", "areas", "hard_limits"],
+    "input_schema": {"type": "object", "additionalProperties": False, "required": ["intent", "areas", "hard_limits", "budget_around"],
                      "properties": _criteria_core()},
 }
 
@@ -138,8 +142,37 @@ def _blank(value) -> bool:
     return value in (None, [], "")
 
 
+def _round(value: float, step: int) -> int:
+    return int(round(value / step) * step)
+
+
+def search_card(raw: dict) -> dict:
+    """The card the search runs on: the user's numbers, plus Mike's budget rules applied by code (D53).
+
+    "Around X" searches from X minus 10% to X plus 10% (a range the user gave
+    widens the same way). With no minimum from the user, the lowest price is
+    80% of the top for a home to live in or to rent, 50% for an investment,
+    to keep out wrecks and listings with no real price. Rounded to €5,000,
+    or €50 for a monthly rent. The model never does this arithmetic.
+    """
+    limits = dict(raw.get("hard_limits") or {})
+    top, low = limits.get("max_price_eur"), limits.get("min_price_eur")
+    if not top:
+        return {**raw, "hard_limits": limits}
+    intent = raw.get("intent") or "buy"
+    step = 50 if top < 10_000 else 5000  # a monthly rent or a sale price: the size of the number decides
+    if raw.get("budget_around"):
+        low = _round(low * (1 - MARGIN), step) if low else _round(top * (1 - MARGIN), step)
+        top = _round(top * (1 + MARGIN), step)
+    if not low:
+        low = _round(top * LOWEST_SHARE.get(intent, 0.8), step)
+    limits.update(max_price_eur=top, min_price_eur=min(low, top))
+    return {**raw, "hard_limits": limits}
+
+
 def card(raw: dict) -> Criteria:
-    """The model's card as a Criteria. Raises if it breaks the rules the search relies on."""
+    """The card the search runs on, as a Criteria. Raises if it breaks the rules the search relies on."""
+    raw = search_card(raw)
     limits = {k: v for k, v in (raw.get("hard_limits") or {}).items() if not _blank(v)}
     preferences = [{k: v for k, v in p.items() if v is not None} for p in raw.get("preferences") or []]
     return Criteria(user_id="interview", intent=raw.get("intent") or "buy", areas=raw.get("areas") or [],
@@ -166,6 +199,7 @@ def check_supply(args: dict, listings: list) -> dict:
     per_m2 = [l.price_per_m2 for l in in_areas if l.price_per_m2]
     sizes = [l.size_m2 for l in in_areas if l.size_m2]
     result = {
+        "search_limits": {"min_price_eur": criteria.hard_limits.min_price_eur, "max_price_eur": criteria.hard_limits.max_price_eur},
         "matches": len(matches), "if_dropped": if_dropped, "listings_in_areas": len(in_areas),
         "median_price_eur": round(statistics.median(prices)) if prices else None,
         "median_price_per_m2": round(statistics.median(per_m2)) if per_m2 else None,
@@ -205,6 +239,10 @@ def eased(criteria: Criteria, listings: list) -> dict:
         out["max_size_m2"] = {"to": to, "matches": count(max_size_m2=to)}
     if limits.min_bedrooms:
         out["min_bedrooms"] = {"to": limits.min_bedrooms - 1, "matches": count(min_bedrooms=limits.min_bedrooms - 1)}
+    for kind, wider in WIDER_TYPES.items():
+        if kind in limits.property_types:
+            for extra in (t for t in wider if t not in limits.property_types):
+                out[f"add_type:{extra}"] = {"to": extra, "matches": count(property_types=[*limits.property_types, extra])}
     if criteria.areas:
         for area in (a for a in SEARCH_AREAS if a not in criteria.areas):
             wider = criteria.model_copy(update={"areas": [*criteria.areas, area]})
@@ -301,7 +339,7 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
         except json.JSONDecodeError:
             out["error"] = f"no JSON answer (stop reason {response['stop_reason']})"
             return out
-        problem = card_problem(out["output"]["criteria"])
+        problem = card_problem(out["output"]["criteria"], out["output"].get("action"))
         if problem and len(repairs) < MAX_REPAIRS:
             repairs.append(problem)
             history.append({"role": "user", "content": repair_message(problem)})
@@ -311,8 +349,10 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
     raise RuntimeError("unreachable: the last round runs with tools switched off")
 
 
-def card_problem(raw: dict) -> str | None:
+def card_problem(raw: dict, action: str | None = None) -> str | None:
     """Why the search couldn't run on this card, or None if it can."""
+    if action == "confirm" and not (raw.get("hard_limits") or {}).get("max_price_eur"):
+        return "a card shown for confirmation needs a top price (max_price_eur): use the user's, or ask for it"  # D53
     try:
         card(raw)
     except Exception as err:  # noqa: BLE001 - the reason goes back to the model

@@ -65,7 +65,8 @@ SIM_SYSTEM = """You play a person looking for a home, in a test of a property se
 Answer the assistant's latest message in one or two short sentences, in the language given.
 Use only your facts and what you've already said; never contradict what you've already said.
 If it asks about something those don't cover, or suggests a change they don't cover, say you have no preference.
-If it shows a summary and asks whether it's right, say yes. Never add a wish, a limit or a detail of your own.
+If it shows a summary and asks whether it's right, say yes. If it asks you to confirm something you've already said, confirm it.
+Never add a wish, a limit or a detail of your own.
 In facts_used, list the facts your answer rests on ("already_said" for what you've said before). If none, leave it empty."""
 NO_PREFERENCE = {"en": "No preference.", "el": "Δεν έχω προτίμηση."}
 
@@ -219,6 +220,9 @@ def field_outcomes(expected: dict, predicted: dict) -> dict[str, str]:
         result = _outcome((expected.get("hard_limits") or {}).get(name), (predicted.get("hard_limits") or {}).get(name))
         if result:
             out[name] = result
+    said, caught = bool(expected.get("budget_around")), bool(predicted.get("budget_around"))
+    if said or caught:  # "around" is scored on what the model caught; the 10% is code's (D53)
+        out["budget_around"] = "correct" if said == caught else ("missed" if said else "invented")
     return out
 
 
@@ -365,6 +369,8 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
 
 def _looser(name: str, before, after) -> bool:
     """Did this hard limit get looser from one card to the next? Removing a limit counts."""
+    if name == "budget_around":
+        return not before and bool(after)  # "around" widens the price by 10% (D53)
     if name == "areas":
         return bool(before) and (not after or bool(set(after) - set(before)))
     if _blank(before):
@@ -396,9 +402,10 @@ def unasked_loosenings(log: list[dict]) -> list[str]:
             continue
         current = entry["output"]["criteria"]
         if previous is not None and last_user and last_user["source"] != "script":
-            for name in ("areas", *interview.HARD_FIELDS):
-                old = previous.get(name) if name == "areas" else (previous.get("hard_limits") or {}).get(name)
-                new = current.get(name) if name == "areas" else (current.get("hard_limits") or {}).get(name)
+            for name in ("areas", "budget_around", *interview.HARD_FIELDS):
+                top = name in ("areas", "budget_around")
+                old = previous.get(name) if top else (previous.get("hard_limits") or {}).get(name)
+                new = current.get(name) if top else (current.get("hard_limits") or {}).get(name)
                 if _looser(name, old, new):
                     found.append(name)
         previous = current

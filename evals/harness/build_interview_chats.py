@@ -8,6 +8,8 @@ The chats are hand-written; this file is the readable source for the JSONL.
 "New build" is year_built from five years back, 2021 in these chats, in both languages (D46).
 Mike's rules (D48): "flat" means an apartment or a maisonette, never a detached house or a building;
 "studio" means a small apartment of about 30 to 40 m², so studio or apartment, with a size preference up to 40 m².
+D53: "around X" is X plus or minus 10%, applied by code, so the assistant no longer asks whether it's the ceiling
+(el_01, en_02); "δωμάτια" means bedrooms, so it no longer asks rooms or bedrooms (el_09).
 
 Run: uv run python -m evals.harness.build_interview_chats evals/datasets/interview_chats.jsonl
 """
@@ -39,7 +41,7 @@ chat("el_01", "el", "Ζευγάρι, πρώτο σπίτι, δουλεύουν �
      ["Γεια, ψάχνουμε τριάρι στο Αιγάλεω, γύρω στις 200.", "Μέχρι 200 χιλιάδες, δεν μπορούμε παραπάνω.", "Ναι, διαμέρισμα."],
      {"budget": "Μέχρι 200.000 €, όχι παραπάνω", "type": "Διαμέρισμα", "bedrooms": "Τριάρι, δηλαδή 2 υπνοδωμάτια"},
      crit("buy", ["Egaleo"], {"max_price_eur": 200000, "min_bedrooms": 2, "property_types": ["apartment"]}),
-     must_ask=["budget_ceiling"], must_say=["reply_in:el"], must_not_invent=["min_size_m2", "exclude_floors"],
+     must_ask=[], must_say=["reply_in:el"], must_not_invent=["min_size_m2", "exclude_floors"],
      notes="'Γύρω στις 200' is ambiguous: ask whether 200k is the ceiling. 'Τριάρι' is three rooms, so 2 bedrooms.")
 
 chat("el_02", "el", "Νέος επαγγελματίας, μόνος", ["greek_room_count", "floor_exclusion"],
@@ -97,7 +99,7 @@ chat("el_09", "el", "Αγοραστής που μιλάει καθομιλουμ
      ["Έχω ένα 180άρι, θέλω κάτι με δύο δωμάτια στο Περιστέρι.", "Δύο υπνοδωμάτια εννοώ."],
      {"budget": "180.000 €", "rooms": "Δύο υπνοδωμάτια"},
      crit("buy", ["Peristeri"], {"max_price_eur": 180000, "min_bedrooms": 2}),
-     must_ask=["rooms_meaning"], must_say=["reply_in:el"],
+     must_ask=[], must_say=["reply_in:el"],
      notes="'180άρι' is 180,000 €. 'Δύο δωμάτια' is ambiguous (two bedrooms or a δυάρι), so ask; the scripted answer is two bedrooms.")
 
 chat("el_10", "el", "Ελληνοαυστραλός, αλλάζει γλώσσα", ["language_switch"],
@@ -191,7 +193,7 @@ chat("en_02", "en", "Expat couple, first purchase", ["ambiguous_budget"],
      ["We're looking at Peristeri, budget around 200.", "200k is the absolute maximum.", "Two bedrooms please."],
      {"budget": "200,000 € absolute max", "bedrooms": "2"},
      crit("buy", ["Peristeri"], {"max_price_eur": 200000, "min_bedrooms": 2}),
-     must_ask=["budget_ceiling", "bedrooms"], must_say=["reply_in:en"])
+     must_ask=["bedrooms"], must_say=["reply_in:en"])
 
 chat("en_03", "en", "Renter relocating for work", ["rent"],
      ["I want to rent in Peristeri, up to 900 a month, at least 60 square metres."],

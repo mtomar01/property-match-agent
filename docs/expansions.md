@@ -19,6 +19,8 @@ Ideas for later, kept in one place so they don't get lost. Nothing here is being
 - **Lift reaches the floor**: some lifts stop short of the flat (D24).
 - **Delivery date** for homes still being built (D24).
 - **Condition as a filter**: "new build only" can only be a strong preference on year_built today (D46, D48).
+- **Price per m² as a limit**: "μέχρι 2000 ανά τετραγωνικό" (clean test gb_3) can only be an open question today; code could filter on price_per_m2.
+- **"Renovated" as a filter**: Mike's note on clean test mike_2. Today it's a preference on renovated_year, which needs a year.
 
 ## Interview
 
