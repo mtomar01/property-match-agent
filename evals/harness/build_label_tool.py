@@ -144,7 +144,7 @@ def build_hosted(count: int, start: int = 0, raw_path: Path = RAW, snapshot_path
 
 def build_hosted_selection(listing_ids: list[str], title: str, out_path: Path, raw_path: Path = RAW,
                            snapshot_path: Path = SNAPSHOT, round_no: int = 1, revisit: bool = False,
-                           system: dict[str, dict] | None = None) -> Path:
+                           system: dict[str, dict] | None = None, copied: str | None = None) -> Path:
     """A hosted page for chosen listings, in the order given, keeping their numbers in the full order.
 
     With `system` (listing id to the system's fields), the page is a verify page:
@@ -158,6 +158,8 @@ def build_hosted_selection(listing_ids: list[str], title: str, out_path: Path, r
         raise ValueError(f"not in the collected pages: {missing}")
     chosen = [_hosted(by_id[listing_id][1], by_id[listing_id][0]) for listing_id in listing_ids]
     payload: dict = {"round": round_no, "items": chosen}
+    if copied:
+        payload["copied"] = copied
     if system is not None:
         for item in chosen:
             answer = {k: v for k, v in system[item["listing_id"]].items() if v not in (None, [], "")}

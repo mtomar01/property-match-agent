@@ -275,6 +275,7 @@ AREA_ALIASES: dict[str, list[str]] = {
     "Egaleo": ["egaleo", "aigaleo", "aegaleo", "αιγαλεω"],
     "Peristeri": ["peristeri", "περιστερι"],
     "Chaidari": ["chaidari", "haidari", "xaidari", "χαιδαρι"],
+    "Pagrati": ["pagrati", "pagkrati", "pangrati", "παγκρατι"],
 }
 
 

@@ -159,7 +159,7 @@ dialog li { margin: 5px 0; }
       <div class="live" role="radiogroup" aria-label="Does the live page still match?">
         <span>Live page:</span>
         <label><input type="radio" name="live" value="matches" id="live-matches"> matches the values below</label>
-        <label><input type="radio" name="live" value="changed" id="live-changed"> changed since 20 October</label>
+        <label><input type="radio" name="live" value="changed" id="live-changed"> changed since <span class="copied-on">20 October</span></label>
         <label><input type="radio" name="live" value="gone" id="live-gone"> gone</label>
       </div>
     </div>
@@ -190,7 +190,7 @@ dialog li { margin: 5px 0; }
   <ol>
     <li><b>Open the listing</b> with the green button and read the whole page: the table, the features (ticked and crossed out) and the description.</li>
     <li><b>Label what the listing says</b>: its text, table and feature list. Photos don't count. Blank means it doesn't say. Never fill a gap with a likely value.</li>
-    <li id="rule-prefill"><b>"table" values</b> come from our copy of the page's table on 20 October. If the live page shows something else because the listing changed (a new price, say), keep our value, pick "changed since 20 October" and note what changed. If the listing is gone, pick "gone" and save.</li>
+    <li id="rule-prefill"><b>"table" values</b> come from our copy of the page's table on <span class="copied-on">20 October</span>. If the live page shows something else because the listing changed (a new price, say), keep our value, pick "changed since <span class="copied-on">20 October</span>" and note what changed. If the listing is gone, pick "gone" and save.</li>
     <li><b>When the listing contradicts itself</b> (the table or features against the text, such as gas heating in the table but a heat pump in the text), leave the field blank and note both values. Except price and size: the table wins.</li>
     <li><b>Ticked is yes, crossed out is no.</b> The advertiser crossed it out, so the flat doesn't have it. Leave a feature blank only when it's nowhere on the page: not in the feature list, not in the table, not in the description.</li>
     <li><b>Lift</b> is "no" if it stops below the flat's floor, or it's a goods lift (αναβατόριο).</li>
@@ -217,6 +217,8 @@ const ROUND = PAYLOAD.round;
 // tagged "system", so the labeller checks the system's answer (D36).
 const VERIFY = PAYLOAD.mode === "verify";
 const TAG = VERIFY ? "system" : "table";
+// The day our copy of these pages was made (20 October for the first 100).
+const COPIED = PAYLOAD.copied || "20 October";
 const FLOORS = ["basement", "semi_basement", "ground", "raised_ground", "mezzanine"]
   .concat(Array.from({ length: 12 }, (_, i) => String(i + 1))).concat(["top"]);
 const GREEK = {
@@ -246,7 +248,7 @@ const FIELDS = [
   { name: "balcony", label: "Balcony", kind: "bool" },
   { name: "storage", label: "Storage", kind: "bool" },
   { name: "flags", label: "Flags", kind: "flags", options: ["whole_floor", "dual_aspect", "corner"] },
-  { name: "area", label: "Area", kind: "select", options: ["Egaleo", "Peristeri", "Chaidari"] },
+  { name: "area", label: "Area", kind: "select", options: ["Egaleo", "Peristeri", "Chaidari", "Pagrati"] },
   { name: "sub_area", label: "Sub-area", kind: "text" },
   { name: "metro_walk_min", label: "Metro walk min", kind: "int" },
 ];
@@ -502,9 +504,10 @@ async function connect() {
 }
 
 $("round").textContent = ROUND;
+for (const span of document.querySelectorAll(".copied-on")) span.textContent = COPIED;
 if (VERIFY) {
   $("hint").textContent = "\"system\" marks what the extraction system now reads from this listing: its table, ticks and text. Check every value against the live page, fix any that are wrong, and fill in what it missed. Blank means the listing doesn't say. Ctrl or ⌘ + Enter saves.";
-  $("rule-prefill").textContent = "\"system\" values are the extraction system's answer, from our copy of the page (20 October, crossed-out lists 22 October). Fix any that are wrong or missing. If the live page changed since, keep our value, pick \"changed since 20 October\" and note what changed. If the listing is gone, pick \"gone\" and save.";
+  $("rule-prefill").textContent = "\"system\" values are the extraction system's answer, from our copy of the page. Fix any that are wrong or missing. If the live page changed since " + COPIED + ", keep our value, pick \"changed since " + COPIED + "\" and note what changed. If the listing is gone, pick \"gone\" and save.";
 }
 // A batch runs in order ("21 to 40"); a chosen set does not, so it shows the count.
 const inOrder = ITEMS.every((item, i) => number(i) === number(0) + i);

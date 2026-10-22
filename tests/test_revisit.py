@@ -131,3 +131,16 @@ def test_round5_takes_only_listings_with_lift_parking_and_storage_all_unknown(tm
     monkeypatch.setattr(answer_key, "load", lambda v: ([], {"origin": {"spitogatos:0": {"labels": [{"labeller": "gb"}]}}}))
     pages = agreement_sets.build_round5(size=10, run_name="x")
     assert pages == {"gb": [], "mike": ["spitogatos:0"]} or pages == {"gb": ["spitogatos:0"], "mike": []}
+
+
+def test_a_new_area_splits_at_random_without_sharing_a_listing():
+    import pytest
+
+    from evals.harness.agreement_sets import split_at_random
+
+    ids = [f"spitogatos:{n}" for n in range(10)]
+    split = split_at_random(ids, ("mike", "gb"), 5, 2026)
+    assert len(split["mike"]) == len(split["gb"]) == 5 and not set(split["mike"]) & set(split["gb"])
+    assert split == split_at_random(list(reversed(ids)), ("mike", "gb"), 5, 2026)  # input order doesn't matter
+    with pytest.raises(ValueError):
+        split_at_random(ids, ("mike", "gb"), 6, 2026)

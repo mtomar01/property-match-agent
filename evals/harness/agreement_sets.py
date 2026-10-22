@@ -225,8 +225,38 @@ def build_round5(size: int = 10, run_name: str = "haiku_v2+crossed-fill", seed: 
             for who, ids in split.items()}
 
 
+def split_at_random(ids: list[str], labellers: tuple[str, ...], size_each: int, seed: int) -> dict[str, list[str]]:
+    """Seeded shuffle, then consecutive slices: no listing goes to two labellers, and the same seed gives the same split."""
+    if size_each * len(labellers) > len(ids):
+        raise ValueError(f"{len(ids)} listings can't give {len(labellers)} labellers {size_each} each")
+    shuffled = sorted(ids)
+    random.Random(seed).shuffle(shuffled)
+    return {who: sorted(shuffled[i * size_each:(i + 1) * size_each]) for i, who in enumerate(labellers)}
+
+
+def build_new_area(folder: Path, name: str, size_each: int = 5, round_no: int = 6, seed: int = 2026,
+                   copied: str = "22 October") -> dict[str, Path]:
+    """Blind labelling pages for a fresh batch from a new area, split at random between the two labellers (D44).
+
+    The pages pre-fill only what code reads from the table and ticks, as in
+    rounds 1 to 3, so nothing the model reads can anchor a label: these labels
+    are the clean test of the extraction system.
+    """
+    from evals.harness.build_label_tool import build_hosted_selection
+
+    raw, snapshot = folder / "details_raw.jsonl", folder / "snapshot.jsonl"
+    ids = sorted(f"spitogatos:{json.loads(line)['source_id']}" for line in raw.read_text(encoding="utf-8").splitlines() if line.strip())
+    split = split_at_random(ids, ("mike", "gb"), size_each, seed)
+    (folder / "sets.json").write_text(json.dumps({"seed": seed, "label": split}, indent=2), encoding="utf-8")
+    return {who: build_hosted_selection(chosen, f"{display(who)}'s {name} Check", folder / f"{name.lower()}-{who}.html",
+                                        raw, snapshot, round_no=round_no, copied=copied)
+            for who, chosen in split.items()}
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["round5"]:
+    if sys.argv[1:2] == ["pagrati"]:
+        pages = build_new_area(ROOT / "data" / "private" / "pagrati", "Pagrati")
+    elif sys.argv[1:2] == ["round5"]:
         pages = build_round5()
     elif sys.argv[1:2] == ["round4"]:
         pages = build_round4()

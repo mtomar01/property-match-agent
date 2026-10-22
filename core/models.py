@@ -34,7 +34,7 @@ HeatingType = Literal["independent", "central", "none"]
 Fuel = Literal["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"]
 Parking = Literal["pilotis", "space", "garage", "none"]
 Flag = Literal["whole_floor", "dual_aspect", "corner"]
-Area = Literal["Egaleo", "Peristeri", "Chaidari"]
+Area = Literal["Egaleo", "Peristeri", "Chaidari", "Pagrati"]  # Pagrati added 22 October 2026 (D44)
 RejectReason = Literal[
     "too_dark", "too_small", "bad_floor", "needs_work", "too_expensive", "wrong_area", "other"
 ]

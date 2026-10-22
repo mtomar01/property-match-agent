@@ -392,3 +392,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **GB's decisions on the 21 values:** the proposed value on 20 (all 6 floors as raised ground, all 3 storage as yes, 11 metro values with metres as written), the key's value on 1 (8 minutes where "600 μέτρα" covers the town hall and the metro stop together).
 - **Answer key v4** is key v3 with those 20 changes; the manifest lists each change per listing (from, to, choice) and the one kept, and every changed value carries a note in its evidence.
 - **Results on key v4, all 100 listings** (no new model calls): Haiku v3 + code 99.3% on table fields, **94.8%** on text-only fields; code alone 99.1% and 93.1%; Sonnet v2 + code 99.4% and 95.0%, still eleven times the cost.
+
+## D44. A clean test set: 10 blind-labelled listings from Pagrati
+
+- **Why:** the prompts and merge rules were shaped on the first 100 listings, so 94.8% is a development score. The honest number comes from listings nothing was tuned on. A new area also tests whether the system holds up outside the three western suburbs.
+- **What:** on 22 October I opened Spitogatos' first results page for homes for sale in Pagrati (30 cards), picked 10 at random with seed 2026 and saved their pages slowly in your Chrome, at least 3 seconds apart. Contact details are scrubbed as before, and each page's crossed-out feature list is saved with it from the start, so no revisit is needed.
+- **Pagrati is now an area:** in `core/models.py`, with its spellings (Παγκράτι, Pangrati, Pagkrati) in `core/greek.py` and on the labelling page's area menu. The metro glossary already covers every Athens station (D40).
+- **Blind labelling:** two pages of 5, split at random with seed 2026 (`split_at_random`, so no listing goes to both of you). They pre-fill only what code reads from the table, ticks and crosses, as in rounds 1 to 3, never the model's reading, so nothing the model says can anchor a label.
+- **Frozen until scored:** prompt v3 and the merge rules don't change before the test runs. Then Haiku v3 + code reads the 10 (about a cent) and is scored against your labels.
+- **Caveat:** 10 listings is small. There are about 50 text-only fields, so one wrong field moves that score by about 2 points. It's a sanity check that the development score isn't overfitted, not a precise number.
+- **Say:** "I tuned on one set and tested on listings from another part of Athens that the prompt had never seen."
