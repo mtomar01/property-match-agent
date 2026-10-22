@@ -17,15 +17,15 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Revisit the other 50 pages** for their crossed-out lists, the same way (about ten minutes). On the revisited half the pipeline is at 88.7% on text fields; on the other half 46 of 49 misses are crossed-out "no"s. Your go-ahead, since it touches the live site.
-2. **Metro rounding:** labels give minutes worked out in different ways (700 m as 8, code says 9). Either score metro within a minute, or label the metres as written and let code convert. Your call.
+1. **Round 4 (D36):** "Mike's Check 4" and "GB's Check 4", 5 random listings each where the old pages hid parking or a balcony. The pages show the system's whole answer, tagged "system": fix anything wrong. Share GB's page by email.
+2. **Then the other 50 pages** for their crossed-out lists, if round 4 says the system now catches parking and balconies. On the revisited half the pipeline is at 89.9% on text fields; on the other half most misses are crossed-out "no"s.
 3. **Sonnet 5.5 run** (about $1.50) on key v2, to see whether a bigger model earns its cost on the text fields.
 4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
 
 ## Answer key v2 (22 October, D35)
 
 - Every round combined: a value one labeller found beats a blank another left; a clash goes to the newer label. 70 of 100 listings have two or three labels.
-- Haiku v2 + code with crossed-out lists: 88.7% on text fields on the revisited 50 (target 85%), 81.2% on all 100.
+- Haiku v2 + code with crossed-out lists: 89.9% on text fields on the revisited 50 (target 85%), 82.1% on all 100, with metro within a minute (D36).
 - Round 2 agreement: 89.3% and 90.0%, parking 34 of 87 disagreements; round 3: 95.7% and 92.4%.
 
 ## The crossed-out revisit (22 October, D34)
@@ -54,7 +54,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D35.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D36.
 
 ## For the desktop app demo
 

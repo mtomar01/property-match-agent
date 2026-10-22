@@ -110,3 +110,10 @@ def test_a_combined_key_records_every_label_it_used(tmp_path):
     assert one.fields.lift is True and one.fields.storage is True
     assert [entry["file"] for entry in manifest["origin"]["spitogatos:1"]["labels"]] == ["hosted_batch3_gb", "round2_mike"]
     assert manifest["origin"]["spitogatos:1"]["rules"] == "D31" and manifest["origin"]["spitogatos:2"]["rules"] == "D29"
+
+
+def test_metro_within_a_minute_is_correct():
+    assert outcome("metro_walk_min", 8, 9) == "correct"  # 700 m typed as 8, code says 9
+    assert outcome("metro_walk_min", 650, 10) == "correct"  # 650 m is 9 minutes
+    assert outcome("metro_walk_min", 5, 7) == "wrong"
+    assert outcome("metro_walk_min", None, 9) == "invented"

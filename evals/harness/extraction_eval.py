@@ -30,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from evals.harness import answer_key
-from evals.harness.labels import LABEL_FIELDS, ExtractionLabel, comparable
+from evals.harness.labels import LABEL_FIELDS, ExtractionLabel, comparable, same
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "evals" / "results"
@@ -40,10 +40,7 @@ OUTCOMES = ("correct", "wrong", "invented", "missed")
 
 
 def _same(name: str, a, b) -> bool:
-    a, b = comparable(name, a), comparable(name, b)
-    if isinstance(a, float) or isinstance(b, float):
-        return a is not None and b is not None and abs(a - b) < 0.01
-    return a == b
+    return same(name, a, b)
 
 
 def outcome(name: str, truth, guess) -> str:

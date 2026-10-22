@@ -9,6 +9,7 @@ and checked; the chosen ids are saved next to the pages.
 Run: uv run python -m evals.harness.agreement_sets [SIZE] [SEED]
      uv run python -m evals.harness.agreement_sets round2   # the listings code read worst
      uv run python -m evals.harness.agreement_sets round3   # 10 each from the revisited 50 (D34)
+     uv run python -m evals.harness.agreement_sets round4   # verify: 5 each the old pages missed parking or a balcony (D36)
 """
 
 from __future__ import annotations
@@ -135,8 +136,70 @@ def build_round3(size: int = 10, key_version: int = 1, run_name: str = "haiku_v2
             for who, ids in sets["relabel"].items()}
 
 
+def missed_before_d35(record: dict, label) -> list[str]:
+    """Whether the pages before D35 hid parking or a balcony that the key says is there.
+
+    Before D35 the pages never pre-filled parking, and a balcony only from a
+    ticked Βεράντα, Ιδιωτικός Κήπος or a balcony area.
+    """
+    from evals.harness.labels import comparable
+
+    exterior = (record["sections"].get("Εξωτερικά χαρακτηριστικά") or "").split("\n")
+    shown = any(t in exterior for t in ("Βεράντα", "Ιδιωτικός Κήπος")) or any(t.startswith("(") and "τ.μ." in t for t in exterior)
+    missed = []
+    if comparable("parking", label.fields.parking) == "yes":
+        missed.append("parking")
+    if label.fields.balcony is True and not shown:
+        missed.append("balcony")
+    return missed
+
+
+def choose_round4(pool: list[str], labellers: list[str], labelled: dict[str, set[str]], size: int = 5,
+                  seed: int = 2026) -> dict[str, list[str]]:
+    """A seeded random `size` for each labeller, none shared between them.
+
+    Listings they never labelled come first; if there are too few, the rest
+    are listings they labelled before (fine for checking the system's answer).
+    """
+    rng = random.Random(seed)
+    chosen: dict[str, list[str]] = {}
+    taken: set[str] = set()
+    for labeller in labellers:
+        fresh = sorted(i for i in pool if labeller not in labelled[i] and i not in taken)
+        picks = rng.sample(fresh, min(size, len(fresh)))
+        seen = sorted(i for i in pool if labeller in labelled[i] and i not in taken)
+        picks += rng.sample(seen, min(size - len(picks), len(seen)))
+        chosen[labeller] = sorted(picks)
+        taken.update(picks)
+    return chosen
+
+
+def build_round4(size: int = 5, key_version: int = 2, run_name: str = "haiku_v2+crossed-fill") -> dict[str, Path]:
+    """Verify pages: listings where the old pages missed parking or a balcony, with the system's new answer (D36)."""
+    from evals.harness import answer_key
+    from evals.harness.build_label_tool import RAW
+    from evals.harness.extraction_eval import PRIVATE, load_predictions
+
+    key, manifest = answer_key.load(key_version)
+    records = {f"spitogatos:{json.loads(line)['source_id']}": json.loads(line)
+               for line in RAW.read_text(encoding="utf-8").splitlines() if line.strip()}
+    pool = {label.listing_id: missed for label in key if (missed := missed_before_d35(records[label.listing_id], label))}
+    labelled = {i: {entry["labeller"] for entry in manifest["origin"][i]["labels"]} for i in pool}
+    labellers = sorted({entry["labeller"] for o in manifest["origin"].values() for entry in o["labels"]})
+    chosen = choose_round4(sorted(pool), labellers, labelled, size)
+    system = load_predictions(PRIVATE / f"predictions_{run_name}.jsonl")
+    (OUT / "sets_round4.json").write_text(json.dumps({
+        "size": size, "seed": 2026, "pool": len(pool), "why": {i: pool[i] for ids in chosen.values() for i in ids},
+        "relabel": chosen, "system": run_name, "key": key_version}, indent=2), encoding="utf-8")
+    return {who: build_hosted_selection(ids, f"{display(who)}'s Check 4", OUT / f"check-4-{who}.html", round_no=4,
+                                        revisit=True, system=system)
+            for who, ids in chosen.items()}
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["round3"]:
+    if sys.argv[1:2] == ["round4"]:
+        pages = build_round4()
+    elif sys.argv[1:2] == ["round3"]:
         pages = build_round3()
     elif sys.argv[1:2] == ["round2"]:
         pages = build_round2()

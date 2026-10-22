@@ -28,7 +28,7 @@ One page, so labels mean the same thing every time. Labels are the answer key fo
 | `lift` | **"no" if the lift stops below the home's floor,** or there's only a goods lift (αναβατόριο), or a shaft with no cabin. | "ασανσέρ μέχρι τον 3ο", flat on the 4th, is no |
 | `balcony` | **Any private outdoor space**: μπαλκόνι, βεράντα, κήπος, ιδιωτικός κήπος, αυλή and the like, ticked or in the text (D31, D35). A shared garden (κοινόχρηστος κήπος) is not. | "αποκλειστική χρήση κήπου" is yes |
 | `storage` | Yes when the text mentions an αποθήκη, or it's ticked. **An internal one (εσωτερική αποθήκη) counts, even when Αποθήκη is crossed out** (D34). | "εσωτερική αποθήκη" is yes |
-| `metro_walk_min` | **Only when the description gives the distance to a station** (D31). Type the minutes, or the metres as written: a value above 60 is read as metres and turned into minutes at 80 m a minute. "Near the metro" with no number is blank. | "500 μ. από τον σταθμό μετρό" is 500 (7 minutes) |
+| `metro_walk_min` | **Only when the description gives the distance to a station** (D31). Type the minutes, or the metres as written: a value above 60 is read as metres and turned into minutes at 80 m a minute. Answers within a minute of each other count as the same (D36). "Near the metro" with no number is blank. | "500 μ. από τον σταθμό μετρό" is 500 (7 minutes) |
 | `condition` | `needs_work`, `unfinished` (ημιτελές), `new_build`, `renovated`, or blank. | "Χρήζει ολικής ανακαίνισης" is needs_work |
 
 ## Things no field holds yet

@@ -1,7 +1,7 @@
 {
   "eval": "extraction",
   "name": "haiku_v2+crossed-fill",
-  "ran_at": "2026-10-22T08:15:46+00:00",
+  "ran_at": "2026-10-22T08:23:13+00:00",
   "listings": 100,
   "answer_key": {
     "version": 2,
@@ -20,11 +20,11 @@
       "accuracy": 0.9894
     },
     "free_text": {
-      "correct": 403,
-      "wrong": 11,
+      "correct": 407,
+      "wrong": 7,
       "invented": 26,
       "missed": 56,
-      "accuracy": 0.8125
+      "accuracy": 0.8206
     }
   },
   "per_field": {
@@ -169,11 +169,11 @@
       "accuracy": 1.0
     },
     "metro_walk_min": {
-      "correct": 81,
-      "wrong": 7,
+      "correct": 85,
+      "wrong": 3,
       "invented": 10,
       "missed": 2,
-      "accuracy": 0.81
+      "accuracy": 0.85
     }
   },
   "data": "real listings, private; totals only",

@@ -44,8 +44,9 @@ The rules are in `docs/labelling-guide.md`.
 | v0.2 | Extraction, Haiku 5.5, prompt v2 | 100 | 98.2% | 72.2% | 58 |
 | v0.2 | Extraction, Haiku 5.5, prompt v2, with crossed-out lists (50 revisited listings) | 50 | 98.6% | 75.6% | 53 |
 | v0.2 | Extraction, code only, with crossed-out lists (same 50) | 50 | 98.9% | 78.6% | 44 |
-| v0.2 | **Answer key v2** (all rounds combined, D35): Haiku v2 + code, crossed-out lists, 50 revisited listings | 50 | 99.1% | **88.7%** | 13 |
-| v0.2 | Answer key v2: the same, all 100 (50 without crossed-out lists yet) | 100 | 98.9% | 81.2% | 26 |
+| v0.2 | **Answer key v2** (all rounds combined, D35; metro within a minute, D36): Haiku v2 + code, crossed-out lists, 50 revisited listings | 50 | 99.1% | **89.9%** | 13 |
+| v0.2 | Answer key v2: code only, crossed-out lists, same 50 | 50 | 99.6% | 87.5% | 11 |
+| v0.2 | Answer key v2: Haiku v2 + code, all 100 (50 without crossed-out lists yet) | 100 | 98.9% | 82.1% | 26 |
 
 Most of Haiku's "invented" values come with a quote from the description that the key left blank, and 73 of its misses are "no" answers from the crossed-out feature list, which isn't in the text. Key v1 limited what this eval could show (D33); answer key v2 combines every round's labels (D35).
 

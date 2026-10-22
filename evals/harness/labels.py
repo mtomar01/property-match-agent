@@ -89,6 +89,24 @@ def comparable(name: str, value):
     return value
 
 
+METRO_TOLERANCE_MIN = 1  # D36: within a minute on foot is the same answer
+
+
+def same(name: str, a, b) -> bool:
+    """Whether two answers for one field agree, in the form `comparable` gives them.
+
+    Minutes to the metro agree within a minute (D36): labellers and code turn
+    metres into minutes in slightly different ways, and a minute doesn't
+    change what a buyer sees. Sizes agree within 0.01 m².
+    """
+    a, b = comparable(name, a), comparable(name, b)
+    if name == "metro_walk_min" and isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return abs(a - b) <= METRO_TOLERANCE_MIN
+    if isinstance(a, float) or isinstance(b, float):
+        return a is not None and b is not None and abs(a - b) < 0.01
+    return a == b
+
+
 class OldPrice(_Strict):
     price_eur: int = Field(gt=0)
     date: dt.date | None = None

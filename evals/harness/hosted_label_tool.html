@@ -172,7 +172,7 @@ dialog li { margin: 5px 0; }
       <button type="button" class="primary" id="save">Save, next</button>
       <span id="status" role="status"></span>
     </div>
-    <p class="hint">Blank means the listing doesn't say. "table" marks a value from our copy of the page's table: check it against the listing's text. Press ❝ to paste the words you read a value from. Ctrl or ⌘ + Enter saves.</p>
+    <p class="hint" id="hint">Blank means the listing doesn't say. "table" marks a value from our copy of the page's table: check it against the listing's text. Press ❝ to paste the words you read a value from. Ctrl or ⌘ + Enter saves.</p>
   </section>
 </div>
 
@@ -190,7 +190,7 @@ dialog li { margin: 5px 0; }
   <ol>
     <li><b>Open the listing</b> with the green button and read the whole page: the table, the features (ticked and crossed out) and the description.</li>
     <li><b>Label what the listing says</b>: its text, table and feature list. Photos don't count. Blank means it doesn't say. Never fill a gap with a likely value.</li>
-    <li><b>"table" values</b> come from our copy of the page's table on 20 October. If the live page shows something else because the listing changed (a new price, say), keep our value, pick "changed since 20 October" and note what changed. If the listing is gone, pick "gone" and save.</li>
+    <li id="rule-prefill"><b>"table" values</b> come from our copy of the page's table on 20 October. If the live page shows something else because the listing changed (a new price, say), keep our value, pick "changed since 20 October" and note what changed. If the listing is gone, pick "gone" and save.</li>
     <li><b>When the listing contradicts itself</b> (the table or features against the text, such as gas heating in the table but a heat pump in the text), leave the field blank and note both values. Except price and size: the table wins.</li>
     <li><b>Ticked is yes, crossed out is no.</b> The advertiser crossed it out, so the flat doesn't have it. Leave a feature blank only when it's nowhere on the page: not in the feature list, not in the table, not in the description.</li>
     <li><b>Lift</b> is "no" if it stops below the flat's floor, or it's a goods lift (αναβατόριο).</li>
@@ -213,6 +213,10 @@ dialog li { margin: 5px 0; }
 const PAYLOAD = JSON.parse(document.getElementById("data").textContent);
 const ITEMS = PAYLOAD.items;
 const ROUND = PAYLOAD.round;
+// "verify" pages pre-fill what the whole system reads (table, ticks and text),
+// tagged "system", so the labeller checks the system's answer (D36).
+const VERIFY = PAYLOAD.mode === "verify";
+const TAG = VERIFY ? "system" : "table";
 const FLOORS = ["basement", "semi_basement", "ground", "raised_ground", "mezzanine"]
   .concat(Array.from({ length: 12 }, (_, i) => String(i + 1))).concat(["top"]);
 const GREEK = {
@@ -391,7 +395,7 @@ function renderSheet() {
     }
     row.append(input);
     const tag = field.name in item.prefill ? (sameAsPrefill(item, e, field.name) ? "table" : "changed") : "";
-    row.append(el("span", { class: "tag " + tag, id: "tag-" + field.name }, tag));
+    row.append(el("span", { class: "tag " + tag, id: "tag-" + field.name }, tag === "table" ? TAG : tag));
     const quote = el("button", { type: "button", class: "quote", title: "Add the words you read this from", "aria-label": "Evidence for " + field.label }, "❝");
     row.append(quote);
     const ev = el("div", { class: "evidence" });
@@ -412,7 +416,7 @@ function retag(item, e, name) {
   const tag = $("tag-" + name);
   if (!tag || !(name in item.prefill)) return;
   const value = sameAsPrefill(item, e, name) ? "table" : "changed";
-  tag.className = "tag " + value; tag.textContent = value;
+  tag.className = "tag " + value; tag.textContent = value === "table" ? TAG : value;
 }
 function go(i) {
   if (i < 0 || i >= ITEMS.length) return;
@@ -498,6 +502,10 @@ async function connect() {
 }
 
 $("round").textContent = ROUND;
+if (VERIFY) {
+  $("hint").textContent = "\"system\" marks what the extraction system now reads from this listing: its table, ticks and text. Check every value against the live page, fix any that are wrong, and fill in what it missed. Blank means the listing doesn't say. Ctrl or ⌘ + Enter saves.";
+  $("rule-prefill").textContent = "\"system\" values are the extraction system's answer, from our copy of the page (20 October, crossed-out lists 22 October). Fix any that are wrong or missing. If the live page changed since, keep our value, pick \"changed since 20 October\" and note what changed. If the listing is gone, pick \"gone\" and save.";
+}
 // A batch runs in order ("21 to 40"); a chosen set does not, so it shows the count.
 const inOrder = ITEMS.every((item, i) => number(i) === number(0) + i);
 $("range").textContent = inOrder ? number(0) + " to " + number(ITEMS.length - 1) : ITEMS.length + ", chosen";

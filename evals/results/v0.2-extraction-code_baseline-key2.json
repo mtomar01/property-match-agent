@@ -1,7 +1,7 @@
 {
   "eval": "extraction",
   "name": "code_baseline",
-  "ran_at": "2026-10-22T08:15:42+00:00",
+  "ran_at": "2026-10-22T08:23:36+00:00",
   "listings": 100,
   "answer_key": {
     "version": 2,
@@ -20,11 +20,11 @@
       "accuracy": 0.9888
     },
     "free_text": {
-      "correct": 349,
-      "wrong": 9,
+      "correct": 353,
+      "wrong": 5,
       "invented": 15,
       "missed": 123,
-      "accuracy": 0.7036
+      "accuracy": 0.7117
     }
   },
   "per_field": {
@@ -169,11 +169,11 @@
       "accuracy": 1.0
     },
     "metro_walk_min": {
-      "correct": 80,
-      "wrong": 6,
+      "correct": 84,
+      "wrong": 2,
       "invented": 12,
       "missed": 2,
-      "accuracy": 0.8
+      "accuracy": 0.84
     }
   },
   "data": "real listings, private; totals only"

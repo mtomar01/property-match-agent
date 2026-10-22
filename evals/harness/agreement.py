@@ -19,16 +19,13 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from evals.harness.labels import LABEL_FIELDS, ExtractionLabel, check, comparable
+from evals.harness.labels import LABEL_FIELDS, ExtractionLabel, check, comparable, same
 
 TARGET = 0.95
 
 
 def _same(name: str, a, b) -> bool:
-    a, b = comparable(name, a), comparable(name, b)
-    if isinstance(a, float) or isinstance(b, float):
-        return a is not None and b is not None and abs(a - b) < 0.01
-    return a == b
+    return same(name, a, b)
 
 
 @dataclass

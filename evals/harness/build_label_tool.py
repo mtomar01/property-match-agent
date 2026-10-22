@@ -143,15 +143,29 @@ def build_hosted(count: int, start: int = 0, raw_path: Path = RAW, snapshot_path
 
 
 def build_hosted_selection(listing_ids: list[str], title: str, out_path: Path, raw_path: Path = RAW,
-                           snapshot_path: Path = SNAPSHOT, round_no: int = 1, revisit: bool = False) -> Path:
-    """A hosted page for chosen listings, in the order given, keeping their numbers in the full order."""
+                           snapshot_path: Path = SNAPSHOT, round_no: int = 1, revisit: bool = False,
+                           system: dict[str, dict] | None = None) -> Path:
+    """A hosted page for chosen listings, in the order given, keeping their numbers in the full order.
+
+    With `system` (listing id to the system's fields), the page is a verify page:
+    it pre-fills the whole system's answer, tagged "system", instead of what
+    code reads from the table and ticks (D36).
+    """
     items = _load(raw_path, snapshot_path, revisit)
     by_id = {item["listing_id"]: (number, item) for number, item in enumerate(items, start=1)}
     missing = [listing_id for listing_id in listing_ids if listing_id not in by_id]
     if missing:
         raise ValueError(f"not in the collected pages: {missing}")
     chosen = [_hosted(by_id[listing_id][1], by_id[listing_id][0]) for listing_id in listing_ids]
-    _write(HOSTED_TEMPLATE, {"round": round_no, "items": chosen}, out_path, title=title)
+    payload: dict = {"round": round_no, "items": chosen}
+    if system is not None:
+        for item in chosen:
+            answer = {k: v for k, v in system[item["listing_id"]].items() if v not in (None, [], "")}
+            if "old_price_eur" in item["prefill"]:
+                answer["old_price_eur"] = item["prefill"]["old_price_eur"]
+            item["prefill"] = answer
+        payload["mode"] = "verify"
+    _write(HOSTED_TEMPLATE, payload, out_path, title=title)
     return out_path
 
 

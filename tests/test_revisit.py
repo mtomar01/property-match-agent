@@ -85,3 +85,30 @@ def test_parking_the_text_mentions_beats_a_crossed_out_tick():
     crossed = dict(record(**{"Περιγραφή": "Πάρκινγκ στην πιλοτή."}), crossed={"Εξωτερικά χαρακτηριστικά": ["Parking"]})
     assert predict(crossed, {})["parking"] == "pilotis"
     assert predict(dict(record(**{"Περιγραφή": "Φωτεινό."}), crossed={"Εξωτερικά χαρακτηριστικά": ["Parking"]}), {})["parking"] == "none"
+
+
+def test_round4_prefers_listings_a_labeller_never_saw_and_never_shares_one():
+    from evals.harness.agreement_sets import choose_round4
+
+    pool = [f"spitogatos:{i}" for i in range(12)]
+    labelled = {i: ({"gb"} if n < 10 else set()) | ({"mike"} if n >= 10 else set()) for n, i in enumerate(pool)}
+    chosen = choose_round4(pool, ["gb", "mike"], labelled, size=5)
+    assert {"spitogatos:10", "spitogatos:11"} <= set(chosen["gb"]) and len(chosen["gb"]) == 5  # 2 fresh, 3 seen
+    assert len(chosen["mike"]) == 5 and not set(chosen["gb"]) & set(chosen["mike"])
+    assert all("mike" not in labelled[i] for i in chosen["mike"])  # mike had 7 fresh left
+
+
+def test_a_verify_page_prefills_the_systems_answer(tmp_path):
+    import json
+    import re
+
+    from evals.harness.build_label_tool import build_hosted_selection
+
+    raw = tmp_path / "raw.jsonl"
+    snap = tmp_path / "snap.jsonl"
+    raw.write_text(json.dumps(dict(record(), source_id="5", url="https://www.spitogatos.gr/aggelia/5")) + "\n", encoding="utf-8")
+    snap.write_text(json.dumps({"listing_id": "spitogatos:5", "area": "Egaleo", "title": "x", "url": "u"}) + "\n", encoding="utf-8")
+    out = build_hosted_selection(["spitogatos:5"], "T", tmp_path / "p.html", raw, snap, round_no=4,
+                                 system={"spitogatos:5": {"parking": "space", "balcony": True, "lift": None}})
+    data = json.loads(re.search(r'id="data">(.*?)</script>', out.read_text(encoding="utf-8"), re.S).group(1))
+    assert data["mode"] == "verify" and data["items"][0]["prefill"] == {"parking": "space", "balcony": True}
