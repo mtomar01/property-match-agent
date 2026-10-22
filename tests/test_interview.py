@@ -220,3 +220,11 @@ def test_a_limit_loosened_after_a_yes_from_the_harness_is_caught():
     log[2]["source"] = "script"  # the user's own words asked for it
     assert ev.unasked_loosenings(log) == []
     assert ev._looser("areas", ["Peristeri"], []) and not ev._looser("areas", [], ["Peristeri"])
+
+
+def test_a_suggestion_to_ease_a_limit_gets_a_fixed_no_preference():
+    chat = {"chat_id": "x", "language": "en", "persona": "p", "turns": ["Peristeri, over 120 m², under 150k."], "user_facts": {}}
+    agent = Scripted([answer("0 pass. Adding Egaleo gives 2. Shall I?", asking=["ease_limit"]),
+                      answer("Keeping it. Search?", "confirm", criteria=card(areas=["Peristeri"]))])
+    t = ev.simulate(chat, agent, [], cache_dir=None, sim_client=Scripted([]))  # the model user is never called
+    assert [(e["source"], e["text"]) for e in t["log"] if e["role"] == "user"][1] == ("fixed, easing", "No preference.")

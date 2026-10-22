@@ -134,6 +134,10 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
             lang = language(text)
         elif last and last.get("output") and last["output"]["action"] == "confirm":
             text, source, confirmed = CONFIRM[lang], "confirm", True
+        elif extra < EXTRA_ANSWERS and last and last.get("output") and "ease_limit" in (last["output"]["asking_about"] or []):
+            # No chat's facts say the user would loosen a limit, so a suggestion to ease one gets a fixed
+            # "no preference", never a model's yes (D50). The rule says that keeps the card as it was.
+            text, source, extra = NO_PREFERENCE[lang], "fixed, easing", extra + 1
         elif extra < EXTRA_ANSWERS and last and last.get("output"):
             text, response = simulated_answer(chat, last["output"]["reply"], lang, sim_client, sim_cache,
                                               [e["text"] for e in log if e["role"] == "user"])
