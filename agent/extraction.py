@@ -179,11 +179,14 @@ def reconcile(name: str, mine, theirs):
     """Two values that differ but don't contradict each other, per the labelling guide.
 
     υπερυψωμένο ισόγειο is a more exact "ground", not a conflict; a ρετιρέ
-    with a floor number takes the number. Returns the value to keep, or None
+    with a floor number takes the number; storage the text mentions counts
+    even when the feature list crosses Αποθήκη out (your rule, D34). Returns the value to keep, or None
     when the two really disagree.
     """
     if comparable(name, mine) == comparable(name, theirs):
         return mine
+    if name == "storage" and theirs is True and mine is False:
+        return True  # "εσωτερική αποθήκη" is storage even when the list crosses Αποθήκη out (D34)
     if name == "floor_class":
         if {mine, theirs} == {"ground", "raised_ground"}:
             return "raised_ground"

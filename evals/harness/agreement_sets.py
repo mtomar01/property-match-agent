@@ -8,6 +8,7 @@ and checked; the chosen ids are saved next to the pages.
 
 Run: uv run python -m evals.harness.agreement_sets [SIZE] [SEED]
      uv run python -m evals.harness.agreement_sets round2   # the listings code read worst
+     uv run python -m evals.harness.agreement_sets round3   # 10 each from the revisited 50 (D34)
 """
 
 from __future__ import annotations
@@ -93,8 +94,51 @@ def build_round2(size: int = 20, key_version: int = 1, detail_name: str = "code_
             for who, ids in chosen.items()}
 
 
+def choose_round3(origin: dict, errors: dict[str, int], pool: list[str], size: int = 10) -> dict:
+    """Each labeller gets the listings where the pipeline and the other's label disagree most.
+
+    When the other labeller has too few listings in the pool, the rest are the
+    labeller's own (a self-check: same person, a few days later), never one
+    already given to the other labeller.
+    """
+    ranked = sorted(pool, key=lambda i: (-errors.get(i, 0), i))
+    labellers = sorted({origin[i]["labeller"] for i in pool})
+    chosen: dict[str, list[str]] = {}
+    for labeller in labellers:
+        chosen[labeller] = [i for i in ranked if origin[i]["labeller"] != labeller][:size]
+    self_check: dict[str, list[str]] = {}
+    for labeller in labellers:
+        given = {i for other, ids in chosen.items() if other != labeller for i in ids}
+        missing = size - len(chosen[labeller])
+        own = [i for i in ranked if origin[i]["labeller"] == labeller and i not in given][:max(missing, 0)]
+        chosen[labeller] += own
+        self_check[labeller] = own
+    return {"relabel": chosen, "self_check": self_check}
+
+
+def build_round3(size: int = 10, key_version: int = 1, run_name: str = "haiku_v2+crossed-fill") -> dict[str, Path]:
+    from evals.harness import answer_key
+    from evals.harness.extraction_eval import PRIVATE, load_predictions, score
+
+    key, manifest = answer_key.load(key_version)
+    sample = set(json.loads((PRIVATE.parent / "revisit" / "sample.json").read_text(encoding="utf-8"))["listing_ids"])
+    round2 = json.loads((OUT / "sets_round2.json").read_text(encoding="utf-8"))["relabel"]
+    pool = sorted(sample - {i for ids in round2.values() for i in ids})
+    result = score(key, load_predictions(PRIVATE / f"predictions_{run_name}.jsonl"), set(pool))
+    errors: dict[str, int] = defaultdict(int)
+    for row in result.detail:
+        errors[row["listing_id"]] += 1
+    sets = choose_round3(manifest["origin"], errors, pool, size)
+    (OUT / "sets_round3.json").write_text(json.dumps(dict(sets, size=size, ranked_by=f"{run_name} errors on key v{key_version}",
+                                                          pool="the revisited 50, less round 2"), indent=2), encoding="utf-8")
+    return {who: build_hosted_selection(ids, f"{display(who)}'s Check 3", OUT / f"check-3-{who}.html", round_no=3, revisit=True)
+            for who, ids in sets["relabel"].items()}
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["round2"]:
+    if sys.argv[1:2] == ["round3"]:
+        pages = build_round3()
+    elif sys.argv[1:2] == ["round2"]:
         pages = build_round2()
     else:
         pages = build(*[int(a) for a in sys.argv[1:3]])

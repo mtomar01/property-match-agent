@@ -12,7 +12,8 @@ the description and the table disagree, the field is unknown).
 A listing whose call fails keeps what code read from the page, so a failure
 can't invent anything; failures are counted in the result.
 
-Run:  uv run python -m evals.harness.model_extraction [MODEL] [PROMPT] [--limit N]
+Run:  uv run python -m evals.harness.model_extraction [MODEL] [PROMPT] [--crossed] [--limit N]
+      --crossed adds the crossed-out lists from the revisit (D34) where there is one.
       --limit N calls N listings and prints them, without scoring (a dry run).
 """
 
@@ -25,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
+from adapters import spitogatos_features as features
 from agent import llm
 from agent.extraction import MAX_TOKENS, PROMPT_VERSION, ExtractionError, call, merge, parse_reading, request
 from evals.harness import extraction_eval
@@ -37,13 +39,15 @@ RULES = ("fill", "conflict")
 SHORT = {"claude-haiku-5-5": "haiku", "claude-sonnet-5-5": "sonnet"}
 
 
-def load_inputs(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT) -> tuple[list[dict], dict[str, dict]]:
+def load_inputs(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, revisit: bool = False) -> tuple[list[dict], dict[str, dict]]:
     cards = {}
     for line in snapshot_path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             card = json.loads(line)
             cards[card["listing_id"]] = card
     records = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if revisit:
+        records = features.attach(records, features.load())
     return records, cards
 
 
@@ -84,8 +88,8 @@ def read_all(records: list[dict], model: str, version: str, client, cache_dir: P
 
 def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_version: int = 1,
         limit: int | None = None, client=None, cache_dir: Path = CACHE, out_dir: Path = PRIVATE,
-        write: bool = True) -> dict:
-    records, cards = load_inputs()
+        write: bool = True, revisit: bool = False) -> dict:
+    records, cards = load_inputs(revisit=revisit)
     if limit:
         records = records[:limit]
     client = client or llm.client()
@@ -109,7 +113,7 @@ def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_vers
             print(json.dumps({"listing_id": entry["listing_id"], "reading": entry.get("raw"), "error": entry.get("error")}, ensure_ascii=False))
         return summary
 
-    name = f"{SHORT.get(model, model)}_{version.replace('extraction_', '')}"
+    name = f"{SHORT.get(model, model)}_{version.replace('extraction_', '')}" + ("+crossed" if revisit else "")
     results = {}
     for rule in RULES:
         conflicts: dict[str, int] = {}
@@ -124,7 +128,7 @@ def run(model: str = "claude-haiku-5-5", version: str = PROMPT_VERSION, key_vers
                     conflicts[field] = conflicts.get(field, 0) + 1
                 fh.write(json.dumps({"listing_id": listing_id, "fields": fields,
                                      "evidence": text.get("evidence", {}), "conflicts": blanked}, ensure_ascii=False) + "\n")
-        extra = dict(summary, merge_rule=rule, conflicts_blanked=conflicts)
+        extra = dict(summary, merge_rule=rule, conflicts_blanked=conflicts, crossed_out_lists=revisit)
         results[rule] = extraction_eval.run(path, key_version, f"{name}-{rule}", extra=extra)
         print()
     return dict(summary, results=results)
@@ -135,4 +139,5 @@ if __name__ == "__main__":
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
     models = [a for a in args if a.startswith("claude-")]
     prompts = [a for a in args if a.startswith("extraction_")]
-    run(models[0] if models else "claude-haiku-5-5", prompts[0] if prompts else PROMPT_VERSION, limit=limit)
+    run(models[0] if models else "claude-haiku-5-5", prompts[0] if prompts else PROMPT_VERSION, limit=limit,
+        revisit="--crossed" in args)

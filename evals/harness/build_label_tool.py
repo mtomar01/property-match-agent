@@ -103,8 +103,11 @@ def hosted_items(items: list[dict], count: int, start: int = 0) -> list[dict]:
     return [_hosted(item, number) for number, item in enumerate(items[start:start + count], start=start + 1)]
 
 
-def _load(raw_path: Path, snapshot_path: Path) -> list[dict]:
+def _load(raw_path: Path, snapshot_path: Path, revisit: bool = False) -> list[dict]:
     raw_records = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if revisit:  # crossed-out lists from the 22 October revisit, pre-filled as "no" (D34)
+        from adapters import spitogatos_features as features
+        raw_records = features.attach(raw_records, features.load())
     cards = {}
     for line in snapshot_path.read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -140,9 +143,9 @@ def build_hosted(count: int, start: int = 0, raw_path: Path = RAW, snapshot_path
 
 
 def build_hosted_selection(listing_ids: list[str], title: str, out_path: Path, raw_path: Path = RAW,
-                           snapshot_path: Path = SNAPSHOT, round_no: int = 1) -> Path:
+                           snapshot_path: Path = SNAPSHOT, round_no: int = 1, revisit: bool = False) -> Path:
     """A hosted page for chosen listings, in the order given, keeping their numbers in the full order."""
-    items = _load(raw_path, snapshot_path)
+    items = _load(raw_path, snapshot_path, revisit)
     by_id = {item["listing_id"]: (number, item) for number, item in enumerate(items, start=1)}
     missing = [listing_id for listing_id in listing_ids if listing_id not in by_id]
     if missing:

@@ -272,3 +272,23 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Fill or conflict:** against key v1, "fill" scores higher on table fields, because when the text disagreed with the table the labellers mostly kept the table's value, while D25 says leave it blank. Either the rule or the labels should change; key v2 decides.
 - **Cost:** $0.155 for everything today (a 2-listing dry run, prompt v1 and prompt v2 on 100 listings): under a tenth of a cent per listing.
 - **Say:** "The first model run looked worse than regex. The quotes showed why: most 'errors' were gaps in the answer key. An eval can't tell a good model from a good regex until the key is right, so the next step was the key, not the prompt."
+
+## D34. The crossed-out revisit: 50 pages, and round 3
+
+- **What:** with your go-ahead for 50 of the 100, I reopened 50 listing pages on 22 October (picked at random with a fixed seed: 17 Egaleo, 17 Peristeri, 16 Chaidari) at the D24 pace, a few seconds between pages. A small script read only the four feature lists and each feature's icon: a tick (`i-correct`) or a cross (`i-negative`). Nothing else on the page was read. To move the lists here without retyping Greek, the script returned numbers from a fixed list of feature names (`adapters/spitogatos_features.py`) plus a fingerprint the page computed from that list, so a copying slip would have been caught. All 50 rows matched. The script lived in the tab's session storage and went when the tab closed.
+- **What the pages showed:** all 50 still live. Five advertisers crossed out nothing at all and one crossed out only a handful, so crossing out is a deliberate choice (D29 holds) and "not stated" is real.
+- **Against answer key v1:** the crossed-out lists agree with the key wherever the key has a value, except one parking case where the text mentions parking and the key followed the text. They also give 26 "no" answers the key left blank (lift 8, parking 10, storage 8), mostly listings labelled before D29.
+- **Code now reads them:** a crossed-out Ασανσέρ is no lift, Αποθήκη no storage, Parking no parking; a tick always wins. Only these three: a crossed-out garden doesn't mean no balcony, because a balcony is any private outdoor space.
+- **Your storage rule:** "εσωτερική αποθήκη" counts as storage even when Αποθήκη is crossed out. The merge keeps the text's "yes" over the crossed-out "no" for storage only; the guide and the labelling pages say so.
+- **Results on those 50 listings** (key v1, no new model calls; Haiku's answers came from the cache):
+
+  | | Text-only fields | Missed | Invented |
+  |---|---|---|---|
+  | Code only | 72.1% | 48 | 21 |
+  | Code only, crossed-out lists | 78.6% | 8 | 44 |
+  | Haiku v2, fill | 69.5% | 44 | 31 |
+  | Haiku v2, fill, crossed-out lists | 75.6% | 5 | 53 |
+
+  Misses fall by about 40. "Invented" rises by about 22: mostly the crossed-out "no"s the key left blank. Table fields don't change (98.9% and 98.6%).
+- **Round 3, 10 each (your choice):** from the 50, less round 2's listings, ranked by where Haiku with the crossed-out lists disagrees most with the key. You get GB's 10. Only 7 of yours were left, so GB gets those 7 plus 3 of his own as a self-check (the guide's "agree with yourself" test). The pages pre-fill the crossed-out "no"s like the table's values; parking still isn't pre-filled.
+- **Say:** "Most of the misses weren't a reading problem. The page states 'no' with an icon, and my first collector threw it away. Revisiting 50 pages cut misses from 48 to 8."

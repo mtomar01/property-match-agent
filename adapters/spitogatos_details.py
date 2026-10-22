@@ -107,6 +107,7 @@ class DetailFields:
     # Facts worth showing the labeller that have no label field yet.
     extras: dict = field(default_factory=dict)
     ticked: dict = field(default_factory=dict)
+    crossed: dict = field(default_factory=dict)
     problems: list[str] = field(default_factory=list)
 
 
@@ -220,6 +221,19 @@ def parse_details(record: dict) -> DetailFields:
         f["parking"] = "space"
         if spaces:
             x["parking_spaces"] = spaces[0]
+
+    # Crossed-out features, when the record has them (the revisit, D34). The
+    # advertiser crossed them out, so the home doesn't have them (D29). A tick
+    # always wins, in case a page lists a feature twice.
+    crossed = record.get("crossed") or {}
+    if crossed:
+        out.crossed = crossed
+        if "Ασανσέρ" in crossed.get(INTERIOR, []) and "lift" not in f:
+            f["lift"] = False
+        if "Αποθήκη" in crossed.get(INTERIOR, []) and "storage" not in f:
+            f["storage"] = False
+        if "Parking" in crossed.get(EXTERIOR, []) and "parking" not in f:
+            f["parking"] = "none"
 
     flags = []
     if "Οροφοδιαμέρισμα" in construction:

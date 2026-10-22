@@ -21,6 +21,7 @@ import re
 import sys
 from pathlib import Path
 
+from adapters import spitogatos_features as features
 from adapters.spitogatos_details import parse_details
 from evals.harness.build_label_tool import RAW, ROOT, SNAPSHOT
 from evals.harness.labels import LABEL_FIELDS
@@ -111,7 +112,7 @@ def predict(record: dict, card: dict) -> dict:
     return fields
 
 
-def run(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = OUT) -> int:
+def run(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = OUT, revisit: bool = False) -> int:
     cards = {}
     for line in snapshot_path.read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -119,11 +120,11 @@ def run(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = O
             cards[card["listing_id"]] = card
     out_path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
+    records = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if revisit:
+        records = features.attach(records, features.load())
     with out_path.open("w", encoding="utf-8") as fh:
-        for line in raw_path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            record = json.loads(line)
+        for record in records:
             listing_id = f"spitogatos:{record['source_id']}"
             fh.write(json.dumps({"listing_id": listing_id, "fields": predict(record, cards.get(listing_id, {}))}, ensure_ascii=False) + "\n")
             count += 1
@@ -131,5 +132,7 @@ def run(raw_path: Path = RAW, snapshot_path: Path = SNAPSHOT, out_path: Path = O
 
 
 if __name__ == "__main__":
-    print(f"Wrote {run()} predictions to {OUT.relative_to(ROOT)}")
+    crossed = "--crossed" in sys.argv[1:]
+    out = OUT.with_name("predictions_code_baseline+crossed.jsonl") if crossed else OUT
+    print(f"Wrote {run(out_path=out, revisit=crossed)} predictions to {out.relative_to(ROOT)}")
     sys.exit(0)

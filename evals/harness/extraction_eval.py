@@ -70,9 +70,12 @@ class Score:
         return counts["correct"] / total if total else 0.0
 
 
-def score(key: list[ExtractionLabel], predictions: dict[str, dict]) -> Score:
+def score(key: list[ExtractionLabel], predictions: dict[str, dict], only: set[str] | None = None) -> Score:
+    """Score predictions against the key; `only` limits it to some listings (a subset such as the revisit's 50)."""
     result = Score(per_field={name: dict.fromkeys(OUTCOMES, 0) for name in LABEL_FIELDS})
     for label in key:
+        if only is not None and label.listing_id not in only:
+            continue
         guess = predictions.get(label.listing_id)
         if guess is None:
             result.missing_predictions.append(label.listing_id)
@@ -105,15 +108,19 @@ def report(result: Score, name: str, manifest: dict) -> str:
     return "\n".join(lines)
 
 
-def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", write: bool = True,
-        extra: dict | None = None) -> Score:
-    key, manifest = answer_key.load(version)
+def load_predictions(path: Path) -> dict[str, dict]:
     predictions = {}
-    for line in predictions_path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             row = json.loads(line)
             predictions[row["listing_id"]] = row["fields"]
-    result = score(key, predictions)
+    return predictions
+
+
+def run(predictions_path: Path, version: int = 1, name: str = "code_baseline", write: bool = True,
+        extra: dict | None = None) -> Score:
+    key, manifest = answer_key.load(version)
+    result = score(key, load_predictions(predictions_path))
     print(report(result, name, manifest))
     if write:
         stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
