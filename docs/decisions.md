@@ -568,3 +568,10 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **One number in code** (`LOWEST_SHARE` in `core/card_rules.py`). The search safety lists were rebuilt on it: 0 breaks, recall and precision 1.00, and the Greek-floors case (ss05) has listings to test again.
 - **Prompt v7** is v6 without the percentages: the assistant quotes the range code returns, so the number can change again without touching the prompt. Not run yet; the app uses it.
 - **Open:** the purpose question ("to live in or as an investment?") was added because the lowest price depended on it (D54). It no longer does.
+
+## D61. The product's flow: no confirm step, a bar above the deck
+
+- **Your call:** while chatting, the chat takes the full width. When the assistant has what it needs, the swipe deck comes straight up; there's no card to confirm inside the chat. The card lives on as a one-line bar above the deck ("Egaleo · €180–220k · 2+ bedrooms · balcony"). Changes happen by chat ("make it 220k") and rerun the search.
+- **What this changes in the spec:** "nothing is searched until they confirm" goes. It was there because a wrong hard limit hides homes silently. Two things keep that check: the assistant's last message says in one sentence what it will search, and the bar always shows the hard limits (area, price range, bedrooms, floors ruled out); nice-to-haves can shorten to "+2 more". Investor mode shows on the bar too. The repo's `docs/spec.md` is updated; your original in the Project is unchanged.
+- **When:** with v2, the swipe deck. The v1 app keeps its side-by-side card and table, which is the quickest way to test the interview and the search.
+- **For the evals:** the assistant's "confirm" becomes "ready to search", and the simulated user's fixed "yes" becomes "no objection", so the scores keep their meaning.

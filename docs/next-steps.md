@@ -19,7 +19,7 @@ Updated 22 October 2026, after answer key v4.
 
 1. **Your call: the purpose question (D60).** It no longer changes the search now that the lowest price is half the top for everyone. Then prompt v7 gets its eval run (about $2.70).
 2. **Try the app** (README, "The app"): build it once, run the server, chat. Then connect the server to the Claude desktop app (`docs/connect-claude-desktop.md`).
-3. **v2, the swipe deck:** cards with two "why this one" reasons, rule scoring, reject reasons, the Sheets export (spec section 13).
+3. **v2, the swipe deck:** the flow from D61 (chat full width, deck straight up, the card as a one-line bar, changes by chat), cards with two "why this one" reasons, rule scoring, reject reasons, the Sheets export (spec section 13).
 
 ## Interview eval (22 October, D46, D47)
 
@@ -96,7 +96,7 @@ In `docs/expansions.md`: xe.gr, more areas, rentals, investor versus live-in buy
 1. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 2. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D60.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D61.
 
 ## For the desktop app demo
 
