@@ -17,10 +17,14 @@ Updated 22 October 2026, after the first model run.
 
 ## Next steps
 
-1. **Round 4 (D36):** "Mike's Check 4" and "GB's Check 4", 5 random listings each where the old pages hid parking or a balcony. The pages show the system's whole answer, tagged "system": fix anything wrong. Share GB's page by email.
-2. **Then the other 50 pages** for their crossed-out lists, if round 4 says the system now catches parking and balconies. On the revisited half the pipeline is at 89.9% on text fields; on the other half most misses are crossed-out "no"s.
+1. **Check 5 (D37):** "Crossed-Out Check", 10 listings where the system says unknown for lift, parking and storage. You both use the same page; share it with GB by email.
+2. **Then the other 50 pages** for their crossed-out lists, if Check 5 shows the unknowns are crossed-out "no"s. Check 4 already found exactly that on #53.
 3. **Sonnet 5.5 run** (about $1.50) on key v2, to see whether a bigger model earns its cost on the text fields.
 4. **Interview eval harness** on the 40 chats, with a simulated user that answers only from each chat's facts.
+
+## Check 4 (22 October, D37)
+
+- You agreed with the system on 103 of 105 fields, GB on 102. All balconies and 4 of 5 parking answers right; the misses were crossed-out lift, parking and storage on a listing not revisited.
 
 ## Answer key v2 (22 October, D35)
 
@@ -54,7 +58,7 @@ Not in the schema yet; the labels note them so we can count them first: **rented
 2. **Anthropic API key.** Working, stored outside the repo, $100 credit with a $100 monthly limit. Delete it and make a new one when the project's done, since it was pasted in chat.
 3. **Tab suspender.** You can turn it back on. If I collect more pages later, please whitelist spitogatos.gr instead.
 
-Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D36.
+Decided this session: spiti24 added (D18), agency names kept (D19), React for the front end (D20), plus D21 to D37.
 
 ## For the desktop app demo
 

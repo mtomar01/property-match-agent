@@ -112,3 +112,19 @@ def test_a_verify_page_prefills_the_systems_answer(tmp_path):
                                  system={"spitogatos:5": {"parking": "space", "balcony": True, "lift": None}})
     data = json.loads(re.search(r'id="data">(.*?)</script>', out.read_text(encoding="utf-8"), re.S).group(1))
     assert data["mode"] == "verify" and data["items"][0]["prefill"] == {"parking": "space", "balcony": True}
+
+
+def test_round5_takes_only_listings_with_lift_parking_and_storage_all_unknown(tmp_path, monkeypatch):
+    import json
+
+    from evals.harness import agreement_sets, extraction_eval
+
+    rows = {f"spitogatos:{i}": {"lift": None, "parking": None, "storage": None} for i in range(4)}
+    rows["spitogatos:1"]["lift"] = False
+    rows["spitogatos:3"]["parking"] = "space"
+    (tmp_path / "predictions_x.jsonl").write_text("".join(json.dumps({"listing_id": i, "fields": f}) + "\n" for i, f in rows.items()))
+    (tmp_path / "sets_round4.json").write_text(json.dumps({"relabel": {"gb": ["spitogatos:2"]}}))
+    monkeypatch.setattr(extraction_eval, "PRIVATE", tmp_path)
+    monkeypatch.setattr(agreement_sets, "OUT", tmp_path)
+    monkeypatch.setattr(agreement_sets, "build_hosted_selection", lambda ids, *a, **k: ids)
+    assert agreement_sets.build_round5(size=10, run_name="x") == {"both": ["spitogatos:0"]}

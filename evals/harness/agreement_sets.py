@@ -10,6 +10,7 @@ Run: uv run python -m evals.harness.agreement_sets [SIZE] [SEED]
      uv run python -m evals.harness.agreement_sets round2   # the listings code read worst
      uv run python -m evals.harness.agreement_sets round3   # 10 each from the revisited 50 (D34)
      uv run python -m evals.harness.agreement_sets round4   # verify: 5 each the old pages missed parking or a balcony (D36)
+     uv run python -m evals.harness.agreement_sets round5   # verify: 10 with lift, parking and storage all unknown (D37)
 """
 
 from __future__ import annotations
@@ -196,8 +197,31 @@ def build_round4(size: int = 5, key_version: int = 2, run_name: str = "haiku_v2+
             for who, ids in chosen.items()}
 
 
+def build_round5(size: int = 10, run_name: str = "haiku_v2+crossed-fill", seed: int = 2026) -> dict[str, Path]:
+    """One verify page for both labellers: listings where the system says unknown for lift, parking and storage (D37).
+
+    Those three are the features a crossed-out list answers, so a listing with
+    all three unknown is where reading the list would help most. Picked at
+    random, with a fixed seed, from listings not on the round 4 pages.
+    """
+    from evals.harness.extraction_eval import PRIVATE, load_predictions
+
+    system = load_predictions(PRIVATE / f"predictions_{run_name}.jsonl")
+    round4 = json.loads((OUT / "sets_round4.json").read_text(encoding="utf-8"))["relabel"]
+    skip = {i for ids in round4.values() for i in ids}
+    pool = sorted(i for i, f in system.items()
+                  if i not in skip and all(f.get(name) is None for name in ("lift", "parking", "storage")))
+    chosen = sorted(random.Random(seed).sample(pool, min(size, len(pool))))
+    (OUT / "sets_round5.json").write_text(json.dumps({"size": size, "seed": seed, "pool": len(pool), "listings": chosen,
+                                                      "system": run_name}, indent=2), encoding="utf-8")
+    return {"both": build_hosted_selection(chosen, "Crossed-Out Check", OUT / "check-5.html", round_no=5,
+                                           revisit=True, system=system)}
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["round4"]:
+    if sys.argv[1:2] == ["round5"]:
+        pages = build_round5()
+    elif sys.argv[1:2] == ["round4"]:
         pages = build_round4()
     elif sys.argv[1:2] == ["round3"]:
         pages = build_round3()
