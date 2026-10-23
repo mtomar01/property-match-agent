@@ -34,6 +34,8 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, Intent, Preference
 from core.search import MAX_LIMIT, search
+from learning import deck, patterns
+from learning.swipes import SwipeStore
 
 CACHE = Path(__file__).resolve().parents[1] / "data" / "private" / "cache"
 
@@ -139,14 +141,63 @@ def extract_listing(description: str, known_fields: dict | None = None, seen: st
     return extraction.extract(description, known_fields or {}, seen, client, CACHE)
 
 
-@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v6)")
+def _criteria(criteria: SearchCriteria) -> Criteria:
+    applied = search_card(_raw(criteria))
+    limits = {k: v for k, v in applied["hard_limits"].items() if v not in (None, [])}
+    return Criteria(user_id="mcp", intent=criteria.intent, areas=criteria.areas, hard_limits=HardLimits(**limits),
+                    preferences=criteria.preferences, confirmed_by_user=True)
+
+
+@mcp.tool(
+    description=(
+        "The next swipe cards for a user: the listings that pass the card, best first, each with two reasons from its "
+        "fields, one explore card in five, and cards already swiped left out. Hard limits are applied in code."
+    )
+)
+def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -> dict:
+    store = SwipeStore(user_id)
+    swiped = store.load()
+    return deck.build(adapter().listings(), _criteria(criteria), {s.listing_id for s in swiped}, start_position=len(swiped),
+                      limit=max(1, min(limit, MAX_LIMIT)), seed=len(swiped) // deck.EXPLORE_EVERY)
+
+
+@mcp.tool(
+    description=(
+        "Record a swipe: like or reject, with reject reasons (too_dark, too_small, bad_floor, needs_work, too_expensive, "
+        "wrong_area, other). Kept on this machine only. Returns the user's counts and like rate."
+    )
+)
+def record_swipe(listing_id: str, decision: Literal["like", "reject"], user_id: str = "me",
+                 reasons: list[str] | None = None, deck_position: int = 0, explore_card: bool = False) -> dict:
+    if adapter().get(listing_id) is None:
+        return {"error": f"No listing with id {listing_id}"}
+    store = SwipeStore(user_id)
+    store.record(listing_id, decision, reasons or [], deck_position, explore_card)
+    return store.stats()
+
+
+@mcp.tool(
+    description=(
+        "What a user's swipes say, counted in code: likes against rejects on each field, strongest pattern first, each "
+        "with its evidence as counts and the change it suggests (a limit when 5 or more homes would remain, otherwise "
+        "a preference). Put the top one to the user and change the card only on their yes."
+    )
+)
+def swipe_patterns(criteria: SearchCriteria, user_id: str = "me", declined: list[str] | None = None) -> dict:
+    found = patterns.observe(SwipeStore(user_id).load(), adapter().listings(), _criteria(criteria), set(declined or []))
+    return {"patterns": found[:3], "checkin_every": patterns.CHECKIN_EVERY}
+
+
+@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v8)")
 def criteria_interview() -> str:
     text = interview.system_prompt(interview.PROMPT_VERSION, date.today().isoformat())
     text = text.split("## Output fields")[0].rstrip()
     return text + (
-        "\n\n## With these tools\n\nShow the card in plain words. Call check_supply before showing it. When the user "
-        "confirms, call search_listings with the card: prices and sizes as the user said them, budget_around and ideally "
-        "as above. The server applies the margins and the lowest price and returns what it applied."
+        "\n\n## With these tools\n\nCall check_supply before you say what you'll search for. Then call next_cards with "
+        "the card: prices and sizes as the user said them, budget_around and ideally as above; the server applies the "
+        "margins and the lowest price. Show one card at a time with its reasons, record each answer with record_swipe, "
+        "and after every 10 call swipe_patterns: put its top pattern to the user as a check-in and change the card only "
+        "on their yes. search_listings gives the same homes as a table."
     )
 
 

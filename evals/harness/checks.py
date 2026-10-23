@@ -75,4 +75,8 @@ def breaks(result: dict, criteria: dict) -> list[str]:
     if excluded and (result.get("floor") is None or result.get("floor") in excluded):
         found.append(f"floor {result.get('floor')} is excluded or unknown")
 
+    year = result.get("year_built")
+    if limits.get("min_year_built") is not None and (year is None or year < limits["min_year_built"]):
+        found.append(f"year built {year} breaks min {limits['min_year_built']}")
+
     return found

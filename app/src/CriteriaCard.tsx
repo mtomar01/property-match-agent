@@ -11,7 +11,7 @@ interface Props {
   onSearch: () => void;
 }
 
-type NumberField = keyof Pick<HardLimits, "max_price_eur" | "min_price_eur" | "min_size_m2" | "max_size_m2" | "min_bedrooms" | "max_bedrooms">;
+type NumberField = keyof Pick<HardLimits, "max_price_eur" | "min_price_eur" | "min_size_m2" | "max_size_m2" | "min_bedrooms" | "max_bedrooms" | "min_year_built">;
 
 export function CriteriaCard({ card, searchedAs, ready, unsupported, busy, onChange, onSearch }: Props) {
   if (!card) {
@@ -88,6 +88,7 @@ export function CriteriaCard({ card, searchedAs, ready, unsupported, busy, onCha
           {number("max_size_m2", "Size up to", "m²")}
           {number("min_bedrooms", "Bedrooms from")}
           {number("max_bedrooms", "Bedrooms up to")}
+          {number("min_year_built", "Built from")}
         </div>
         <div className="checks">
           <label className="check">

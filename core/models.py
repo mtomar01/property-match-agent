@@ -222,6 +222,7 @@ class HardLimits(_Strict):
     max_size_m2: float | None = Field(default=None, gt=0)
     min_bedrooms: int | None = Field(default=None, ge=0)
     max_bedrooms: int | None = Field(default=None, ge=0)  # D56: "ideally 1 bedroom" searches 0 to 2
+    min_year_built: int | None = Field(default=None, ge=1800, le=2035)  # D66: "built from 2015 on", from a check-in
     property_types: list[PropertyType] = Field(default_factory=list)
     exclude_floors: list[str] = Field(default_factory=list)
 

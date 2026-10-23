@@ -88,6 +88,7 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   }
   if ("min_bedrooms" in patch) parts.push(`${patch.min_bedrooms}+ bedrooms`);
   if ("max_bedrooms" in patch) parts.push(`up to ${patch.max_bedrooms} bedrooms`);
+  if ("min_year_built" in patch) parts.push(`built from ${patch.min_year_built}`);
   if ("property_types" in patch) {
     const added = (patch.property_types as string[]).filter((t) => !((searched.property_types as unknown as string[]) ?? []).includes(t));
     parts.push(`add ${added.map((t) => TYPES.find(([code]) => code === t)?.[1].toLowerCase() ?? t).join(", ")}`);

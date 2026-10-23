@@ -29,9 +29,24 @@ def test_lists_the_tools_and_the_interview_prompt():
             return tools, prompts, text
 
     tools, prompts, text = asyncio.run(go())
-    assert tools == ["check_supply", "extract_listing", "get_listing", "search_listings"]
+    assert tools == ["check_supply", "extract_listing", "get_listing", "next_cards", "record_swipe", "search_listings", "swipe_patterns"]
     assert prompts == ["criteria_interview"]
-    assert "in Athens" in text and "search_listings" in text and "## Output fields" not in text
+    assert "in Athens" in text and "next_cards" in text and "## Output fields" not in text
+
+
+def test_the_deck_tools_share_one_swipe_log(tmp_path, monkeypatch):
+    import learning.swipes as swipes
+    monkeypatch.setattr(swipes, "SWIPES_DIR", tmp_path)
+    monkeypatch.setattr(swipes.SwipeStore.__init__, "__defaults__", (tmp_path,))
+    card = {"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 250000}}
+    first = call("next_cards", {"criteria": card, "user_id": "t", "limit": 3})
+    assert len(first["cards"]) == 3 and all(c["reasons"] for c in first["cards"])
+    stats = call("record_swipe", {"listing_id": first["cards"][0]["listing_id"], "decision": "like", "user_id": "t"})
+    assert stats["swipes"] == 1 and stats["like_rate"] == 1.0
+    again = call("next_cards", {"criteria": card, "user_id": "t", "limit": 3})
+    assert first["cards"][0]["listing_id"] not in {c["listing_id"] for c in again["cards"]}
+    assert call("swipe_patterns", {"criteria": card, "user_id": "t"}) == {"patterns": [], "checkin_every": 10}
+    assert "error" in call("record_swipe", {"listing_id": "nope", "decision": "like", "user_id": "t"})
 
 
 def test_search_applies_mikes_rules_in_code():

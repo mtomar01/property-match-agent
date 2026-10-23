@@ -9,6 +9,7 @@ export interface HardLimits {
   max_size_m2: number | null;
   min_bedrooms: number | null;
   max_bedrooms: number | null;
+  min_year_built: number | null;
   property_types: string[];
   exclude_floors: string[];
 }

@@ -89,6 +89,12 @@ def check(listing: Listing, criteria: Criteria) -> tuple[str, str] | None:
         if listing.floor.floor_class in limits.exclude_floors:
             return ("excluded_floor", "floor")
 
+    if limits.min_year_built is not None:
+        if listing.year_built is None:
+            return ("unknown", "year_built")
+        if listing.year_built < limits.min_year_built:
+            return ("too_old", "year_built")
+
     return None
 
 

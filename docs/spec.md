@@ -66,7 +66,7 @@ You'd need a data agreement. Routes to explore:
 2. **Criteria card.** The agent shows what it understood, split into hard limits (never broken) and preferences (weighted). *Changed by D61:* there's no separate confirm step. When the agent has what it needs, its last message says in one sentence what it will search, the deck appears, and the card stays on a one-line bar above it, hard limits always visible. Changes happen by chat and rerun the search.
 3. **Search.** The agent searches all three portals, removes duplicates and ranks the results. If there are too few matches, it says which limit to loosen and what that would unlock, for example "raising the budget to €210k adds 14 listings, adding Peristeri adds 22".
 4. **Swipe deck.** One listing per card: main photo, price, size, €/m², floor, area and two short "why this one" reasons. Right to like, left to reject. Optional quick reasons on a reject: too dark, too small, bad floor, needs work, too expensive, wrong area.
-5. **What I've noticed.** After every 15 to 20 swipes, the agent suggests changes with evidence, for example "you've rejected 9 of 10 ground floor flats, shall I leave them out?". The user accepts or ignores each one.
+5. **What I've noticed.** *Changed by D66:* after every 10 swipes, code compares likes with rejects and, when there's a clean pattern, the agent puts one change to the user with the evidence, for example "you've rejected 9 of 10 ground floor flats, shall I leave them out?", or "you're liking homes built from 2015 on; as a limit that leaves 12 of the 68". Offered as a limit when 5 or more homes would remain, otherwise as a strong preference. The user accepts, declines or gives a different number, in the chat. A declined change isn't offered again.
 6. **Shortlist.** Liked listings in a table view and a Google Sheets export: price, size, €/m², floor, year, renovation, energy class, area, link, date first seen and price changes.
 7. **Listing view.** Full details, plus a link to the original listing for contacting the agent.
 
@@ -74,8 +74,8 @@ You'd need a data agreement. Routes to explore:
 
 Decide these after using it yourself for a week.
 
-- Cards per session: endless, or a daily deck of 20?
-- A super like, or only like and reject?
+- Cards per session: endless while testing; a cap per user per day in the final version (Mike, D64, D66).
+- A super like, or only like and reject? Like and reject only for now (D64).
 - Map view in v1 or later?
 - **Couples mode:** two people swipe the same deck and mutual likes go to a shared list. Very Tinder, and very real for couples buying together.
 - Alerts for new matching listings: email, or only inside the app?
@@ -141,7 +141,7 @@ flowchart LR
 }
 ```
 
-`intent` is `buy`, `rent` or `invest`. Investor criteria are in section 14.
+`intent` is `buy`, `rent` or `invest`. Investor criteria are in section 14. *Added by D56 and D66:* hard limits also take `max_bedrooms` and `min_year_built`.
 
 ### Listing
 

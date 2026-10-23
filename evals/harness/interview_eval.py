@@ -53,6 +53,8 @@ SIM_MODEL = "claude-haiku-5-5"
 EXTRA_ANSWERS = 2
 TARGETS = {"field_accuracy": 0.95, "invented_hard_limits": 0, "unasked_loosenings": 0}
 
+# From prompt v8 the assistant doesn't ask for a yes: "confirm" means the homes come up (D61). The chat still
+# ends here, and the user's last word is logged as no objection, so the scores keep their meaning.
 CONFIRM = {"en": "Yes, that's right. Go ahead.", "el": "Ναι, σωστά. Προχώρα."}
 COUNTERPART = {"max_price_eur": "price_eur", "min_price_eur": "price_eur", "min_size_m2": "size_m2",
                "max_size_m2": "size_m2", "min_bedrooms": "bedrooms", "exclude_floors": "floor_level"}
@@ -397,7 +399,7 @@ def _looser(name: str, before, after) -> bool:
         return True
     if name in ("max_price_eur", "max_size_m2", "max_bedrooms"):
         return after > before
-    if name in ("min_price_eur", "min_size_m2", "min_bedrooms"):
+    if name in ("min_price_eur", "min_size_m2", "min_bedrooms", "min_year_built"):
         return after < before
     if name == "property_types":
         return bool(set(after) - set(before))

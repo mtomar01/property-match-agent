@@ -33,7 +33,7 @@ from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v7"
+PROMPT_VERSION = "interview_v8"
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -44,16 +44,17 @@ RENOVATED_YEARS = 10  # "renovated" with no year means renovated in the last ten
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
-          "priorities", "narrowing", "ease_limit", "purpose", "other")
+          "priorities", "narrowing", "ease_limit", "purpose", "suggest_change", "other")
 UNSUPPORTED = ("rent",)  # rentals come later (Mike, D54)
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
 EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one more covered area
+YEAR_STEP = 5  # easing a year-built limit: five years earlier
 WIDER_TYPES = {"apartment": ("maisonette", "loft")}  # types to offer when an apartment search is thin (Mike, D53)
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "max_bedrooms", "property_types",
-               "exclude_floors")
+               "exclude_floors", "min_year_built")
 
 
 def _nullable(kind: str) -> dict:
@@ -67,6 +68,7 @@ def _hard_limits_schema() -> dict:
             "max_price_eur": _nullable("integer"), "min_price_eur": _nullable("integer"),
             "min_size_m2": _nullable("number"), "max_size_m2": _nullable("number"),
             "min_bedrooms": _nullable("integer"), "max_bedrooms": _nullable("integer"),
+            "min_year_built": _nullable("integer"),  # from a check-in the user accepted (D66)
             "property_types": {"type": "array", "items": {"type": "string", "enum": list(get_args(PropertyType))}},
             "exclude_floors": {"type": "array", "items": {"type": "string", "enum": list(FLOORS)}},
         },
@@ -230,6 +232,8 @@ def eased(criteria: Criteria, listings: list) -> dict:
         numbers["min_bedrooms"] = limits.min_bedrooms - 1
     if limits.max_bedrooms is not None:
         numbers["max_bedrooms"] = limits.max_bedrooms + 1
+    if limits.min_year_built:
+        numbers["min_year_built"] = limits.min_year_built - YEAR_STEP
     for name, value in numbers.items():
         out[name] = option({name: value})
     if len(numbers) > 1:
