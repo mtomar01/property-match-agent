@@ -593,3 +593,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **A gap left for v2:** the assistant doesn't hear about a button click (or a hand edit to the card), so a later chat message can bring the old numbers back. v2 routes every change through the chat (D61), which closes it.
 - **Not measured yet:** prompt v7 needs its eval run (about $2.70). The eval already reads the numbers inside each option, so a count the assistant quotes is checked against code.
 
+## D64. Choices for v2, the swipe deck
+
+- **Photos (your call):** on your real listings, the card's main photo loads from the portal only when that card is on screen, the same as opening the listing yourself. Nothing is downloaded or stored. Synthetic listings in the public repo get placeholder pictures. This is the one place v2 touches a live site.
+- **Export (your call):** a CSV download that opens straight in Google Sheets. It needs no new dependency and no Google sign-in. Sending straight to Google Sheets can come later, or Claude can do it in the desktop demo.
+- **Reject reasons (your call):** the spec's six: too dark, too small, bad floor, needs work, too expensive, wrong area.
+- **"Why this one" reasons come from code, not the model:** code picks the card's two strongest matches to your preferences and words them from a template ("Balcony, as you asked"). They can only point to real fields, which is what the explanation eval checks, and they cost nothing.
+- **Swipes stay local:** saved in `data/private/`, never pushed. The record holds the listing, like or reject, any reasons and the deck position, as in spec section 6.
+- **Still open:** endless deck or 20 a day, and whether to have a super like. Explained to you; my suggestion is endless and no super like, to revisit after a week of use.
+- **Done when (spec):** the explanation eval passes and your like rate is recorded, from about 100 swipes on real listings over a few days. That rate is the baseline the learned ranking in v3 has to beat.
+
