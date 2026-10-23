@@ -1,0 +1,11 @@
+{
+ "eval": "explanations",
+ "ran_at": "2026-10-23T11:33:56+00:00",
+ "data": "synthetic listings; criteria from the search safety set plus five fixed wishes",
+ "cards": 50,
+ "reasons": 100,
+ "backed": 1.0,
+ "target": 0.98,
+ "passed": true,
+ "failures": []
+}

@@ -1,0 +1,404 @@
+{
+ "eval": "suggestions",
+ "ran_at": "2026-10-23T11:37:22+00:00",
+ "data": "30 swipe histories written by taste rules on the synthetic listings",
+ "summary": {
+  "histories": 30,
+  "offered": 18,
+  "precision": 0.944,
+  "recall": 0.944,
+  "false_alarms": [],
+  "wrong_change": [
+   "sh08"
+  ],
+  "missed": [],
+  "evidence_wrong": [],
+  "passed": true
+ },
+ "histories": [
+  {
+   "id": "sh01",
+   "taste": "recent_builds",
+   "expected": [
+    "year_built:min"
+   ],
+   "offered": "year_built:min",
+   "kind": "limit",
+   "evidence": "4 of 4 likes built from 2015; 20 of 20 rejects the other side",
+   "others": [
+    "size_m2:max",
+    "energy_class:min",
+    "bedrooms:max"
+   ],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh02",
+   "taste": "recent_builds",
+   "expected": [
+    "year_built:min"
+   ],
+   "offered": "year_built:min",
+   "kind": "limit",
+   "evidence": "3 of 3 likes built from 2015; 21 of 21 rejects the other side",
+   "others": [
+    "size_m2:max",
+    "energy_class:min"
+   ],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh03",
+   "taste": "big_homes",
+   "expected": [
+    "size_m2:min"
+   ],
+   "offered": "size_m2:min",
+   "kind": "limit",
+   "evidence": "8 of 8 likes from 95 m²; 5 of 6 rejects the other side",
+   "others": [
+    "metro_walk_min:max"
+   ],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh04",
+   "taste": "big_homes",
+   "expected": [
+    "size_m2:min"
+   ],
+   "offered": "size_m2:min",
+   "kind": "limit",
+   "evidence": "5 of 5 likes from 100 m²; 7 of 7 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh05",
+   "taste": "small_homes",
+   "expected": [
+    "size_m2:max"
+   ],
+   "offered": "size_m2:max",
+   "kind": "limit",
+   "evidence": "3 of 3 likes up to 70 m²; 21 of 21 rejects the other side",
+   "others": [
+    "price_eur:max",
+    "bedrooms:max"
+   ],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh06",
+   "taste": "balcony_only",
+   "expected": [
+    "balcony:equals"
+   ],
+   "offered": "balcony:equals",
+   "kind": "preference",
+   "evidence": "9 of 9 likes have a balcony; 3 of 3 rejects don't",
+   "others": [
+    "floor_level:min"
+   ],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh07",
+   "taste": "balcony_only (too few to read)",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh08",
+   "taste": "high_floors",
+   "expected": [
+    "floor_level:min",
+    "floor:exclude"
+   ],
+   "offered": "balcony:equals",
+   "kind": "preference",
+   "evidence": "11 of 11 likes have a balcony; 3 of 3 rejects don't",
+   "others": [
+    "floor_level:min"
+   ],
+   "right": false,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh09",
+   "taste": "high_floors",
+   "expected": [
+    "floor_level:min",
+    "floor:exclude"
+   ],
+   "offered": "floor_level:min",
+   "kind": "preference",
+   "evidence": "8 of 8 likes from 1 floor; 3 of 4 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh10",
+   "taste": "good_energy",
+   "expected": [
+    "energy_class:min"
+   ],
+   "offered": "energy_class:min",
+   "kind": "preference",
+   "evidence": "3 of 3 likes from C energy class; 9 of 10 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh11",
+   "taste": "cheap",
+   "expected": [
+    "price_eur:max"
+   ],
+   "offered": "price_eur:max",
+   "kind": "limit",
+   "evidence": "7 of 7 likes up to 185000 €; 4 of 5 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh12",
+   "taste": "cheap",
+   "expected": [
+    "price_eur:max"
+   ],
+   "offered": "price_eur:max",
+   "kind": "limit",
+   "evidence": "6 of 6 likes up to 180000 €; 8 of 8 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh13",
+   "taste": "says_too_expensive",
+   "expected": [
+    "price_eur:max"
+   ],
+   "offered": "price_eur:max",
+   "kind": "limit",
+   "evidence": "4 rejects marked too expensive; your likes go up to €178,000",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh14",
+   "taste": "says_too_expensive",
+   "expected": [
+    "price_eur:max"
+   ],
+   "offered": "price_eur:max",
+   "kind": "preference",
+   "evidence": "3 of 3 likes up to 180000 €; 8 of 8 rejects the other side",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh15",
+   "taste": "hates_low_floors",
+   "expected": [
+    "floor:exclude"
+   ],
+   "offered": "floor:exclude",
+   "kind": "limit",
+   "evidence": "3 rejects marked bad floor: basement (1), semi basement (1), ground (1)",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh16",
+   "taste": "hates_low_floors (too few to read)",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh17",
+   "taste": "not_peristeri",
+   "expected": [
+    "area:remove"
+   ],
+   "offered": "area:remove",
+   "kind": "limit",
+   "evidence": "all 7 rejects marked wrong area are in Peristeri, and no like is",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh18",
+   "taste": "not_peristeri",
+   "expected": [
+    "area:remove"
+   ],
+   "offered": "area:remove",
+   "kind": "limit",
+   "evidence": "all 6 rejects marked wrong area are in Peristeri, and no like is",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh19",
+   "taste": "wants_renovated",
+   "expected": [
+    "renovated_year:min"
+   ],
+   "offered": "renovated_year:min",
+   "kind": "preference",
+   "evidence": "10 rejects marked needs work",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh20",
+   "taste": "wants_renovated",
+   "expected": [
+    "renovated_year:min"
+   ],
+   "offered": "renovated_year:min",
+   "kind": "preference",
+   "evidence": "9 rejects marked needs work",
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh21",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh22",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh23",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh24",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh25",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh26",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh27",
+   "taste": "likes_everything (too few to read)",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh28",
+   "taste": "random_with_reasons",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh29",
+   "taste": "random_with_reasons",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  },
+  {
+   "id": "sh30",
+   "taste": "random",
+   "expected": [],
+   "offered": null,
+   "kind": null,
+   "evidence": null,
+   "others": [],
+   "right": true,
+   "evidence_ok": null
+  }
+ ]
+}

@@ -28,8 +28,9 @@ from ranking.rules import ENERGY_ORDER
 CHECKIN_EVERY = 10  # swipes between check-ins (Mike, D66)
 MIN_EACH = 3  # likes and rejects that state the field before a line between them means anything
 LIKES_SHARE = 0.9  # nearly all likes on one side of the line
-REJECTS_SHARE = 0.6  # most rejects on the other side
+REJECTS_SHARE = 0.7  # most rejects on the other side (0.6 let three chance likes pass on the suggestion eval)
 MIN_REASON = 3  # the same reject reason this many times is a pattern on its own
+MIN_LOW_FLOORS = 4  # low floors rejected without a stated reason: one more than with "bad floor" said
 STRONG = 0.8  # the weight of a preference a check-in adds
 LOW_FLOORS = ("basement", "semi_basement", "ground", "raised_ground", "mezzanine")
 
@@ -61,10 +62,17 @@ def _round(value: float, step: int, direction: str) -> float:
     return float(math.floor(value / step) * step if direction == "min" else math.ceil(value / step) * step)
 
 
-def _split(likes: list[float], rejects: list[float], direction: str, step: int) -> dict | None:
-    """The line that keeps nearly all likes on one side with most rejects on the other, or None."""
+def _split(likes: list[float], rejects: list[float], direction: str, step: int,
+           totals: tuple[int, int] | None = None) -> dict | None:
+    """The line that keeps nearly all likes on one side with most rejects on the other, or None.
+
+    The shares that gate a pattern count only the swipes that state the field.
+    Its strength counts every swipe (totals), so a line through 14 swipes
+    outranks one through the 10 that happen to state a rarer field.
+    """
     if len(likes) < MIN_EACH or len(rejects) < MIN_EACH:
         return None
+    all_likes, all_rejects = totals or (len(likes), len(rejects))
     best = None
     for line in sorted(set(likes) | set(rejects)):
         if direction == "min":
@@ -90,7 +98,7 @@ def _split(likes: list[float], rejects: list[float], direction: str, step: int) 
         likes_in, rejects_out = sum(v <= line for v in likes), sum(v > line for v in rejects)
     return {"line": int(line) if float(line).is_integer() else line, "likes_in": likes_in, "likes": len(likes),
             "rejects_out": rejects_out, "rejects": len(rejects),
-            "strength": round(likes_in / len(likes) + rejects_out / len(rejects), 3)}
+            "strength": round(likes_in / all_likes + rejects_out / all_rejects, 3)}
 
 
 def _already(criteria: Criteria, feature: str, direction: str, line) -> str | None:
@@ -170,7 +178,7 @@ def observe(swipes: list[Swipe], listings: list[Listing], criteria: Criteria, de
         like_values = [v for v in (read(l) for l in likes) if v is not None]
         reject_values = [v for v in (read(l) for l, _ in rejects) if v is not None]
         for direction in directions:
-            split = _split(like_values, reject_values, direction, step)
+            split = _split(like_values, reject_values, direction, step, (len(likes), len(rejects)))
             if split:
                 suggestion = _suggestion(feature, direction, split, criteria, listings, _numeric_evidence(feature, direction, split))
                 if suggestion:
@@ -191,12 +199,13 @@ def observe(swipes: list[Swipe], listings: list[Listing], criteria: Criteria, de
                                            "rejects": len(reject_values), "from": "swipes",
                                            "text": f"{likes_with} of {len(like_values)} likes have a {feature.replace('_', ' ')}; "
                                                    f"{rejects_without} of {len(reject_values)} rejects don't"},
-                              "strength": round(likes_with / len(like_values) + rejects_without / len(reject_values), 3)})
+                              "strength": round(likes_with / len(likes) + rejects_without / len(rejects), 3)})
 
     found.extend(_floor_patterns(likes, rejects, criteria, listings))
     found.extend(_reason_patterns(likes, rejects, criteria, listings, today))
 
-    found.sort(key=lambda f: (-f["strength"], f["kind"] != "limit",
+    # ties: a limit before a preference, a field that can be a limit before one that can't, more evidence first
+    found.sort(key=lambda f: (-f["strength"], f["kind"] != "limit", (f["feature"], f["direction"]) not in AS_LIMIT,
                               -(f["evidence"]["likes"] + f["evidence"]["rejects"]), f["key"]))
     kept, keys = [], set()
     for f in found:  # one per key: the same change can show in the swipes and in the reject reasons
@@ -213,7 +222,7 @@ def _floor_patterns(likes: list[Listing], rejects: list[tuple[Listing, Swipe]], 
     rejected_low = Counter(l.floor.floor_class for l, _ in rejects if l.floor.floor_class in LOW_FLOORS)
     floors = [f for f in LOW_FLOORS if rejected_low[f] and not liked_low[f] and f not in criteria.hard_limits.exclude_floors]
     total = sum(rejected_low[f] for f in floors)
-    if not floors or total < MIN_REASON or sum(1 for l in likes if l.floor.floor_class) < MIN_EACH:
+    if not floors or total < MIN_LOW_FLOORS or sum(1 for l in likes if l.floor.floor_class) < MIN_EACH:
         return []
     patch = {"exclude_floors": [*criteria.hard_limits.exclude_floors, *floors]}
     leaves = _would_leave(listings, criteria, patch)

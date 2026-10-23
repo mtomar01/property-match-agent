@@ -1,14 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-
-export interface Message {
-  role: "user" | "assistant";
-  text: string;
-}
+import { Message } from "./api";
 
 interface Props {
   messages: Message[];
   busy: boolean;
   error: string | null;
+  compact?: boolean;
   onSend: (text: string) => void;
 }
 
@@ -17,7 +14,7 @@ const STARTERS = [
   "A two bedroom flat in Egaleo, around 200k, with a balcony.",
 ];
 
-export function Chat({ messages, busy, error, onSend }: Props) {
+export function Chat({ messages, busy, error, compact = false, onSend }: Props) {
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
@@ -31,12 +28,12 @@ export function Chat({ messages, busy, error, onSend }: Props) {
   };
 
   return (
-    <section className="panel chat" aria-labelledby="chat-h">
-      <h2 id="chat-h">Tell it what you're looking for</h2>
+    <section className={`panel chat ${compact ? "compact" : ""}`} aria-labelledby="chat-h">
+      <h2 id="chat-h">{compact ? "Change anything by chat" : "Tell it what you're looking for"}</h2>
       <div className="messages" aria-live="polite">
         {messages.length === 0 && (
           <div className="empty">
-            <p>Write the way you'd tell a friend, in Greek or English. It asks only what it needs, then shows the card on the right.</p>
+            <p>Write the way you'd tell a friend, in Greek or English. It asks only what it needs, then the homes come up.</p>
             <div className="starters">
               {STARTERS.map((text) => (
                 <button key={text} type="button" className="starter" onClick={() => setDraft(text)}>
@@ -61,7 +58,7 @@ export function Chat({ messages, busy, error, onSend }: Props) {
           id="message"
           rows={2}
           value={draft}
-          placeholder="Γράψτε εδώ… / Write here…"
+          placeholder={compact ? "e.g. make it 220k, or add Peristeri" : "Γράψτε εδώ… / Write here…"}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) submit(e);

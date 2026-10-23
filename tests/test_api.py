@@ -107,6 +107,8 @@ def test_swipes_are_kept_and_never_shown_again_and_the_shortlist_exports(api):
     _, after = ask("/api/deck", {"limit": 3})
     assert first["listing_id"] not in {c["listing_id"] for c in after["cards"]} and after["cards"][0]["deck_position"] == 2
     assert ask("/api/swipe", {"listing_id": "nope", "decision": "like"})[0] == 404
+    status, short = ask("/api/shortlist")
+    assert status == 200 and [h["listing_id"] for h in short["homes"]] == [first["listing_id"]]
     status, csv_text = ask("/api/export.csv", raw=True)
     lines = csv_text.splitlines()
     assert status == 200 and lines[0].startswith("listing_id,price_eur,size_m2") and len(lines) == 2 and first["listing_id"] in lines[1]

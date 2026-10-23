@@ -1,104 +1,173 @@
-import { useState } from "react";
-import { Card, ChatReply, HardLimits, SearchResult, Widening, runSearch, sendChat } from "./api";
-import { Chat, Message } from "./Chat";
-import { CriteriaCard } from "./CriteriaCard";
-import { ResultsTable } from "./ResultsTable";
+import { useCallback, useEffect, useState } from "react";
+import { Card, Checkin, Deck as DeckData, DeckCard, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe } from "./api";
+import { Bar } from "./Bar";
+import { Chat } from "./Chat";
+import { Deck } from "./Deck";
+import { Shortlist } from "./Shortlist";
 
+// The flow from D61: the chat takes the width until the assistant is ready, then the deck comes up with
+// the card as a bar above it. Every change, including a yes to a check-in, goes through the chat.
 export function App() {
-  const [session, setSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [card, setCard] = useState<Card | null>(null);
-  const [last, setLast] = useState<ChatReply | null>(null);
   const [searchedAs, setSearchedAs] = useState<Partial<HardLimits> | null>(null);
-  const [result, setResult] = useState<SearchResult | null>(null);
-  const [busy, setBusy] = useState<"chat" | "search" | null>(null);
+  const [ready, setReady] = useState(false);
+  const [unsupported, setUnsupported] = useState(false);
+  const [deck, setDeck] = useState<DeckData | null>(null);
+  const [queue, setQueue] = useState<DeckCard[]>([]);
+  const [checkin, setCheckin] = useState<Checkin | null>(null);
+  const [stats, setStats] = useState<SwipeStats | null>(null);
+  const [shortlist, setShortlist] = useState<Summary[]>([]);
+  const [view, setView] = useState<"deck" | "shortlist">("deck");
+  const [busy, setBusy] = useState<"chat" | "swipe" | "deck" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState("");
+
+  const fail = (err: unknown) => setError(err instanceof Error ? err.message : String(err));
+
+  const loadDeck = useCallback(async () => {
+    setBusy("deck");
+    try {
+      const next = await getDeck(10);
+      setDeck(next);
+      setQueue(next.cards);
+      setStats(next.swipes);
+      setData(next.data);
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    getState().then((state) => {
+      setMessages(state.messages);
+      setCard(state.card);
+      setSearchedAs(state.searched_as);
+      setStats(state.swipes);
+      setData(state.data);
+      setUnsupported(state.unsupported.includes("rent") || state.card?.intent === "rent");
+      if (state.action === "confirm" && state.card && state.card.intent !== "rent") {
+        setReady(true);
+        void loadDeck();
+      }
+    }).catch(fail);
+    getShortlist().then((s) => setShortlist(s.homes)).catch(() => undefined);
+  }, [loadDeck]);
 
   const send = async (text: string) => {
     setMessages((m) => [...m, { role: "user", text }]);
     setBusy("chat");
     setError(null);
     try {
-      const reply = await sendChat(session, text);
-      setSession(reply.session);
+      const reply = await sendChat(text);
       setMessages((m) => [...m, { role: "assistant", text: reply.reply }]);
       setCard(reply.card);
       setSearchedAs(reply.searched_as);
-      setLast(reply);
+      setStats(reply.swipes);
+      setUnsupported(reply.unsupported.includes("rent") || reply.card.intent === "rent");
+      setCheckin(null);
+      if (reply.deck_ready) {
+        setReady(true);
+        setView("deck");
+        await loadDeck();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err);
     } finally {
       setBusy(null);
     }
   };
 
-  const search = async (which: Card | null = card) => {
-    if (!which) return;
-    setBusy("search");
+  const swipe = useCallback(async (home: DeckCard, decision: "like" | "reject", reasons: string[]) => {
+    setBusy("swipe");
     setError(null);
     try {
-      const found = await runSearch(which);
-      setResult(found);
-      setSearchedAs(found.searched_as);
+      const result = await sendSwipe({ listing_id: home.listing_id, decision, reasons, deck_position: home.deck_position, explore_card: home.explore_card });
+      setStats(result.swipes);
+      setQueue((q) => q.filter((c) => c.listing_id !== home.listing_id));
+      setDeck((d) => d ? { ...d, remaining: d.remaining - 1, swipes: result.swipes, since_checkin: result.since_checkin } : d);
+      if (decision === "like") setShortlist((s) => [home, ...s]);
+      if (result.checkin) {
+        setCheckin(result.checkin);
+        setMessages((m) => [...m, { role: "assistant", text: result.checkin!.reply }]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err);
     } finally {
       setBusy(null);
     }
+  }, []);
+
+  useEffect(() => {
+    if (ready && deck && queue.length <= 2 && deck.remaining > queue.length && busy === null && !checkin) void loadDeck();
+  }, [ready, deck, queue.length, busy, checkin, loadDeck]);
+
+  const startOver = async () => {
+    if (!window.confirm("Start a new search? Your swipes and shortlist stay.")) return;
+    try {
+      const state = await resetSearch();
+      setMessages(state.messages);
+      setCard(null);
+      setSearchedAs(null);
+      setReady(false);
+      setDeck(null);
+      setQueue([]);
+      setCheckin(null);
+      setStats(state.swipes);
+      setView("deck");
+    } catch (err) {
+      fail(err);
+    }
   };
 
-  // The user picked one of code's widenings: set exactly the limits that were counted, then search again.
-  const widen = (option: Widening) => {
-    if (!card || !result) return;
-    const done = result.searched_as;
-    const patch = option.limits as Partial<HardLimits> & { areas?: string[] };
-    const hard = { ...card.hard_limits };
-    let { budget_around, ideally, areas } = card;
-    if ("max_price_eur" in patch || "min_price_eur" in patch) {
-      hard.max_price_eur = done.max_price_eur ?? hard.max_price_eur;
-      hard.min_price_eur = done.min_price_eur ?? hard.min_price_eur;
-      budget_around = false;
-    }
-    if ("min_size_m2" in patch || "max_size_m2" in patch) {
-      hard.min_size_m2 = done.min_size_m2 ?? hard.min_size_m2;
-      hard.max_size_m2 = done.max_size_m2 ?? hard.max_size_m2;
-      ideally = ideally.filter((x) => x !== "size");
-    }
-    if ("min_bedrooms" in patch || "max_bedrooms" in patch) {
-      hard.min_bedrooms = done.min_bedrooms ?? hard.min_bedrooms;
-      hard.max_bedrooms = done.max_bedrooms ?? hard.max_bedrooms;
-      ideally = ideally.filter((x) => x !== "bedrooms");
-    }
-    const { areas: newAreas, ...limits } = patch;
-    const next: Card = { ...card, hard_limits: { ...hard, ...limits }, budget_around, ideally, areas: newAreas ?? areas };
-    setCard(next);
-    void search(next);
-  };
-
-  const unsupported = Boolean(last?.unsupported.includes("rent") || card?.intent === "rent");
+  const current = queue[0] ?? null;
+  const nextCheckin = deck ? Math.max(0, deck.checkin_every - deck.since_checkin) : null;
 
   return (
     <>
       <header className="top">
         <div className="brand">
           <h1>Property Match</h1>
-          <span className="muted small">Egaleo · Peristeri · Chaidari</span>
+          <span className="muted small">Egaleo · Peristeri · Chaidari{data ? ` · ${data}` : ""}</span>
         </div>
-        <span className="muted small">Hard limits are checked in code, never by the model.</span>
+        <div className="top-right">
+          {stats && stats.swipes > 0 && (
+            <span className="muted small">
+              {stats.swipes} swiped · {stats.likes} liked
+              {stats.like_rate != null ? ` · ${Math.round(stats.like_rate * 100)}% like rate` : ""}
+              {ready && nextCheckin != null ? ` · check-in in ${nextCheckin}` : ""}
+            </span>
+          )}
+          {(messages.length > 0 || ready) && <button type="button" className="link" onClick={startOver}>New search</button>}
+        </div>
       </header>
-      <main className="layout">
-        <Chat messages={messages} busy={busy === "chat"} error={error} onSend={send} />
-        <CriteriaCard
-          card={card}
-          searchedAs={searchedAs}
-          ready={last?.action === "confirm"}
-          unsupported={unsupported}
-          busy={busy === "search"}
-          onChange={setCard}
-          onSearch={() => void search()}
-        />
-        {result && <ResultsTable result={result} onWiden={widen} busy={busy === "search"} />}
-      </main>
+
+      {!ready ? (
+        <main className="layout single">
+          <Chat messages={messages} busy={busy === "chat"} error={error} onSend={send} />
+          {unsupported && <p className="hint center">Rentals aren't supported yet; the deck is for buying.</p>}
+        </main>
+      ) : (
+        <main className="layout deck-layout">
+          {card && searchedAs && <Bar card={card} searched={searchedAs} />}
+          <nav className="tabs" aria-label="Views">
+            <button type="button" className={`tab ${view === "deck" ? "on" : ""}`} onClick={() => setView("deck")}>Homes</button>
+            <button type="button" className={`tab ${view === "shortlist" ? "on" : ""}`} onClick={() => setView("shortlist")}>
+              Shortlist{shortlist.length ? ` (${shortlist.length})` : ""}
+            </button>
+          </nav>
+          <div className="deck-and-chat">
+            {view === "deck" ? (
+              <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} onSwipe={swipe} onAnswer={send} />
+            ) : (
+              <Shortlist homes={shortlist} />
+            )}
+            <Chat messages={messages} busy={busy === "chat"} error={error} compact onSend={send} />
+          </div>
+        </main>
+      )}
     </>
   );
 }

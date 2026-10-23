@@ -1,6 +1,6 @@
 # Next steps
 
-Updated 22 October 2026, after your first v1 test (D63).
+Updated 23 October 2026, after the v2 build (D64 to D67).
 
 ## Where we are
 
@@ -17,9 +17,11 @@ Updated 22 October 2026, after your first v1 test (D63).
 
 ## Next steps
 
-1. **You test v1 on your machine** (README, "The app"), started with `PM_SNAPSHOT=data/private/snapshot.jsonl` to search your real listings. Under 5 results, the app now offers code's widenings as buttons (D63). Prompt v7, the one the app uses, passed its eval run (D65).
-2. **Connect the server to the Claude desktop app** (`docs/connect-claude-desktop.md`) for the demo.
-3. **v2, the swipe deck:** the flow from D61 (chat full width, deck straight up, the card as a one-line bar, changes by chat), cards with two "why this one" reasons, rule scoring, reject reasons, the Sheets export (spec section 13).
+1. **Prompt v8 eval run** (about $3, your go): the deck's prompt says what it will search in one sentence instead of asking to confirm, and words the check-ins. The 40 chats and the clean 10 should hold at v7's scores.
+2. **You swipe real listings** (README, "The app", with `PM_SNAPSHOT`): about 100 swipes over a few days, tapping a reject reason when one fits. Then `uv run python -m learning.swipes me` records the baseline like rate, which finishes v2 and is what v3's learning has to beat.
+3. **Two data gaps to decide on:** photo links were captured for 29 of your 484 listings, so most real cards show a placeholder; year built is known for 47. Both need another pass over the portals (a live-site step, your call) or the detail pages from D24.
+4. **Connect the server to the Claude desktop app** (`docs/connect-claude-desktop.md`): the demo now includes the deck tools.
+5. **v3, learning:** logistic regression on your swipes against the rule baseline, duplicates across portals (the synthetic deck already shows the same flat twice from two sources), area stats.
 
 ## Interview eval (22 October, D46, D47)
 

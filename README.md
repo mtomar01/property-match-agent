@@ -2,7 +2,7 @@
 
 A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
 
-**Status:** v1, criteria and search: the interview, the criteria card, the MCP server and a table view. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
+**Status:** v2, the swipe deck: the interview, the deck with reasons from fields, swipes with reject reasons, check-ins that read the swipes, the shortlist and its CSV. Built, with its evals passing; the baseline like rate waits for real swipes. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
 
 ## Run it on the synthetic data
 
@@ -20,7 +20,7 @@ Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basemen
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
 
-## The app: chat, criteria card, results table
+## The app: chat, swipe deck, shortlist
 
 You need Node 18 or newer, and the Anthropic API key for the chat (`ANTHROPIC_API_KEY`, or `~/.config/property-match/anthropic.env`).
 
@@ -28,13 +28,14 @@ You need Node 18 or newer, and the Anthropic API key for the chat (`ANTHROPIC_AP
 cd app && npm install && npm run build && cd ..   # build the React app once
 uv run python -m api.server                       # http://127.0.0.1:8765, synthetic listings
 PM_SNAPSHOT=data/private/snapshot.jsonl uv run python -m api.server   # your private listings, your machine only
+uv run python -m learning.swipes me               # your like rate so far, counts only (v2's finishing line)
 ```
 
+How it flows (D61, D66): you chat until the assistant has what it needs, then the homes come up one at a time with the hard limits on a bar above them. Right to like, left to reject with a quick reason. Every fifth card comes from outside the ranking's top, so the deck keeps learning. After every 10 swipes code compares your likes with your rejects; when it finds a clear pattern, the assistant puts one change to you with the counts, and nothing changes until you say yes. Any change goes through the chat, and the shortlist of liked homes downloads as a CSV that opens in Google Sheets.
+
+Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents, and so is a check-in. The deck, the reasons on the cards, the swipe log and the pattern finding are code and cost nothing. Swipes and the chat are saved in `data/private/`, which git ignores. Photos load from the portal only while a card is on screen and are never stored; the public synthetic listings show a placeholder.
+
 For changes to the app, run `npm run dev` in `app/` with the server running: Vite serves the page and passes `/api` to Python.
-
-Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents. Search and the card's rules are code and cost nothing.
-
-The header of the results says which listings were searched ("synthetic listings" or "private personal-use snapshot"). When a search finds fewer than 5 homes, code counts a few ways to widen it and the app shows them as buttons; a click reruns the search with exactly those numbers (D63).
 
 ## Labelling real listings (private data, your machine only)
 
@@ -97,9 +98,15 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v1 | **Interview, prompt v7**: the lowest price from code, an early supply check, widening together under 5 matches (D60, D63) | 40 | **100%** | **0** | 17 of 17 | **100%** |
 | v1 | **Interview clean test, prompt v7** | 10 | **97.3%** | **0** | 13 of 13 | **100%** |
 
+| Version | Eval | Size | Result | Target |
+|---|---|---|---|---|
+| v2 | Explanations: every "why this one" reason checked against the listing's fields (D64) | 50 cards, 100 reasons | **100%** backed | 98% |
+| v2 | Suggestions: the pattern a check-in offers from a swipe history, or silence (D66, D67) | 30 histories | precision **94.4%**, recall 94.4%, evidence counts all correct, 0 false alarms on random swipes | 80% precision, evidence always correct |
+| v2 | Baseline like rate, the share of cards swiped right before any learning | about 100 real swipes | not recorded yet | recorded |
+
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
-Results files are in `evals/results/`. A mutation test checks the eval fails when the hard-limit filter is switched off.
+Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. Prompt v8, which the deck uses, hasn't had its interview run yet.
 
 ## Docs
 

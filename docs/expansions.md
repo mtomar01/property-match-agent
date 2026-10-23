@@ -23,6 +23,13 @@ Ideas for later, kept in one place so they don't get lost. Nothing here is being
 - **Price per m² as a limit**: "μέχρι 2000 ανά τετραγωνικό" (clean test gb_3) can only be an open question today; code could filter on price_per_m2.
 - **"Renovated" as a filter**: Mike's note on clean test mike_2. Today it's a preference on renovated_year, which needs a year.
 
+## Deck
+
+- **A cap on swipes per user per day** in the final version (Mike, D64, D66). One constant, `DAILY_CAP` in `learning/swipes.py`, off while testing.
+- **A super like** (swipe up): left out for now (D64); revisit after a week of use.
+- **Greek on the cards:** the reasons code writes are English templates; a Greek set is a translation table away.
+- **Couples mode** (spec section 4): two people swipe the same deck, mutual likes go to a shared list.
+
 ## Interview
 
 - **Either/or musts**, such as "a ground floor or a lift": recorded today as a strong preference plus an open question (el_14).

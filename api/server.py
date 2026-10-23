@@ -18,6 +18,7 @@ Routes:
     POST /api/deck     {"limit": 10}    -> the next cards, each with its two reasons
     POST /api/swipe    {"listing_id", "decision", "reasons", "deck_position", "explore_card"}
                                          -> the counts, and a check-in from the assistant when code found a pattern
+    GET  /api/shortlist                  -> the liked homes, newest first
     GET  /api/export.csv                 -> the liked homes as a spreadsheet
     POST /api/reset                      -> a new search (the swipes stay)
     POST /api/search   {"card": {...}, "limit": 20}            -> the v1 table: listings that pass the card's limits
@@ -167,9 +168,20 @@ class App:
         swiped = self.swipes.load()
         built = deck.build(self.adapter.listings(), criteria, {s.listing_id for s in swiped}, start_position=len(swiped),
                            limit=max(1, min(int(limit), MAX_LIMIT)), seed=len(swiped) // deck.EXPLORE_EVERY)
+        if built["total_matches"] < interview.THIN:  # thin: code's ways to widen, for the user to ask the assistant (D63)
+            built["if_eased"] = interview.eased(criteria, self.adapter.listings())
         return {**built, "searched_as": search_card(self.state["card"])["hard_limits"], "swipes": self.swipes.stats(),
                 "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
                 "since_checkin": len(swiped) - self.state["checkin_at"]}
+
+    def shortlist(self) -> dict:
+        """The liked homes, newest like first, for the table; the CSV has the same columns."""
+        homes = []
+        for listing_id in reversed(self.swipes.liked_ids()):
+            listing = self.adapter.get(listing_id)
+            if listing is not None:
+                homes.append(listing.summary())
+        return {"homes": homes, "swipes": self.swipes.stats()}
 
     def swipe(self, listing_id: str, decision: str, reasons: list[str] | None = None, deck_position: int = 0,
               explore_card: bool = False) -> dict:
@@ -298,6 +310,8 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
             url = urlparse(self.path)
             if url.path == "/api/state":
                 return self._json(200, app.snapshot())
+            if url.path == "/api/shortlist":
+                return self._json(200, app.shortlist())
             if url.path == "/api/export.csv":
                 body = app.export_csv().encode("utf-8-sig")  # the BOM makes Excel and Sheets read the Greek
                 return self._send(200, body, "text/csv; charset=utf-8",

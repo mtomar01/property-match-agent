@@ -1,4 +1,4 @@
-// The shapes the Python API sends (api/server.py) and the three calls the app makes.
+// The shapes the Python API sends (api/server.py) and the calls the app makes.
 
 export type Intent = "buy" | "rent" | "invest";
 
@@ -33,22 +33,47 @@ export interface Card {
   open_questions: string[];
 }
 
-export interface Supply {
-  matches: number;
-  listings_in_areas: number;
-  median_price_eur: number | null;
-  median_price_per_m2: number | null;
+export interface SwipeStats {
+  swipes: number;
+  likes: number;
+  rejects: number;
+  like_rate: number | null;
+  reject_reasons: Record<string, number>;
+}
+
+export interface Message {
+  role: "user" | "assistant";
+  text: string;
+}
+
+// What the server keeps for this user: GET /api/state, and the shape /api/chat answers with.
+export interface State {
+  messages: Message[];
+  card: Card | null;
+  action: "ask" | "confirm" | null;
+  asking_about: string[];
+  unsupported: string[];
+  searched_as: Partial<HardLimits> | null;
+  swipes: SwipeStats;
+  data: string;
+  checkin_every: number;
 }
 
 export interface ChatReply {
-  session: string;
   reply: string;
   action: "ask" | "confirm";
   asking_about: string[];
   unsupported: string[];
   card: Card;
   searched_as: Partial<HardLimits>;
-  supply: Supply | null;
+  deck_ready: boolean;
+  swipes: SwipeStats;
+}
+
+export interface Reason {
+  text: string;
+  feature: string;
+  kind: "preference" | "fact" | "fallback";
 }
 
 export interface Summary {
@@ -69,8 +94,15 @@ export interface Summary {
   property_type: string | null;
   first_seen: string;
   previous_price_eur: number | null;
-  preference_score: number;
   synthetic: boolean;
+}
+
+export interface DeckCard extends Summary {
+  photo_url: string | null;
+  reasons: Reason[];
+  preference_score: number;
+  explore_card: boolean;
+  deck_position: number;
 }
 
 // One way to widen a thin search, counted by code (agent/interview.py, eased).
@@ -79,19 +111,32 @@ export interface Widening {
   matches: number;
 }
 
-export interface SearchResult {
-  if_eased?: Record<string, Widening>;
+export interface Deck {
+  cards: DeckCard[];
   total_matches: number;
-  returned: number;
-  results: Summary[];
+  remaining: number;
+  swiped_of_these: number;
+  if_eased?: Record<string, Widening>;
   searched_as: Partial<HardLimits>;
-  excluded_because_unknown: Record<string, number>;
-  searched: number;
+  swipes: SwipeStats;
   data: string;
+  checkin_every: number;
+  since_checkin: number;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(path, {
+// The assistant's check-in after a run of swipes: a pattern code found, put into words (D66).
+export interface Checkin extends ChatReply {
+  suggestion: { key: string; feature: string; kind: "limit" | "preference" };
+}
+
+export interface SwipeResult {
+  swipes: SwipeStats;
+  checkin: Checkin | null;
+  since_checkin: number;
+}
+
+async function call<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(path, body === undefined ? undefined : {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -101,5 +146,10 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return payload as T;
 }
 
-export const sendChat = (session: string | null, text: string) => post<ChatReply>("/api/chat", { session, text });
-export const runSearch = (card: Card, limit = 50) => post<SearchResult>("/api/search", { card, limit });
+export const getState = () => call<State>("/api/state");
+export const sendChat = (text: string) => call<ChatReply>("/api/chat", { text });
+export const getDeck = (limit = 10) => call<Deck>("/api/deck", { limit });
+export const sendSwipe = (swipe: { listing_id: string; decision: "like" | "reject"; reasons: string[]; deck_position: number; explore_card: boolean }) =>
+  call<SwipeResult>("/api/swipe", swipe);
+export const getShortlist = () => call<{ homes: Summary[]; swipes: SwipeStats }>("/api/shortlist");
+export const resetSearch = () => call<State>("/api/reset", {});

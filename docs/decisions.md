@@ -623,3 +623,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Daily cap, later:** endless now, a cap per user per day in the final version (your call). One constant in code, off while testing, counted from the swipe log.
 - **Testing costs nothing:** pattern finding is code, so it runs on the frozen snapshot with made-up swipe histories of known taste, and must stay quiet on random swipes. The assistant's wording is checked as its trade-offs are: it must quote code's numbers.
 
+## D67. What the suggestion eval changed in the pattern finder
+
+- **Why an eval before tuning:** the first run of the pattern finder on 30 made-up swipe histories gave 70.6% precision. Two "false alarms" and three "wrong changes" were real findings about the rules; five "misses" were histories with nothing to read (0 or 1 likes), so their labels were wrong, not the code.
+- **Four changes, all in code, all one constant or one line:**
+  1. Most rejects on the other side now means 70%, not 60%. At 60%, three chance likes under a price line plus 6 of 9 rejects above it read as a pattern on a random history.
+  2. Low floors rejected with no reason given need four rejects before they count; with "bad floor" said, three are enough. Three silent rejects on low floors turned up in random swipes.
+  3. A pattern's strength counts every swipe, not only those that state the field. A line through 14 swipes now outranks one through the 10 that happened to state the metro walk, which had put "under 10 minutes from the metro" ahead of "100 m² or more" for someone liking big homes.
+  4. On a tie, a field that can be a hard limit comes before one that can only rank, because it ends up on the bar where the user sees it.
+- **Labels fixed too:** a history whose taste leaves fewer than 3 likes or 3 rejects is labelled "nothing to read", and "high floors" accepts either "floor from 2" or "no low floors", since both say the same thing.
+- **After:** precision 94.4%, recall 94.4%, no false alarms, every evidence count recounted correct. The one miss left is a history where 11 of 11 likes have a balcony and 3 of 3 rejects don't, which the swipes support exactly as well as the floor pattern the taste was written with.
+- **A limit of the synthetic set:** year built is known for every synthetic listing but for only 47 of your 484 real ones, so on your data the year pattern will rarely have three known values on each side, and a year limit would hide the 437 homes that don't state one. The finder stays quiet rather than guessing; more detail pages (D24) would feed it.
+

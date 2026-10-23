@@ -1,4 +1,6 @@
-// Words for the codes the search uses, so the card and the table read like a person wrote them.
+// Words for the codes the search uses, so the bar, the cards and the table read like a person wrote them.
+
+import { Card, HardLimits, Preference } from "./api";
 
 export const AREAS: [string, string][] = [
   ["Egaleo", "Egaleo · Αιγάλεω"],
@@ -6,21 +8,23 @@ export const AREAS: [string, string][] = [
   ["Chaidari", "Chaidari · Χαϊδάρι"],
 ];
 
-export const TYPES: [string, string][] = [
-  ["apartment", "Apartment"],
-  ["maisonette", "Maisonette"],
-  ["studio", "Studio"],
-  ["detached_house", "House"],
-  ["loft", "Loft"],
-  ["building", "Whole building"],
-];
+export const TYPES: Record<string, string> = {
+  apartment: "apartment",
+  maisonette: "maisonette",
+  studio: "studio",
+  detached_house: "house",
+  loft: "loft",
+  building: "whole building",
+  apartment_complex: "apartment complex",
+};
 
-export const FLOORS: [string, string][] = [
-  ["basement", "Basement"],
-  ["semi_basement", "Semi-basement"],
-  ["ground", "Ground"],
-  ["raised_ground", "Raised ground"],
-  ["mezzanine", "Mezzanine"],
+export const REJECT_REASONS: [string, string][] = [
+  ["too_dark", "Too dark"],
+  ["too_small", "Too small"],
+  ["bad_floor", "Bad floor"],
+  ["needs_work", "Needs work"],
+  ["too_expensive", "Too expensive"],
+  ["wrong_area", "Wrong area"],
 ];
 
 const FEATURES: Record<string, string> = {
@@ -51,7 +55,7 @@ export function weightWord(weight: number): string {
   return "a bonus";
 }
 
-export function preferenceText(p: { feature: string; min: unknown; max: unknown; equals: unknown }): string {
+export function preferenceText(p: Preference): string {
   const name = FEATURES[p.feature] ?? p.feature;
   const unit = UNITS[p.feature] ?? "";
   if (p.equals === true) return name;
@@ -65,18 +69,37 @@ export function preferenceText(p: { feature: string; min: unknown; max: unknown;
 }
 
 export function floorText(floor: string | null): string {
-  if (floor == null) return "–";
-  const named = FLOORS.find(([code]) => code === floor);
-  if (named) return named[1];
-  if (floor === "top") return "Top (ρετιρέ)";
-  return `${floor}${floor === "1" ? "st" : floor === "2" ? "nd" : floor === "3" ? "rd" : "th"}`;
+  if (floor == null) return "floor unknown";
+  if (floor === "top") return "top floor (ρετιρέ)";
+  if (/^\d+$/.test(floor)) return `${floor}${floor === "1" ? "st" : floor === "2" ? "nd" : floor === "3" ? "rd" : "th"} floor`;
+  return floor.replace("_", " ");
 }
 
 const euro = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 export const money = (value: number | null | undefined) => (value == null ? "–" : euro.format(value));
 
+// The one-line bar above the deck: every hard limit, always visible (D61).
+export function barText(card: Card, searched: Partial<HardLimits>): string[] {
+  const parts: string[] = [];
+  parts.push(card.areas.length ? card.areas.join(" · ") : "All three areas");
+  if (searched.max_price_eur != null) parts.push(`${money(searched.min_price_eur)} to ${money(searched.max_price_eur)}`);
+  const lo = searched.min_size_m2, hi = searched.max_size_m2;
+  if (lo != null && hi != null) parts.push(`${lo} to ${hi} m²`);
+  else if (lo != null) parts.push(`from ${lo} m²`);
+  else if (hi != null) parts.push(`up to ${hi} m²`);
+  const bl = searched.min_bedrooms, bh = searched.max_bedrooms;
+  if (bl != null && bh != null) parts.push(`${bl} to ${bh} bedrooms`);
+  else if (bl != null) parts.push(`${bl}+ bedrooms`);
+  else if (bh != null) parts.push(`up to ${bh} bedrooms`);
+  if (searched.min_year_built != null) parts.push(`built from ${searched.min_year_built}`);
+  if (searched.property_types?.length) parts.push(searched.property_types.map((t) => TYPES[t] ?? t).join(" or "));
+  if (searched.exclude_floors?.length) parts.push(`no ${searched.exclude_floors.map((f) => f.replace("_", " ")).join(", ")}`);
+  if (card.intent === "invest") parts.push("investor mode");
+  return parts;
+}
+
 // "Price €155,000 to €230,000 and size 65 to 97 m²": what a widening would search, in words.
-export function wideningText(patch: Record<string, number | string[]>, searched: Record<string, number | null | undefined>): string {
+export function wideningText(patch: Record<string, number | string[]>, searched: Record<string, unknown>): string {
   const parts: string[] = [];
   const merged = { ...searched, ...patch } as Record<string, unknown>;
   if ("max_price_eur" in patch || "min_price_eur" in patch) {
@@ -90,8 +113,9 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   if ("max_bedrooms" in patch) parts.push(`up to ${patch.max_bedrooms} bedrooms`);
   if ("min_year_built" in patch) parts.push(`built from ${patch.min_year_built}`);
   if ("property_types" in patch) {
-    const added = (patch.property_types as string[]).filter((t) => !((searched.property_types as unknown as string[]) ?? []).includes(t));
-    parts.push(`add ${added.map((t) => TYPES.find(([code]) => code === t)?.[1].toLowerCase() ?? t).join(", ")}`);
+    const had = (searched.property_types as string[] | undefined) ?? [];
+    const added = (patch.property_types as string[]).filter((t) => !had.includes(t));
+    parts.push(`add ${added.map((t) => TYPES[t] ?? t).join(", ")}`);
   }
   if ("areas" in patch) {
     const all = patch.areas as string[];
@@ -99,4 +123,17 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   }
   const text = parts.join(" and ");
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// The same widening as a message to the assistant, so it hears the change and the card follows (D61, D66).
+export function wideningMessage(patch: Record<string, number | string[]>): string {
+  const words: Record<string, string> = {
+    max_price_eur: "top price", min_price_eur: "lowest price", min_size_m2: "minimum size", max_size_m2: "maximum size",
+    min_bedrooms: "minimum bedrooms", max_bedrooms: "maximum bedrooms", min_year_built: "earliest year built",
+  };
+  const parts = Object.entries(patch).map(([name, value]) =>
+    name === "property_types" ? `types ${(value as string[]).map((t) => TYPES[t] ?? t).join(", ")}`
+      : name === "areas" ? `areas ${(value as string[]).join(", ")}`
+      : `${words[name] ?? name} ${value}`);
+  return `Yes, widen it: ${parts.join(", ")}.`;
 }

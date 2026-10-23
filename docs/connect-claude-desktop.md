@@ -61,7 +61,10 @@ Good follow-ups to show in a demo:
 - "Why didn't you show more?" makes Claude read `excluded_because_unknown`, the listings left out because they don't state a price, size, bedrooms or floor.
 - "Around 200k, ideally 2 bedrooms" shows the server's own rules: `search_listings` returns the limits it applied (€180k to €220k, 1 to 3 bedrooms).
 - "What if I drop the size limit?" calls `check_supply`, which counts in code what each limit costs.
-- Pick **criteria_interview** from the prompts menu to have Claude interview you the way the evals measured it.
+- "Show me the next five as swipe cards" calls `next_cards`: each card carries two reasons taken from its fields, and one card in five is an explore card from outside the top.
+- "I like the second one, reject the third, too dark" calls `record_swipe` twice; swipes are kept on your machine only, in `data/private/swipes/`.
+- After ten or so, "what do my swipes say?" calls `swipe_patterns`: code compares likes with rejects and returns the clearest pattern with its counts, for Claude to put to you. Change the card only on your yes.
+- Pick **criteria_interview** from the prompts menu to have Claude interview you the way the evals measured it; it now ends in the deck tools rather than a table.
 - `extract_listing` reads a pasted Greek description into fields; it needs the API key on your machine (one Haiku call, about a tenth of a cent).
 
 ## 4. Optional: your real listings, on your own machine only
