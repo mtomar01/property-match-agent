@@ -22,7 +22,7 @@ from datetime import date
 from agent.interview import RENOVATED_YEARS, THIN
 from core import greek
 from core.filters import apply_hard_limits
-from core.models import SEARCH_AREAS, Criteria, Listing, Swipe
+from core.models import Criteria, Listing, Swipe, covered_areas
 from ranking.rules import ENERGY_ORDER
 
 CHECKIN_EVERY = 10  # swipes between check-ins (Mike, D66)
@@ -294,7 +294,7 @@ def _reason_patterns(likes: list[Listing], rejects: list[tuple[Listing, Swipe]],
     n = reasons["wrong_area"]
     if n >= MIN_REASON:
         areas = Counter(l.area for l, s in rejects if "wrong_area" in s.reasons and l.area)
-        covered = list(criteria.areas or SEARCH_AREAS)
+        covered = list(criteria.areas or covered_areas())
         if areas and len(covered) > 1:
             worst, count = areas.most_common(1)[0]
             if count == n and worst in covered and not any(l.area == worst for l in likes):

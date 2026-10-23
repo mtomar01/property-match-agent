@@ -18,6 +18,8 @@ _AREAS = {
     "egaleo": "Egaleo", "aigaleo": "Egaleo", "αιγαλεω": "Egaleo",
     "peristeri": "Peristeri", "περιστερι": "Peristeri",
     "chaidari": "Chaidari", "haidari": "Chaidari", "χαιδαρι": "Chaidari",
+    "pagrati": "Pagrati", "pangrati": "Pagrati", "παγκρατι": "Pagrati",
+    "kypseli": "Kypseli", "kipseli": "Kypseli", "κυψελη": "Kypseli",
 }
 _FLOORS = {"υπογειο": "basement", "ημιυπογειο": "semi_basement", "ισογειο": "ground"}
 _LISTING_TYPE = {"buy": "sale", "invest": "sale", "rent": "rent"}

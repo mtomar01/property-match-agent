@@ -29,7 +29,8 @@ from agent import llm
 from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
 from core.card_rules import IDEALLY, search_card  # Mike's price, size and bedroom rules, in code (D53, D56)
-from core.models import SEARCH_AREAS, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType
+from core import greek
+from core.models import Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
@@ -78,7 +79,7 @@ def _hard_limits_schema() -> dict:
 def _criteria_core() -> dict:
     return {
         "intent": {"enum": [*get_args(Intent), None]},  # the same nullable enum form as extraction
-        "areas": {"type": "array", "items": {"type": "string", "enum": list(SEARCH_AREAS)}},
+        "areas": {"type": "array", "items": {"type": "string", "enum": list(covered_areas())}},
         "hard_limits": _hard_limits_schema(),
         "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
         "ideally": {"type": "array", "items": {"type": "string", "enum": list(IDEALLY)}},  # code adds the margins (D56)
@@ -112,6 +113,11 @@ def schema() -> dict:
     return {"type": "object", "additionalProperties": False, "required": list(properties), "properties": properties}
 
 
+def tool() -> dict:
+    """check_supply, with the areas the loaded data covers (D69)."""
+    return {**TOOL, "input_schema": {**TOOL["input_schema"], "properties": _criteria_core()}}
+
+
 TOOL = {
     "name": "check_supply",
     "description": ("Count the listings in the snapshot that pass these hard limits, and how many would pass if each "
@@ -123,11 +129,34 @@ TOOL = {
 }
 
 
+def areas_text(areas: tuple[str, ...] | None = None) -> str:
+    """"Egaleo (Αιγάλεω), Peristeri (Περιστέρι) and Chaidari (Χαϊδάρι)": the covered areas, both spellings."""
+    names = [f"{a} ({greek.AREA_GREEK[a]})" for a in (areas or covered_areas())]
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def areas_note(areas: tuple[str, ...] | None = None) -> str:
+    """Where the covered areas are, so "Athens" on its own is asked about, not refused (D46, D69)."""
+    areas = areas or covered_areas()
+    west = [a for a in areas if a in greek.WESTERN_SUBURBS]
+    centre = [a for a in areas if a in greek.CENTRAL_ATHENS]
+    if west and not centre:
+        where = f"All {'three' if len(west) == 3 else len(west)} are in Athens, in its western suburbs"
+    elif centre and not west:
+        where = "They're all in central Athens"
+    else:
+        join = lambda xs: xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]  # noqa: E731
+        where = f"All are in Athens: {join(west)} in its western suburbs, {join(centre)} in the centre"
+    which = "which of the three" if len(areas) == 3 else "which of them"
+    return f'{where}, so "Athens" on its own isn\'t an area we don\'t cover: ask {which}, or whether any will do.'
+
+
 def system_prompt(version: str = PROMPT_VERSION, today: str | None = None) -> str:
     day = date.fromisoformat(today) if today else date.today()
     text = (PROMPTS / f"{version}.md").read_text(encoding="utf-8")
     text = (text.replace("{{today}}", day.isoformat())
-                .replace("{{areas}}", "Egaleo (Αιγάλεω), Peristeri (Περιστέρι) and Chaidari (Χαϊδάρι)")
+                .replace("{{areas}}", areas_text())
+                .replace("{{areas_note}}", areas_note())
                 .replace("{{new_build_from}}", str(day.year - NEW_BUILD_YEARS))
                 .replace("{{renovated_from}}", str(day.year - RENOVATED_YEARS)))
     if "{{" in text:
@@ -139,7 +168,7 @@ def request(messages: list[dict], today: str, model: str = MODEL, version: str =
     return {
         "model": model, "max_tokens": MAX_TOKENS,
         "system": [{"type": "text", "text": system_prompt(version, today), "cache_control": {"type": "ephemeral"}}],
-        "tools": [TOOL],
+        "tools": [tool()],
         "messages": list(messages),  # a copy: the history grows after the call
         "output_config": {"format": {"type": "json_schema", "schema": schema()}},
     }
@@ -243,7 +272,7 @@ def eased(criteria: Criteria, listings: list) -> dict:
             for extra in (t for t in wider if t not in limits.property_types):
                 out[f"add_type:{extra}"] = option({"property_types": [*limits.property_types, extra]}, to=extra)
     if criteria.areas:
-        for area in (a for a in SEARCH_AREAS if a not in criteria.areas):
+        for area in (a for a in covered_areas() if a not in criteria.areas):
             out[f"add_area:{area}"] = option({"areas": [*criteria.areas, area]}, to=area)
     return out
 

@@ -25,6 +25,18 @@ class SnapshotError(ValueError):
     pass
 
 
+MIN_AREA_LISTINGS = 10  # an area is covered once the data holds this many homes for sale there (D69)
+
+
+def data_areas(listings) -> list[str]:
+    """The areas a dataset covers: those with at least MIN_AREA_LISTINGS homes for sale."""
+    counts: dict[str, int] = {}
+    for listing in listings:
+        if listing.area and listing.listing_type == "sale":
+            counts[listing.area] = counts.get(listing.area, 0) + 1
+    return [area for area, n in counts.items() if n >= MIN_AREA_LISTINGS]
+
+
 class SnapshotAdapter:
     name = "snapshot"
 

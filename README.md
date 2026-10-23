@@ -114,6 +114,7 @@ Results files are in `evals/results/`. Mutation tests check that the search safe
 - `docs/decisions.md`: every design choice, the options and why
 - `docs/labelling-guide.md`: rules for labelling listings
 - `docs/next-steps.md`: what's next and open decisions
+- `docs/collecting.md`: how a dataset is collected from Spitogatos and built (D68, D69)
 
 ## Data and privacy
 

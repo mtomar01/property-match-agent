@@ -81,7 +81,7 @@ export const money = (value: number | null | undefined) => (value == null ? "–
 // The one-line bar above the deck: every hard limit, always visible (D61).
 export function barText(card: Card, searched: Partial<HardLimits>): string[] {
   const parts: string[] = [];
-  parts.push(card.areas.length ? card.areas.join(" · ") : "All three areas");
+  parts.push(card.areas.length ? card.areas.join(" · ") : "All areas");
   if (searched.max_price_eur != null) parts.push(`${money(searched.min_price_eur)} to ${money(searched.max_price_eur)}`);
   const lo = searched.min_size_m2, hi = searched.max_size_m2;
   if (lo != null && hi != null) parts.push(`${lo} to ${hi} m²`);

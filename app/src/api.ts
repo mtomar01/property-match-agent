@@ -57,6 +57,7 @@ export interface State {
   swipes: SwipeStats;
   data: string;
   checkin_every: number;
+  areas: string[];
 }
 
 export interface ChatReply {

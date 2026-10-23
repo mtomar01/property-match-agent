@@ -18,19 +18,29 @@ Haiku answers are cached by a hash of the request, so listings already read
 for the extraction eval cost nothing; only new pages are paid for.
 
     uv run python -m adapters.page_snapshot              # the 100 pages of 20 October
+    uv run python -m adapters.page_snapshot --cards 'data/private/collect/cards_*.jsonl' \
+        --pages 'data/private/collect/pages_*.jsonl' --out data/private/snapshot_2026-10-23.jsonl
+
+The file formats are in docs/collecting.md. A page record may carry its own
+crossed-out lists ("crossed") and its first photo link ("photo_url"); the
+20 October pages take theirs from the revisit file (D34) when it's there.
+A listing whose page couldn't be read keeps its card alone, and is counted.
 """
 
 from __future__ import annotations
 
+import argparse
+import glob
 import json
-import sys
 from datetime import date
 from pathlib import Path
 
+from adapters import spitogatos_cards
 from adapters import spitogatos_features as features
 from agent import llm
 from agent.extraction import PROMPT_VERSION, apply_walking_rule, merge, parse_reading
 from core import pii
+from core.models import covered_areas, set_covered_areas  # noqa: F401 - re-exported for the CLI summary
 from core.models import EnergyRating, Floor, Heating, Listing, PricePoint
 from evals.harness.code_baseline import from_page
 from evals.harness.model_extraction import CACHE, read_one
@@ -70,6 +80,8 @@ def to_listing(card: dict, record: dict, fields: dict, evidence: dict, details_e
     data["energy_class"] = EnergyRating(raw=details_extra.get("energy_raw"), value=fields.get("energy_class")).model_dump()
     data["heating"] = Heating(raw=details_extra.get("heating_raw"), type=fields.get("heating_type"),
                               fuel=fields.get("heating_fuel")).model_dump()
+    if record.get("photo_url") and str(record["photo_url"]).startswith("https://"):
+        data["photo_urls"] = [record["photo_url"]]  # the page's first photo: a link, never a file (D64)
     history = [PricePoint(**p) for p in card.get("price_history") or []]
     if details_extra.get("old_price_eur") and not history:
         history.append(PricePoint(date=seen, price_eur=details_extra["old_price_eur"]))
@@ -83,12 +95,38 @@ def to_listing(card: dict, record: dict, fields: dict, evidence: dict, details_e
     return Listing.model_validate(data)
 
 
-def build(raw: Path = RAW, cards_path: Path = CARDS, out: Path = OUT, client=None, cache_dir: Path = CACHE) -> dict:
-    cards = {json.loads(l)["listing_id"]: json.loads(l) for l in cards_path.read_text(encoding="utf-8").splitlines() if l.strip()}
-    records = [json.loads(l) for l in raw.read_text(encoding="utf-8").splitlines() if l.strip()]
-    records = features.attach(records, features.load())  # the crossed-out lists, where the revisit has them (D34)
+def _lines(paths: list[Path]) -> list[dict]:
+    return [json.loads(line) for path in paths for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def cards_from_raw(paths: list[Path]) -> tuple[dict[str, dict], list[str]]:
+    """Raw result cards (docs/collecting.md) as Listing dicts, by listing id, with the cards that couldn't be read."""
+    out, problems = {}, []
+    for card in _lines(paths):
+        card["card_text"] = pii.scrub(card["card_text"])
+        try:
+            listing = spitogatos_cards.parse_card(card, date.fromisoformat(card["seen"]))
+        except Exception as err:  # noqa: BLE001 - reported, never stored
+            problems.append(f"card {card.get('source_id')}: {str(err).splitlines()[0]}")
+            continue
+        out.setdefault(listing.listing_id, listing.model_dump(by_alias=True, mode="json"))  # first sighting wins
+    return out, problems
+
+
+def build(raw: Path | list[Path] = RAW, cards_path: Path | None = CARDS, out: Path = OUT, client=None, cache_dir: Path = CACHE,
+          raw_cards: list[Path] | None = None) -> dict:
+    """Listings from cards plus pages. Cards come either as a Listing snapshot (cards_path) or as raw result cards."""
+    problems: list[str] = []
+    if raw_cards:
+        cards, problems = cards_from_raw(raw_cards)
+    else:
+        cards = {json.loads(l)["listing_id"]: json.loads(l) for l in cards_path.read_text(encoding="utf-8").splitlines() if l.strip()}
+    records = _lines(raw if isinstance(raw, list) else [raw])
+    if features.REVISIT.exists():  # the 20 October pages: their crossed-out lists came later (D34)
+        revisit = features.load()
+        records = [r if r.get("crossed") else features.attach([r], revisit)[0] for r in records]
     client = client or _NoClient()
-    rows, problems, paid = [], [], {}
+    rows, paid, with_page = [], {}, set()
     from adapters.spitogatos_details import parse_details
     for record in records:
         listing_id = f"spitogatos:{record['source_id']}"
@@ -107,19 +145,40 @@ def build(raw: Path = RAW, cards_path: Path = CARDS, out: Path = OUT, client=Non
         page = parse_details(record)
         try:
             rows.append(to_listing(card, record, fields, text.get("evidence", {}), {**page.fields, **page.extras}))
+            with_page.add(listing_id)
         except Exception as err:  # noqa: BLE001 - a refused record is reported, never stored
             problems.append(f"{listing_id}: {str(err).splitlines()[0]}")
+    card_only = [lid for lid in cards if lid not in with_page] if raw_cards else []
+    for listing_id in card_only:  # a page that failed or wasn't reached: the card alone, counted below
+        rows.append(Listing.model_validate(cards[listing_id]))
     out.write_text("".join(r.model_dump_json(by_alias=True) + "\n" for r in rows), encoding="utf-8")
     known = {name: sum(1 for r in rows if getattr(r, name) is not None)
              for name in ("year_built", "renovated_year", "metro_walk_min", "parking", "lift", "balcony", "storage")}
     known["floor"] = sum(1 for r in rows if r.floor.floor_class)
     known["energy_class"] = sum(1 for r in rows if r.energy_class.value)
     known["photo"] = sum(1 for r in rows if r.photo_urls)
-    summary = {"listings": len(rows), "refused": problems, "known": known,
-               "haiku_paid_usd": round(llm.cost_usd(MODEL, paid), 4) if paid else 0.0, "out": str(out.relative_to(ROOT))}
+    areas: dict[str, int] = {}
+    for r in rows:
+        areas[r.area or "unknown"] = areas.get(r.area or "unknown", 0) + 1
+    summary = {"listings": len(rows), "with_page": len(with_page), "card_only": len(card_only), "by_area": areas,
+               "refused": problems, "known": known,
+               "haiku_paid_usd": round(llm.cost_usd(MODEL, paid), 4) if paid else 0.0, "out": str(out)}
     return summary
 
 
+def _paths(pattern: str) -> list[Path]:
+    found = sorted(Path(p) for p in glob.glob(pattern))
+    if not found:
+        raise SystemExit(f"no files match {pattern}")
+    return found
+
+
 if __name__ == "__main__":
-    result = build(Path(sys.argv[1]) if len(sys.argv) > 1 else RAW)
+    parser = argparse.ArgumentParser(description="Build a product dataset from Spitogatos cards and listing pages (D68).")
+    parser.add_argument("--pages", help="raw listing pages, a glob (default: the 100 pages of 20 October)")
+    parser.add_argument("--cards", help="raw result cards, a glob; without it, cards come from data/private/snapshot.jsonl")
+    parser.add_argument("--out", default=str(OUT), help="where to write the dataset")
+    args = parser.parse_args()
+    result = build(_paths(args.pages) if args.pages else RAW, None if args.cards else CARDS, Path(args.out),
+                   raw_cards=_paths(args.cards) if args.cards else None)
     print(json.dumps(result, ensure_ascii=False, indent=1))

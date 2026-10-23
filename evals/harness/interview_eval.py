@@ -40,7 +40,7 @@ from pathlib import Path
 
 from adapters.snapshot import SnapshotAdapter
 from agent import interview, llm
-from core.models import SEARCH_AREAS
+from core.models import covered_areas
 from evals.harness.build_label_tool import ROOT
 
 CHATS = ROOT / "evals" / "datasets" / "interview_chats.jsonl"
@@ -216,7 +216,7 @@ def _outcome(expected, predicted) -> str | None:
 def field_outcomes(expected: dict, predicted: dict) -> dict[str, str]:
     out = {"intent": "correct" if expected.get("intent") == predicted.get("intent") else
            ("missed" if predicted.get("intent") is None else "wrong")}
-    areas = lambda a: frozenset(a) if a else frozenset(SEARCH_AREAS)  # noqa: E731 - empty means all
+    areas = lambda a: frozenset(a) if a else frozenset(covered_areas())  # noqa: E731 - empty means all
     out["areas"] = "correct" if areas(expected.get("areas")) == areas(predicted.get("areas")) else "wrong"
     for name in interview.HARD_FIELDS:
         result = _outcome((expected.get("hard_limits") or {}).get(name), (predicted.get("hard_limits") or {}).get(name))

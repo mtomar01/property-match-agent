@@ -276,7 +276,11 @@ AREA_ALIASES: dict[str, list[str]] = {
     "Peristeri": ["peristeri", "περιστερι"],
     "Chaidari": ["chaidari", "haidari", "xaidari", "χαιδαρι"],
     "Pagrati": ["pagrati", "pagkrati", "pangrati", "παγκρατι"],
+    "Kypseli": ["kypseli", "kipseli", "kypselli", "κυψελη"],
 }
+AREA_GREEK = {"Egaleo": "Αιγάλεω", "Peristeri": "Περιστέρι", "Chaidari": "Χαϊδάρι", "Pagrati": "Παγκράτι", "Kypseli": "Κυψέλη"}
+WESTERN_SUBURBS = ("Egaleo", "Peristeri", "Chaidari")
+CENTRAL_ATHENS = ("Pagrati", "Kypseli")
 
 
 def normalise_area(raw: str | None) -> str | None:

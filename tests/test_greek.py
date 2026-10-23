@@ -115,7 +115,8 @@ def test_property_type(raw, expected):
 
 @pytest.mark.parametrize(
     "raw, expected",
-    [("Αιγάλεω", "Egaleo"), ("aigaleo", "Egaleo"), ("ΧΑΪΔΑΡΙ", "Chaidari"), ("Περιστέρι", "Peristeri"), ("Κυψέλη", None)],
+    [("Αιγάλεω", "Egaleo"), ("aigaleo", "Egaleo"), ("ΧΑΪΔΑΡΙ", "Chaidari"), ("Περιστέρι", "Peristeri"), ("Κυψέλη", "Kypseli"),
+     ("Kipseli", "Kypseli"), ("Κηφισιά", None)],
 )
 def test_area(raw, expected):
     assert greek.normalise_area(raw) == expected

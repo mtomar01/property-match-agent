@@ -22,6 +22,7 @@ export function App() {
   const [busy, setBusy] = useState<"chat" | "swipe" | "deck" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState("");
+  const [areas, setAreas] = useState<string[]>([]);
 
   const fail = (err: unknown) => setError(err instanceof Error ? err.message : String(err));
 
@@ -47,6 +48,7 @@ export function App() {
       setSearchedAs(state.searched_as);
       setStats(state.swipes);
       setData(state.data);
+      setAreas(state.areas);
       setUnsupported(state.unsupported.includes("rent") || state.card?.intent === "rent");
       if (state.action === "confirm" && state.card && state.card.intent !== "rent") {
         setReady(true);
@@ -130,7 +132,7 @@ export function App() {
       <header className="top">
         <div className="brand">
           <h1>Property Match</h1>
-          <span className="muted small">Egaleo · Peristeri · Chaidari{data ? ` · ${data}` : ""}</span>
+          <span className="muted small">{areas.join(" · ")}{data ? ` · ${data}` : ""}</span>
         </div>
         <div className="top-right">
           {stats && stats.swipes > 0 && (

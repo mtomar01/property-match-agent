@@ -38,11 +38,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from adapters.snapshot import SnapshotAdapter
+from adapters.snapshot import SnapshotAdapter, data_areas
 from agent import interview, llm
 from core import greek
 from core.card_rules import search_card
-from core.models import Criteria, HardLimits
+from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
 from learning import deck, patterns
 from learning.swipes import SwipeStore
@@ -67,6 +67,7 @@ class App:
     def __init__(self, adapter: SnapshotAdapter | None = None, client=None, cache_dir: Path | None = CACHE,
                  user_id: str = USER, state_dir: Path = STATE, swipes_dir: Path = SWIPES):
         self.adapter = adapter or SnapshotAdapter()
+        self.areas = set_covered_areas(data_areas(self.adapter.listings()))  # what this dataset covers (D69)
         self._client = client
         self.cache_dir = cache_dir
         self.user_id = user_id
@@ -109,7 +110,8 @@ class App:
         return {"messages": shown, "card": self.state["card"], "action": last.get("action"),
                 "asking_about": last.get("asking_about", []), "unsupported": last.get("unsupported", []),
                 "searched_as": search_card(self.state["card"])["hard_limits"] if self.state["card"] else None,
-                "swipes": self.swipes.stats(), "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY}
+                "swipes": self.swipes.stats(), "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
+                "areas": list(self.areas)}
 
     def data_label(self) -> str:
         return "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
@@ -260,6 +262,7 @@ class App:
 def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "PropertyMatch/2"
+        app_areas = app.areas
 
         def log_message(self, format, *args):  # noqa: A002 - the base class's name
             pass  # quiet; errors still come back as JSON
@@ -344,5 +347,6 @@ def serve(app: App | None = None, host: str = HOST, port: int = PORT) -> Threadi
 if __name__ == "__main__":
     snapshot = os.environ.get("PM_SNAPSHOT")
     server = serve(App(SnapshotAdapter(snapshot) if snapshot else None))
-    print(f"Property Match on http://{HOST}:{PORT} ({'private snapshot' if snapshot else 'synthetic listings'}, user {USER})")
+    print(f"Property Match on http://{HOST}:{PORT} ({'private snapshot' if snapshot else 'synthetic listings'}, user {USER}, "
+          f"areas {', '.join(server.RequestHandlerClass.app_areas)})")
     server.serve_forever()

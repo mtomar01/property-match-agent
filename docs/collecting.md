@@ -1,0 +1,85 @@
+# Collecting a dataset from Spitogatos
+
+How a new, refreshed or expanded product dataset is built (D68). It runs on Mike's Mac, in his own Chrome, through Claude Code with the Claude in Chrome extension (`claude --chrome`). Everything collected stays in `data/private/`, which git ignores. The evals never use it: they stay on the frozen 20 October snapshot.
+
+## Rules
+
+- **Personal use, polite pace.** One tab, one request at a time, 4 to 7 seconds apart (random), never in parallel. No logging in.
+- **Read robots.txt and the terms first** (`https://www.spitogatos.gr/robots.txt`). Spitogatos allowed this on 20 October (D13): it disallows map search, annual reports, the account area and named bad bots, none of them Claude. If that has changed, or the result or listing pages are disallowed, stop and ask Mike.
+- **Stop and ask** on a 403 or 429, a captcha, an "access denied" page, or three failed pages in a row. Don't retry harder.
+- **No contact details, ever.** Phone numbers and emails are replaced with `[removed]` in the browser before anything is saved, then scrubbed again in Python, and the Listing model refuses anything left (D5). Agent and owner names aren't collected.
+- **Don't pass page text through the chat.** A thousand pages are far too much text for a conversation. A script in the tab collects them and saves files; the chat only sees counts and problems.
+- **Spitogatos only.** spiti24 waits until its listing pages have a reader and an eval (D68).
+
+## Scope (23 October run)
+
+Homes for sale in Egaleo, Peristeri, Chaidari, Pagrati and Kypseli, up to 200 listings per area: about 7 result pages of 30 cards each, plus each listing's page. Area slugs for file names: `aigaleo`, `peristeri`, `chaidari`, `pagkrati`, `kypseli`.
+
+Find each area's results URL through the site's own search (homes for sale, the area), note the URL and how it pages, and write both in the run log.
+
+## Step 1: result cards
+
+One record per card, one JSON object per line, in `cards_<slug>_<YYYY-MM-DD>.jsonl`:
+
+```json
+{"source": "spitogatos", "source_id": "1000000001", "url": "https://www.spitogatos.gr/aggelia/1000000001",
+ "area_query": "aigaleo", "card_text": "12\nItem 1 of 12\nΔιαμέρισμα, 86τ.μ.\nΔιαμέρισμα, 86τ.μ.\nΛιούμη (Αιγάλεω)\n\n...\n€185.000",
+ "photo_url": null, "seen": "2026-10-23"}
+```
+
+- `card_text` is the card's `innerText`, unchanged except for the scrub. The parser (`adapters/spitogatos_cards.py`) expects the layout above: an optional photo count, the title ("Διαμέρισμα, 86τ.μ."), the sub-area line ("Λιούμη (Αιγάλεω)" or "Κυψέλη (Αθήνα - Κέντρο)"), the generated sentence, the badges and the price, with an old price after it when there was a drop. See `tests/test_spitogatos_cards.py` for a full made-up example.
+- `photo_url` is the card image's `https://` address if the image has loaded, else null. Never the image itself.
+- Skip promoted mini cards that show only a price and a size. A listing seen twice keeps its first card.
+
+## Step 2: listing pages
+
+One record per listing, in `pages_<slug>_<YYYY-MM-DD>.jsonl`:
+
+```json
+{"source_id": "1000000001", "url": "https://www.spitogatos.gr/aggelia/1000000001", "seen": "2026-10-23",
+ "photo_url": "https://...jpg",
+ "sections": {"Περιγραφή": "full description", "Χαρακτηριστικά": "Τιμή\n€185.000\nΕμβαδόν\n86τ.μ.\nΌροφος\n2ος\n...\nΈτος κατασκευής\n1978",
+              "Εσωτερικό": "Ασανσέρ\nΑποθήκη", "Εξωτερικά χαρακτηριστικά": "Βεράντα\nΓωνιακό", "Κατασκευή": "Ανακαινισμένο", "Κατάλληλο για": "Επενδυτικό"},
+ "crossed": {"Εσωτερικό": ["Τζάκι"], "Εξωτερικά χαρακτηριστικά": ["Parking", "Κήπος"]}}
+```
+
+- **Selectors that worked on 22 October** (check they still do on the first page): the title `h1.property__title`; each section starts at an `h3.property__subheading` whose text is one of the six names above; the four feature lists are `ul.property__features`, and each `li` carries an icon whose `use` `href` ends in `#i-correct` (ticked) or `#i-negative` (crossed out). `adapters/spitogatos_features.page_script()` is the script used then for the feature lists.
+- `sections`: the text under each of the six headings as `innerText` lines. In the four feature lists keep only the ticked items; the crossed-out ones go in `crossed`, each name without a trailing bracket. "Χαρακτηριστικά" is the details table as alternating name and value lines. "Περιγραφή" is the whole description: expand a "read more" first if the text is cut.
+- `photo_url`: the first gallery photo's `https://` address, or null.
+- **Fetch or open:** first try `fetch()` of a listing URL from a Spitogatos tab and parse it with `DOMParser`. If the six sections are in the fetched HTML, use that for every page (same load as a visit, without images). If they only appear after the page's JavaScript runs, open each page in the tab instead. Either way, one at a time, 4 to 7 seconds apart.
+
+## Moving the files
+
+The script keeps its results in the tab and saves them with a Blob download, one file per area and kind (`cards_...` and `pages_...`), into `~/Downloads`. Chrome asks once whether spitogatos.gr may download several files: allow it. Then move them into `data/private/collect/`.
+
+## Checkpoint before the full run
+
+After the first results page and the first 5 listing pages of the first area, build from just those files and look at the summary:
+
+```bash
+uv run python -m adapters.page_snapshot --cards 'data/private/collect/cards_aigaleo_*.jsonl' \
+  --pages 'data/private/collect/pages_aigaleo_*.jsonl' --out /tmp/pm_check.jsonl
+```
+
+Go on only if `refused` is empty, the area is right, and year built, floor and energy class are known on most of the 5. A card the parser can't read shows up in `refused` with the reason.
+
+## Step 3: build the dataset
+
+```bash
+uv run python -m adapters.page_snapshot --cards 'data/private/collect/cards_*.jsonl' \
+  --pages 'data/private/collect/pages_*.jsonl' --out data/private/snapshot_<YYYY-MM-DD>.jsonl
+```
+
+Code reads each page's table and features, Haiku 5.5 reads each description (prompt extraction_v3, about a tenth of a cent each, cached), and the two are merged with the rule the extraction eval measured. It needs the Anthropic key in `~/.config/property-match/anthropic.env`. A listing whose page failed keeps its card alone and is counted in `card_only`.
+
+## Step 4: run the app on it
+
+```bash
+PM_SNAPSHOT=data/private/snapshot_<YYYY-MM-DD>.jsonl uv run python -m api.server
+```
+
+The app covers every area the dataset has at least 10 homes for sale in (D69), so the header shows all five.
+
+## Run log
+
+Write `data/private/collect/run_<YYYY-MM-DD>.md`: when robots.txt and the terms were read and what they said, the results URLs, start and end times, pages collected per area, anything skipped and why, and the build summary. Commit the collection script itself (it holds no data) so the next refresh reuses it; never commit anything under `data/private/`.

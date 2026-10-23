@@ -28,11 +28,11 @@ from typing import Literal
 from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel, Field
 
-from adapters.snapshot import SnapshotAdapter
+from adapters.snapshot import SnapshotAdapter, data_areas
 from agent import extraction, interview, llm
 from core import greek
 from core.card_rules import search_card
-from core.models import Criteria, HardLimits, Intent, Preference
+from core.models import Criteria, HardLimits, Intent, Preference, set_covered_areas
 from core.search import MAX_LIMIT, search
 from learning import deck, patterns
 from learning.swipes import SwipeStore
@@ -65,6 +65,7 @@ def adapter() -> SnapshotAdapter:
     global _adapter
     if _adapter is None:
         _adapter = SnapshotAdapter()
+        set_covered_areas(data_areas(_adapter.listings()))  # the areas this dataset covers (D69)
     return _adapter
 
 
@@ -72,7 +73,7 @@ class SearchCriteria(BaseModel):
     """What the user is looking for. Areas accept Greek or English names."""
 
     intent: Intent = Field(default="buy", description="buy, rent or invest")
-    areas: list[str] = Field(default_factory=list, description="Egaleo, Peristeri, Chaidari (any spelling). Empty means all")
+    areas: list[str] = Field(default_factory=list, description="Covered areas, any spelling: Egaleo, Peristeri, Chaidari, plus Pagrati and Kypseli when the data has them. Empty means all")
     hard_limits: HardLimits = Field(default_factory=HardLimits, description="Limits that are never broken, as the user said them")
     budget_around: bool = Field(default=False, description='The user said "around" their top price: the server searches 10% either side')
     ideally: list[Literal["size", "bedrooms"]] = Field(

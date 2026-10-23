@@ -34,10 +34,26 @@ HeatingType = Literal["independent", "central", "none"]
 Fuel = Literal["gas", "oil", "heat_pump", "lpg", "electric", "wood", "other"]
 Parking = Literal["pilotis", "space", "garage", "none"]
 Flag = Literal["whole_floor", "dual_aspect", "corner"]
-Area = Literal["Egaleo", "Peristeri", "Chaidari", "Pagrati"]  # Pagrati added 22 October 2026 (D44)
-# Areas the search covers: the snapshot has listings for these only. Pagrati is an Area for the
-# extraction clean test (D44) but has no search listings, so criteria can't ask for it (D46).
+Area = Literal["Egaleo", "Peristeri", "Chaidari", "Pagrati", "Kypseli"]  # Pagrati 22 October (D44), Kypseli 23 October (D69)
+# Areas the search covers by default: the frozen snapshot the evals run on has listings for these only.
 SEARCH_AREAS: tuple[str, ...] = ("Egaleo", "Peristeri", "Chaidari")
+_covered: tuple[str, ...] = SEARCH_AREAS
+
+
+def covered_areas() -> tuple[str, ...]:
+    """The areas the search covers right now: the default three, or what the loaded dataset holds (D69)."""
+    return _covered
+
+
+def set_covered_areas(areas) -> tuple[str, ...]:
+    """Cover the areas a dataset has listings for. The app and the MCP server call this when they load data."""
+    global _covered
+    known = Area.__args__
+    chosen = tuple(a for a in known if a in set(areas))
+    if not chosen:
+        raise ValueError("a dataset has to cover at least one known area")
+    _covered = chosen
+    return _covered
 RejectReason = Literal[
     "too_dark", "too_small", "bad_floor", "needs_work", "too_expensive", "wrong_area", "other"
 ]
@@ -303,8 +319,8 @@ class Criteria(_Strict):
         out = []
         for raw in value or []:
             canonical = greek.normalise_area(raw)
-            if canonical is None or canonical not in SEARCH_AREAS:
-                raise ValueError(f"area {raw!r} isn't covered yet ({', '.join(SEARCH_AREAS)})")
+            if canonical is None or canonical not in covered_areas():
+                raise ValueError(f"area {raw!r} isn't covered yet ({', '.join(covered_areas())})")
             if canonical not in out:
                 out.append(canonical)
         return out
