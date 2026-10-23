@@ -635,3 +635,15 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **After:** precision 94.4%, recall 94.4%, no false alarms, every evidence count recounted correct. The one miss left is a history where 11 of 11 likes have a balcony and 3 of 3 rejects don't, which the swipes support exactly as well as the floor pattern the taste was written with.
 - **A limit of the synthetic set:** year built is known for every synthetic listing but for only 47 of your 484 real ones, so on your data the year pattern will rarely have three known values on each side, and a year limit would hide the 437 homes that don't state one. The finder stays quiet rather than guessing; more detail pages (D24) would feed it.
 
+## D68. Every new or refreshed dataset reads the listing pages, not only the result cards
+
+- **Your call:** the listing-page reader was built and measured for a reason, so it's the default whenever the data is built, refreshed or expanded. My miss: I treated the 100 listing pages as an eval set and kept the product's snapshot on result cards only, which is why it knows the year for 47 of 484 homes.
+- **The pipeline from now on, for Spitogatos:**
+  1. Result pages find the listings (about 30 cards a page).
+  2. Each listing page is opened in your Chrome, slowly, and its table, ticked and crossed-out features and description are saved, scrubbed of contact details (D24, D29).
+  3. Code reads the table and the ticks (`adapters/spitogatos_details.py`); Haiku reads the description (prompt extraction_v3); they're merged with the rules the extraction eval measured, the table winning on a conflict (D33 to D43).
+  4. Code checks every record against the same models as before, so a phone number or an impossible value is refused, not stored.
+- **What it was measured at:** Haiku plus code, 99.3% on table fields and 94.8% on text fields against answer key v4 (D43); Pagrati clean test 100% and 88.2% (D45).
+- **spiti24 stays on result cards** until its pages get the same treatment: a reader, a labelled set and an eval. Its listings are mostly copies of Spitogatos ones (D18).
+- **The evals still run on the frozen 20 October snapshot**; a new dataset is for the product.
+
