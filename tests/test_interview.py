@@ -137,6 +137,27 @@ def test_numbers_are_read_the_way_people_write_them():
     assert ev.quotes_tool_number("The median here is about €210k.", results, set())
 
 
+def test_a_thin_search_that_no_widening_fixes_counts_when_the_counts_are_given():
+    def turn(reply, asking=(), action="ask", eased=None):
+        out = {"reply": reply, "action": action, "asking_about": list(asking), "criteria": {}}
+        result = {"matches": 0, "if_eased": eased}
+        return {"role": "assistant", "output": out, "tool_calls": [{"result": result}]}
+
+    hopeless = {"max_price_eur": {"limits": {"max_price_eur": 175000}, "matches": 0},
+                "together": {"limits": {"max_price_eur": 175000, "min_size_m2": 117}, "matches": 2}}
+    fixable = {"min_size_m2": {"limits": {"min_size_m2": 117}, "matches": 6}}
+    # nothing reaches 5: explaining with code's counts is right, no question needed
+    said = ev.easing({"log": [turn("Raising the price to €175,000 still gives 0; all together give 2.", eased=hopeless)]})
+    assert said == {"thin": True, "suggested": True, "fixable": False}
+    silent = ev.easing({"log": [turn("Nothing matches. Here is your card.", action="confirm", eased=hopeless)]})
+    assert silent["thin"] and not silent["suggested"]
+    # one option reaches 5: the assistant must offer it and ask
+    asked = ev.easing({"log": [turn("Lowering the size to 117 m² gives 6. Shall I?", asking=["ease_limit"], eased=fixable)]})
+    assert asked == {"thin": True, "suggested": True, "fixable": True}
+    told = ev.easing({"log": [turn("Lowering the size to 117 m² gives 6, so I did that.", action="confirm", eased=fixable)]})
+    assert told["fixable"] and not told["suggested"]
+
+
 def test_behaviours_need_the_question_the_language_and_the_named_area():
     chat = {"must_ask": ["which_covered_area"], "must_say": ["area_not_covered:Κυψέλη", "reply_in:el"], "must_not_invent": ["min_size_m2"]}
     log = [{"role": "user", "text": "Κυψέλη ή Αιγάλεω", "source": "script", "language": "el"},

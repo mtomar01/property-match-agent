@@ -17,7 +17,7 @@ Updated 22 October 2026, after your first v1 test (D63).
 
 ## Next steps
 
-1. **You test v1 on your machine** (README, "The app"), started with `PM_SNAPSHOT=data/private/snapshot.jsonl` to search your real listings. Under 5 results, the app now offers code's widenings as buttons (D63). Prompt v7, the one the app uses, gets its eval run when you want it (about $2.70).
+1. **You test v1 on your machine** (README, "The app"), started with `PM_SNAPSHOT=data/private/snapshot.jsonl` to search your real listings. Under 5 results, the app now offers code's widenings as buttons (D63). Prompt v7, the one the app uses, passed its eval run (D65).
 2. **Connect the server to the Claude desktop app** (`docs/connect-claude-desktop.md`) for the demo.
 3. **v2, the swipe deck:** the flow from D61 (chat full width, deck straight up, the card as a one-line bar, changes by chat), cards with two "why this one" reasons, rule scoring, reject reasons, the Sheets export (spec section 13).
 
@@ -30,7 +30,8 @@ Updated 22 October 2026, after your first v1 test (D63).
 - Clean test, 10 new chats (D52): 43.5% as labelled; see the decision list.
 - Prompt v5 (D55): 40 chats 100% fields and behaviours; clean 10: 82.9% fields, 0 invented hard limits.
 - Prompt v6 (D57): 40 chats 100%; clean 10 at 92.1% fields, behaviours 100%.
-- Spent about $12.30 of the $100 in total.
+- Prompt v7 (D63, D65): 40 chats 100%, 13 of 13 narrowing questions when wide; clean 10 at 97.3% fields, behaviours 100%.
+- Spent about $15.40 of the $100 in total.
 
 ## Pagrati clean test, scored (22 October, D45)
 

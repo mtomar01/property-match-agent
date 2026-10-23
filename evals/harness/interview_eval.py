@@ -433,12 +433,20 @@ def unasked_loosenings(log: list[dict]) -> list[str]:
 
 
 def easing(transcript: dict) -> dict:
-    """In a thin search (fewer than 5, not a data gap), did a reply suggest one eased limit with code's numbers?"""
+    """In a thin search (fewer than 5, not a data gap), did a reply suggest one eased limit with code's numbers?
+
+    When no widening reaches 5 (en_10: 4 bedrooms over 130 m² under €160k), there is
+    nothing to ask, so the right reply says so with code's counts instead (D65).
+    """
     replies = [t for t in transcript["log"] if t["role"] == "assistant" and t.get("output")]
     results = [c["result"] for t in replies for c in t.get("tool_calls") or []]
     thin = [r for r in results if r.get("matches", THIN_DEFAULT) < interview.THIN and r.get("if_eased")]
-    suggested = any("ease_limit" in _asked(t) and quotes_tool_number(t["output"]["reply"], thin, set()) for t in replies)
-    return {"thin": bool(thin), "suggested": bool(thin) and suggested}
+    fixable = any(o.get("matches", 0) >= interview.THIN for r in thin for o in r["if_eased"].values())
+    if fixable:
+        suggested = any("ease_limit" in _asked(t) and quotes_tool_number(t["output"]["reply"], thin, set()) for t in replies)
+    else:  # nothing to offer: explaining with the counts is the right move
+        suggested = any(quotes_tool_number(t["output"]["reply"], thin, set()) for t in replies)
+    return {"thin": bool(thin), "suggested": bool(thin) and suggested, "fixable": bool(thin) and fixable}
 
 
 THIN_DEFAULT = 10 ** 9
@@ -507,7 +515,8 @@ def summarise(scores: list[dict]) -> dict:
                       "asked_when_wide": sum(s["wide"] and s["narrowing_asked"] for s in scores),
                       "asked_when_not_wide": sum(not s["wide"] and s["narrowing_asked"] for s in scores)},
         "easing": {"thin_chats": sum(s["easing"]["thin"] for s in scores),
-                   "suggested_with_numbers": sum(s["easing"]["suggested"] for s in scores)},
+                   "suggested_with_numbers": sum(s["easing"]["suggested"] for s in scores),
+                   "nothing_reaches_5": sum(s["easing"]["thin"] and not s["easing"].get("fixable", True) for s in scores)},
         "unasked_loosenings": sum(len(s["unasked_loosenings"]) for s in scores),
         "cost_usd": round(sum(s["cost_usd"] for s in scores), 4),
         "mean_cost_per_chat_usd": round(sum(s["cost_usd"] for s in scores) / len(scores), 4),
@@ -535,7 +544,7 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
             bad.append("not confirmed")
         bad += [f"loosened {name} unasked" for name in s.get("unasked_loosenings", [])]
         if s.get("easing", {}).get("thin") and not s["easing"]["suggested"]:
-            bad.append("thin, no easing suggested")
+            bad.append("thin, no easing suggested" if s["easing"].get("fixable", True) else "thin, nothing reaches 5, counts not given")
         if bad:
             lines.append(f"    {s['chat_id']}: {', '.join(bad)}")
     return "\n".join(lines)

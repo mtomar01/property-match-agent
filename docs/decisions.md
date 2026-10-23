@@ -603,3 +603,10 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Still open:** endless deck or 20 a day, and whether to have a super like. Explained to you; my suggestion is endless and no super like, to revisit after a week of use.
 - **Done when (spec):** the explanation eval passes and your like rate is recorded, from about 100 swipes on real listings over a few days. That rate is the baseline the learned ranking in v3 has to beat.
 
+## D65. Prompt v7 passes; the easing check learns the "nothing reaches 5" case
+
+- **Results:** 40 chats: fields 100%, 0 invented hard limits, 0 unasked loosenings, behaviours 100%, 17 of 17 preferences with the weights agreeing. Clean 10: fields 97.3%, behaviours 100%, the same single miss as v6 (an "ideally" the card didn't carry). Together $3.02, so about $15.40 spent of the $100.
+- **The early supply check works:** the assistant now sees a wide search in 13 chats instead of 3, and asked a narrowing question in all 13 without adding questions overall (2.1 a chat, as in v6). Tool calls went from 111 to 132, which is the extra early check.
+- **One grader fix, no prompt change:** en_10 asks for 4 bedrooms over 130 m² under €160,000 in Egaleo. Nothing passes, and no widening reaches 5 (together gives 2). The assistant said exactly that, with code's counts, and kept the card as given. The grader only counted a suggestion that asks to ease a limit, so it marked this a miss. Now, when no option reaches 5, explaining with the counts is what passes, and the summary counts such chats separately ("nothing_reaches_5"). The v7 results were rescored, with no calls; v6 is unaffected (all its thin chats had a fix).
+- **Why it matters in an interview:** a grader can be wrong the same way a model can, and a miss has to be read before it's believed. This is the third grader slip the chats have caught (D48, D52), and each one was fixed in code with a test.
+
