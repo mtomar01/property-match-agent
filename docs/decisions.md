@@ -646,4 +646,6 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **What it was measured at:** Haiku plus code, 99.3% on table fields and 94.8% on text fields against answer key v4 (D43); Pagrati clean test 100% and 88.2% (D45).
 - **spiti24 stays on result cards** until its pages get the same treatment: a reader, a labelled set and an eval. Its listings are mostly copies of Spitogatos ones (D18).
 - **The evals still run on the frozen 20 October snapshot**; a new dataset is for the product.
+- **First use, 23 October (your ask: run the product on the pages we already read):** `adapters/page_snapshot.py` turned the 100 listing pages of 20 October into `data/private/snapshot_pages.jsonl`. Every Haiku reading was already cached from the extraction eval, so it cost nothing. Known for these 100 homes: year built 92 (35 from the cards alone), floor and energy class 100, parking and storage 96, balcony 88, renovation year 31, metro on foot 22. Photo links only 13, because the pages were saved without their gallery. The independent checker found 0 broken limits on decks in all three areas.
+- **What 100 homes means for testing:** about 33 per area, so a deck runs out fast (Egaleo up to €200k: 16 homes; Peristeri up to €180k: 5). The "typical €/m²" on the cards also comes from those 33, so it's a rough figure.
 
