@@ -6,6 +6,7 @@
 //   PM.run({resultPages: 7, listings: 200, pages: 200})   // returns at once; the run goes on in the tab
 //   await PM.wait(45)                                      // counts and problems only, never page text
 //   PM.save()                                              // the two files for this area, into ~/Downloads
+//   PM.only([...ids]); PM.run({resultPages: 0, listings: 0, pages: N}); PM.save({pagesOnly: true})   // refetch known pages
 //
 // Pages are fetched, not opened: the six sections are in the server's HTML. Each one is shown in a hidden
 // same-origin frame without its scripts or images, so innerText lays out with the site's own inline CSS
@@ -238,15 +239,27 @@
       return status();
     },
     status,
+    // A refetch of known listings (D70): queue these ids as the area's listings, then PM.run({resultPages: 0, listings: 0,
+    // pages: ids.length}) reads only their pages, and PM.save({pagesOnly: true}) writes only the pages file.
+    only(ids) {
+      const A = S.area;
+      for (const raw of ids) {
+        const id = String(raw);
+        if (A.ids.has(id)) continue;
+        A.ids.add(id);
+        A.cards.push({source: 'spitogatos', source_id: id, url: `${BASE}/aggelia/${id}`, area_query: A.slug, card_text: '', photo_url: null, seen: A.seen, refetch: true});
+      }
+      return status();
+    },
     async wait(seconds = 45) {
       const until = Date.now() + seconds * 1000;
       while (S.running && Date.now() < until) await sleep(1000);
       return status();
     },
-    save() {
+    save({pagesOnly = false} = {}) {
       const A = S.area;
       if (status().contactLeftovers) return {error: 'contact details left after the scrub; nothing saved'};
-      download(`cards_${A.slug}_${A.seen}.jsonl`, A.cards);
+      if (!pagesOnly) download(`cards_${A.slug}_${A.seen}.jsonl`, A.cards);
       download(`pages_${A.slug}_${A.seen}.jsonl`, A.pages);
       return {saved: [`cards_${A.slug}_${A.seen}.jsonl`, `pages_${A.slug}_${A.seen}.jsonl`], cards: A.cards.length, pages: A.pages.length,
               startedAt: A.startedAt, endedAt: A.endedAt, failures: A.failures};

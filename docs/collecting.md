@@ -76,7 +76,7 @@ uv run python -m adapters.page_snapshot --pages 'data/private/collect/pages_*.js
 
 Code reads each page's table and features, Haiku 5.5 reads each description (prompt extraction_v3, about a tenth of a cent each, cached), and the two are merged with the rule the extraction eval measured. It needs the Anthropic key in `~/.config/property-match/anthropic.env`. A listing whose page failed isn't in the dataset; it shows in `refused` or in the run's failures.
 
-For the 23 October run only, add `--cards 'data/private/collect/cards_*.jsonl'`: the first 84 Egaleo pages were saved before the title and badges were, so they take those from their cards (D70).
+A page saved twice (a refetch with `PM.only()`) keeps one record: the copy with its title and badges, then the newest (D70).
 
 ## Step 4: run the app on it
 

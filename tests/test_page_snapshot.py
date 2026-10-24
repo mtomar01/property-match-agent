@@ -108,3 +108,20 @@ def test_a_page_saved_with_its_title_and_badges_needs_no_card(tmp_path, monkeypa
     check = summary["check_against_cards"]
     assert check["listings_compared"] == 1
     assert all(check["by_field"][f]["agree"] == 1 for f in ("area", "sub_area", "property_type", "size_m2", "bedrooms", "price_eur"))
+
+
+def test_a_refetched_page_replaces_the_older_copy_without_badges(tmp_path, monkeypatch):
+    import json
+
+    from adapters import page_snapshot
+
+    base = {"source_id": "1000000009", "url": "https://www.spitogatos.gr/aggelia/1000000009", "area_query": "aigaleo",
+            "sections": {"Περιγραφή": "Κείμενο.", "Χαρακτηριστικά": "Τιμή\n€150.000\nΕμβαδόν\n70τ.μ."}, "crossed": {}}
+    older = dict(base, seen="2026-10-23")
+    newer = dict(base, seen="2026-10-24", title="Διαμέρισμα, 70τ.μ.", location="Λιούμη, Αιγάλεω (Αθήνα - Δυτικά Προάστια)",
+                 rooms="2 υ/δ\n1 μπ")
+    pages = tmp_path / "pages.jsonl"
+    pages.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in (newer, older)), encoding="utf-8")
+    monkeypatch.setattr(page_snapshot, "read_one", lambda *a, **k: {"raw": None, "cached": True})
+    summary = page_snapshot.build([pages], None, tmp_path / "out.jsonl")
+    assert summary["listings"] == 1 and summary["page_only"] == 1 and summary["refused"] == []

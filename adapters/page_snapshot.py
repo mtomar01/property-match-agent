@@ -216,6 +216,13 @@ def build(raw: Path | list[Path] = RAW, cards_path: Path | None = CARDS, out: Pa
     else:
         cards = {}
     records = _lines(raw if isinstance(raw, list) else [raw])
+    # A listing saved twice (a refetch) keeps one record: one with its title and badges first, then the newest (D70).
+    best: dict[str, dict] = {}
+    for r in records:
+        key, have = str(r["source_id"]), best.get(str(r["source_id"]))
+        if have is None or (bool(r.get("title")), r.get("seen", "")) >= (bool(have.get("title")), have.get("seen", "")):
+            best[key] = r
+    records = list(best.values())
     if limit:  # a test on a few per area: the first `limit` pages, spread over the areas
         by_area: dict[str, list[dict]] = {}
         for r in records:
