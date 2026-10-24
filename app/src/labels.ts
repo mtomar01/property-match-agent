@@ -28,6 +28,12 @@ export const REJECT_REASONS: [string, string][] = [
   ["wrong_area", "Wrong area"],
 ];
 
+// "Can't judge": a skip that says why the listing didn't let the user decide (D71).
+export const CANT_JUDGE_REASONS: [string, string][] = [
+  ["photos_unclear", "Photos don't show it"],
+  ["too_little_info", "Too little information"],
+];
+
 const FEATURES: Record<string, string> = {
   price_eur: "Price",
   size_m2: "Size",

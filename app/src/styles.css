@@ -90,6 +90,11 @@ a { color: var(--accent); }
 .swipe { padding: 10px 18px; font-weight: 600; min-width: 120px; }
 .swipe.reject { border-color: var(--warn); color: var(--warn); }
 .reject-why { display: grid; gap: 8px; background: var(--warn-soft); border-radius: 10px; padding: 10px 12px; }
+.cant-judge { display: grid; gap: 8px; background: var(--user); border-radius: 10px; padding: 10px 12px; }
+.middle { display: flex; gap: 10px; }
+.icon { width: 44px; height: 44px; border-radius: 999px; font-size: 20px; line-height: 1; padding: 0; display: grid; place-items: center; }
+.under-buttons { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+input.note { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
 .checkin { background: var(--accent-soft); }
 .checkin-text { margin: 0; font-size: 16px; white-space: pre-wrap; }
 .eyebrow { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }

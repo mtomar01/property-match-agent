@@ -668,3 +668,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **The location line** reads "Λιούμη, Αιγάλεω (Αθήνα - Δυτικά Προάστια)"; the neighbourhood is the part before the comma, once the bracket is dropped.
 - **The 84 early Egaleo pages** were saved before the new fields were added. Your call: no card data for them either, so they're fetched again (84 requests, about 8 minutes, same pace and rules) with `PM.only()` in the collection script. The build keeps one record per listing, preferring the copy with its title and badges, so the refetch simply replaces the old copy and the dataset is page-only throughout.
 - **Two fixes found on the way:** the build now splits files on newlines only, because `splitlines()` also breaks on the U+2028 characters some descriptions hold (the run's first build failed on it); and the Mac session's card parser fix (a card without the generated sentence kept losing its floor) and its chat-scroll fix are committed.
+
+## D71. Skip, back, "Can't judge" and "Other…" on the deck
+
+- **Your calls:** an "Other…" tile with a text box after a reject; a "Can't judge" option for a listing that doesn't let you decide (your example: photos that are a floor plan and a filler image); and two icons between Reject and Like, back and skip.
+- **A skip is no verdict.** It goes in the swipe log but counts in no like rate, triggers no check-in and teaches no pattern, because the user didn't decide against the home. A skipped home comes back at the end of the deck, marked "You skipped this one earlier". Check-ins now count likes and rejects only.
+- **"Can't judge" is a skip with a reason:** "Photos don't show it", "Too little information" or "Other…". Recorded as a reject, a bad listing would have taught the ranking that you dislike its size, area or price. Kept apart, it's listing-quality data for the expansion noted earlier (reject reasons as facts about a listing).
+- **"Other…" opens one short line** (up to 300 characters), saved with the reason "other" and scrubbed of contact details like every other text. Code can't learn from prose, so for now the notes are counted; later Haiku can sort them into existing reasons or new themes, which is how missing tiles get found.
+- **Back takes back the last decision:** it's removed from the log as if it never happened, and its card returns to the front with its reasons. While the assistant's check-in question is waiting, back is off: answer the question first. Keyboard: ← reject, → like, ↓ skip, Backspace back.
+- **The swipe record** gains "skip" as a decision, the can't-judge reasons and an optional note. Older logs read as before.
+

@@ -16,8 +16,10 @@ Routes:
     GET  /api/state                      -> the chat so far, the card, the swipe counts
     POST /api/chat     {"text": "..."}  -> the reply, the card as said and as searched, whether the deck is ready
     POST /api/deck     {"limit": 10}    -> the next cards, each with its two reasons
-    POST /api/swipe    {"listing_id", "decision", "reasons", "deck_position", "explore_card"}
+    POST /api/swipe    {"listing_id", "decision", "reasons", "deck_position", "explore_card", "note"}
                                          -> the counts, and a check-in from the assistant when code found a pattern
+                                            (decision like, reject or skip; a skip with reasons is "can't judge", D71)
+    POST /api/undo                       -> takes back the last decision and returns its card
     GET  /api/shortlist                  -> the liked homes, newest first
     GET  /api/export.csv                 -> the liked homes as a spreadsheet
     POST /api/reset                      -> a new search (the swipes stay)
@@ -44,6 +46,7 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
+from core.reasons import typical_price_per_m2
 from learning import deck, patterns
 from learning.swipes import SwipeStore
 
@@ -119,7 +122,7 @@ class App:
     def reset(self) -> dict:
         with self.lock:
             self.state = {"history": [], "card": None, "last": None, "declined": [], "pending": None,
-                          "checkin_at": len(self.swipes.load())}
+                          "checkin_at": len(self.swipes.verdicts())}
             self._save()
         return self.snapshot()
 
@@ -167,14 +170,15 @@ class App:
 
     def deck(self, limit: int = DECK_LIMIT) -> dict:
         criteria = self.criteria()
-        swiped = self.swipes.load()
-        built = deck.build(self.adapter.listings(), criteria, {s.listing_id for s in swiped}, start_position=len(swiped),
-                           limit=max(1, min(int(limit), MAX_LIMIT)), seed=len(swiped) // deck.EXPLORE_EVERY)
+        everything = self.swipes.load()
+        built = deck.build(self.adapter.listings(), criteria, self.swipes.swiped_ids(), start_position=len(everything),
+                           limit=max(1, min(int(limit), MAX_LIMIT)), seed=len(self.swipes.verdicts()) // deck.EXPLORE_EVERY,
+                           skipped_ids=self.swipes.skipped_ids())
         if built["total_matches"] < interview.THIN:  # thin: code's ways to widen, for the user to ask the assistant (D63)
             built["if_eased"] = interview.eased(criteria, self.adapter.listings())
         return {**built, "searched_as": search_card(self.state["card"])["hard_limits"], "swipes": self.swipes.stats(),
                 "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
-                "since_checkin": len(swiped) - self.state["checkin_at"]}
+                "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(everything)}
 
     def shortlist(self) -> dict:
         """The liked homes, newest like first, for the table; the CSV has the same columns."""
@@ -186,23 +190,41 @@ class App:
         return {"homes": homes, "swipes": self.swipes.stats()}
 
     def swipe(self, listing_id: str, decision: str, reasons: list[str] | None = None, deck_position: int = 0,
-              explore_card: bool = False) -> dict:
+              explore_card: bool = False, note: str | None = None) -> dict:
         if self.adapter.get(listing_id) is None:
             raise KeyError(listing_id)
         with self.lock:
-            self.swipes.record(listing_id, decision, reasons or [], int(deck_position), bool(explore_card))
-            checkin = self._checkin()
+            self.swipes.record(listing_id, decision, reasons or [], int(deck_position), bool(explore_card), note=note)
+            checkin = self._checkin() if decision != "skip" else None  # a skip is no verdict (D71)
             self._save()
         return {"swipes": self.swipes.stats(), "checkin": checkin,
-                "since_checkin": len(self.swipes.load()) - self.state["checkin_at"]}
+                "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": True}
+
+    def undo(self) -> dict:
+        """The back button (D71): the last decision is taken back and its card returns to the front of the deck."""
+        with self.lock:
+            if self.state["pending"]:
+                raise ValueError("answer the assistant's question first, then go back")
+            last = self.swipes.undo()
+            if last is None:
+                raise ValueError("there's nothing to go back to")
+            self.state["checkin_at"] = min(self.state["checkin_at"], len(self.swipes.verdicts()))
+            self._save()
+        listing = self.adapter.get(last.listing_id)
+        back = None
+        if listing is not None:
+            back = deck.card(listing, self.criteria(), typical_price_per_m2(self.adapter.listings()), last.deck_position,
+                             last.explore_card, skipped=False)
+        return {"card": back, "undone": last.decision, "swipes": self.swipes.stats(),
+                "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(self.swipes.load())}
 
     def _checkin(self) -> dict | None:
-        """Every 10 swipes, code looks for a pattern; when it finds one, the assistant puts it to the user (D66)."""
-        count = len(self.swipes.load())
+        """Every 10 likes or rejects, code looks for a pattern; when it finds one, the assistant puts it to the user (D66)."""
+        count = len(self.swipes.verdicts())
         if self.state["pending"] or count - self.state["checkin_at"] < patterns.CHECKIN_EVERY:
             return None
         criteria = self.criteria()
-        found = patterns.observe(self.swipes.load(), self.adapter.listings(), criteria, set(self.state["declined"]))
+        found = patterns.observe(self.swipes.verdicts(), self.adapter.listings(), criteria, set(self.state["declined"]))
         if not found:
             return None
         top = found[0]
@@ -296,7 +318,10 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                     return self._json(200, app.deck(body.get("limit", DECK_LIMIT)))
                 if route == "/api/swipe":
                     return self._json(200, app.swipe(body.get("listing_id", ""), body.get("decision", ""), body.get("reasons"),
-                                                     body.get("deck_position", 0), body.get("explore_card", False)))
+                                                     body.get("deck_position", 0), body.get("explore_card", False),
+                                                     body.get("note")))
+                if route == "/api/undo":
+                    return self._json(200, app.undo())
                 if route == "/api/reset":
                     return self._json(200, app.reset())
                 if route == "/api/search":

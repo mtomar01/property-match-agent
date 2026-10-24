@@ -331,20 +331,40 @@ class Criteria(_Strict):
 # ---------------------------------------------------------------------------
 
 
+# "Can't judge": the user skipped because the listing didn't let them decide, not because of the home (D71).
+SkipReason = Literal["photos_unclear", "too_little_info", "other"]
+REJECT_REASONS: tuple[str, ...] = RejectReason.__args__
+SKIP_REASONS: tuple[str, ...] = SkipReason.__args__
+NOTE_MAX = 300
+
+
 class Swipe(_Strict):
+    """One decision on one card. A skip is no verdict: it counts in no like rate and teaches no ranking (D71)."""
+
     user_id: str
     listing_id: str
-    decision: Literal["like", "reject"]
-    reasons: list[RejectReason] = Field(default_factory=list)
+    decision: Literal["like", "reject", "skip"]
+    reasons: list[str] = Field(default_factory=list)
+    note: str | None = Field(default=None, max_length=NOTE_MAX)  # the user's words after "Other…", scrubbed
     deck_position: int = Field(ge=0)
     explore_card: bool = False
     ts: datetime
 
     @model_validator(mode="after")
-    def _reasons_only_on_reject(self) -> "Swipe":
-        if self.decision == "like" and self.reasons:
-            raise ValueError("reasons are only recorded on a reject")
+    def _reasons_fit_the_decision(self) -> "Swipe":
+        allowed = {"like": (), "reject": REJECT_REASONS, "skip": SKIP_REASONS}[self.decision]
+        wrong = [r for r in self.reasons if r not in allowed]
+        if wrong:
+            raise ValueError(f"{', '.join(wrong)} isn't a reason for a {self.decision}")
+        if self.note and "other" not in self.reasons:
+            raise ValueError('a note goes with the reason "other"')
+        if self.note and pii.find_pii(self.note):
+            raise ValueError("the note contains contact details; scrub it first")
         return self
+
+    @property
+    def verdict(self) -> bool:
+        return self.decision in ("like", "reject")
 
 
 class DuplicateEvidence(_Strict):

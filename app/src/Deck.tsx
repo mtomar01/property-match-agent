@@ -1,35 +1,41 @@
 import { useEffect, useState } from "react";
-import { Checkin, Deck as DeckData, DeckCard, Widening } from "./api";
-import { REJECT_REASONS, floorText, money, wideningMessage, wideningText } from "./labels";
+import { Checkin, Deck as DeckData, DeckCard, Decision, Widening } from "./api";
+import { CANT_JUDGE_REASONS, REJECT_REASONS, floorText, money, wideningMessage, wideningText } from "./labels";
 
 interface Props {
   deck: DeckData | null;
   card: DeckCard | null;
   checkin: Checkin | null;
   busy: boolean;
-  onSwipe: (card: DeckCard, decision: "like" | "reject", reasons: string[]) => void;
+  canUndo: boolean;
+  onSwipe: (card: DeckCard, decision: Decision, reasons: string[], note?: string) => void;
+  onUndo: () => void;
   onAnswer: (text: string) => void;
 }
 
-// One home at a time. Right to like, left to reject, with a quick reason on a reject (spec section 4).
-export function Deck({ deck, card, checkin, busy, onSwipe, onAnswer }: Props) {
-  const [asking, setAsking] = useState(false);
+// One home at a time. Right to like, left to reject with a quick reason; in the middle, back and skip;
+// below them "Can't judge" for a listing that doesn't let you decide (spec section 4, D71).
+export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAnswer }: Props) {
+  const [asking, setAsking] = useState<null | "reject" | "skip">(null);
 
-  useEffect(() => setAsking(false), [card?.listing_id]);
+  useEffect(() => setAsking(null), [card?.listing_id]);
 
   useEffect(() => {
-    if (!card || checkin) return;
+    if (checkin) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "TEXTAREA" || target.tagName === "INPUT")) return;
       if (busy) return;
+      if (e.key === "Backspace" && canUndo) { e.preventDefault(); onUndo(); return; }
+      if (!card) return;
       if (e.key === "ArrowRight") onSwipe(card, "like", []);
-      if (e.key === "ArrowLeft") setAsking(true);
-      if (e.key === "Escape") setAsking(false);
+      if (e.key === "ArrowLeft") setAsking("reject");
+      if (e.key === "ArrowDown") onSwipe(card, "skip", []);
+      if (e.key === "Escape") setAsking(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [card, checkin, busy, onSwipe]);
+  }, [card, checkin, busy, canUndo, onSwipe, onUndo]);
 
   if (!deck) return <section className="panel deck"><p className="muted">Loading the homes…</p></section>;
 
@@ -39,6 +45,7 @@ export function Deck({ deck, card, checkin, busy, onSwipe, onAnswer }: Props) {
     return (
       <section className="panel deck">
         <h2>{deck.total_matches === 0 ? "Nothing passes every limit" : "You've seen every home that passes"}</h2>
+        {canUndo && <button type="button" className="link" disabled={busy} onClick={onUndo}>↶ Back to the last one</button>}
         <p className="muted">
           {deck.total_matches} {deck.total_matches === 1 ? "home passes" : "homes pass"} the limits on the bar.
           {deck.if_eased ? " Code counted a few ways to widen the search; pick one and the assistant will make the change." : " Tell the assistant what to change."}
@@ -54,6 +61,7 @@ export function Deck({ deck, card, checkin, busy, onSwipe, onAnswer }: Props) {
       <article className="home">
         <Photo url={photo} card={card} />
         <div className="home-body">
+          {card.skipped_before && <p className="hint">You skipped this one earlier.</p>}
           <div className="home-head">
             <strong className="price">{money(card.price_eur)}</strong>
             <span className="muted">{card.price_per_m2 ? `€${card.price_per_m2.toLocaleString("en-GB")}/m²` : ""}</span>
@@ -78,29 +86,73 @@ export function Deck({ deck, card, checkin, busy, onSwipe, onAnswer }: Props) {
         </div>
       </article>
 
-      {asking ? (
-        <div className="reject-why">
-          <p className="hint">Why not? One tap is enough; it teaches the ranking more than the swipe.</p>
-          <div className="chips">
-            {REJECT_REASONS.map(([code, text]) => (
-              <button key={code} type="button" className="chip" disabled={busy} onClick={() => onSwipe(card, "reject", [code])}>{text}</button>
-            ))}
-            <button type="button" className="chip" disabled={busy} onClick={() => onSwipe(card, "reject", [])}>No reason</button>
-            <button type="button" className="link" onClick={() => setAsking(false)}>Keep looking at it</button>
-          </div>
-        </div>
+      {asking === "reject" ? (
+        <Reasons
+          kind="reject" busy={busy} title="Why not? One tap is enough; it teaches the ranking more than the swipe."
+          options={REJECT_REASONS} none="No reason"
+          onPick={(reasons, note) => onSwipe(card, "reject", reasons, note)} onCancel={() => setAsking(null)}
+        />
+      ) : asking === "skip" ? (
+        <Reasons
+          kind="skip" busy={busy} title="What stops you deciding? This one won't count as a like or a reject, and it comes back later."
+          options={CANT_JUDGE_REASONS} none={null}
+          onPick={(reasons, note) => onSwipe(card, "skip", reasons, note)} onCancel={() => setAsking(null)}
+        />
       ) : (
-        <div className="swipe-buttons">
-          <button type="button" className="swipe reject" disabled={busy} onClick={() => setAsking(true)} aria-keyshortcuts="ArrowLeft">
-            ← Reject
-          </button>
-          <span className="muted small">{deck.remaining} left · {deck.swipes.swipes} swiped</span>
-          <button type="button" className="swipe like primary" disabled={busy} onClick={() => onSwipe(card, "like", [])} aria-keyshortcuts="ArrowRight">
-            Like →
-          </button>
-        </div>
+        <>
+          <div className="swipe-buttons">
+            <button type="button" className="swipe reject" disabled={busy} onClick={() => setAsking("reject")} aria-keyshortcuts="ArrowLeft">
+              ← Reject
+            </button>
+            <div className="middle">
+              <button type="button" className="icon" disabled={busy || !canUndo} onClick={onUndo} aria-label="Back to the previous home"
+                title="Back to the previous home (Backspace)" aria-keyshortcuts="Backspace">↶</button>
+              <button type="button" className="icon" disabled={busy} onClick={() => onSwipe(card, "skip", [])} aria-label="Skip this home for now"
+                title="Skip for now; it comes back later (↓)" aria-keyshortcuts="ArrowDown">↷</button>
+            </div>
+            <button type="button" className="swipe like primary" disabled={busy} onClick={() => onSwipe(card, "like", [])} aria-keyshortcuts="ArrowRight">
+              Like →
+            </button>
+          </div>
+          <div className="under-buttons">
+            <button type="button" className="link small" disabled={busy} onClick={() => setAsking("skip")}>Can't judge this one?</button>
+            <span className="muted small">{deck.remaining} left · {deck.swipes.swipes} swiped</span>
+          </div>
+        </>
       )}
     </section>
+  );
+}
+
+// The reason tiles for a reject or a "can't judge", with "Other…" opening a short box for the user's own words.
+function Reasons({ kind, title, options, none, busy, onPick, onCancel }: {
+  kind: "reject" | "skip"; title: string; options: [string, string][]; none: string | null; busy: boolean;
+  onPick: (reasons: string[], note?: string) => void; onCancel: () => void;
+}) {
+  const [other, setOther] = useState(false);
+  const [note, setNote] = useState("");
+  return (
+    <div className={kind === "reject" ? "reject-why" : "cant-judge"}>
+      <p className="hint">{title}</p>
+      <div className="chips">
+        {options.map(([code, text]) => (
+          <button key={code} type="button" className="chip" disabled={busy} onClick={() => onPick([code])}>{text}</button>
+        ))}
+        <button type="button" className={`chip ${other ? "on" : ""}`} disabled={busy} aria-expanded={other} onClick={() => setOther((o) => !o)}>
+          Other…
+        </button>
+        {none && <button type="button" className="chip" disabled={busy} onClick={() => onPick([])}>{none}</button>}
+        <button type="button" className="link" onClick={onCancel}>Keep looking at it</button>
+      </div>
+      {other && (
+        <form className="composer" onSubmit={(e) => { e.preventDefault(); onPick(["other"], note.trim() || undefined); }}>
+          <label htmlFor={`${kind}-note`} className="sr-only">In your words</label>
+          <input id={`${kind}-note`} className="note" autoFocus maxLength={300} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder={kind === "reject" ? "In your words, e.g. the street looks busy" : "In your words, e.g. only a floor plan"} />
+          <button type="submit" className="primary" disabled={busy}>Save</button>
+        </form>
+      )}
+    </div>
   );
 }
 

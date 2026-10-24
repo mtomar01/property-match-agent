@@ -169,7 +169,7 @@ def observe(swipes: list[Swipe], listings: list[Listing], criteria: Criteria, de
     """Every pattern the swipes support, strongest first. Each carries counts, a change and what it would leave."""
     today = today or date.today()
     by_id = {l.listing_id: l for l in listings}
-    seen = [(by_id[s.listing_id], s) for s in swipes if s.listing_id in by_id]
+    seen = [(by_id[s.listing_id], s) for s in swipes if s.listing_id in by_id and s.decision in ("like", "reject")]
     likes = [l for l, s in seen if s.decision == "like"]
     rejects = [(l, s) for l, s in seen if s.decision == "reject"]
     found: list[dict] = []

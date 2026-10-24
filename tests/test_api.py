@@ -199,3 +199,24 @@ def test_an_empty_message_is_refused(api):
     ask, _, _ = api
     status, out = ask("/api/chat", {"text": "  "})
     assert status == 400 and "message" in out["error"]
+
+
+def test_skip_doesnt_count_toward_a_checkin_and_back_returns_the_card(api):
+    ask, _, app = api
+    ask("/api/chat", {"text": "Egaleo up to 250k"})
+    _, out = ask("/api/deck", {"limit": 11})
+    cards = out["cards"]
+    _, res = ask("/api/swipe", {"listing_id": cards[0]["listing_id"], "decision": "skip", "reasons": ["photos_unclear"]})
+    assert res["swipes"]["swipes"] == 0 and res["swipes"]["cant_judge"] == 1 and res["since_checkin"] == 0
+    _, res = ask("/api/swipe", {"listing_id": cards[1]["listing_id"], "decision": "reject", "reasons": ["other"],
+                                "note": "Δεν μου αρέσει ο δρόμος", "deck_position": 1})
+    assert res["swipes"]["swipes"] == 1 and res["swipes"]["notes"] == 1
+    status, back = ask("/api/undo", {})
+    assert status == 200 and back["undone"] == "reject" and back["card"]["listing_id"] == cards[1]["listing_id"]
+    assert back["card"]["reasons"] and back["swipes"]["swipes"] == 0
+    _, again = ask("/api/deck", {"limit": 20})
+    ids = [c["listing_id"] for c in again["cards"]]
+    assert ids[0] == cards[1]["listing_id"] and ids[-1] == cards[0]["listing_id"]  # the skipped one waits at the end
+    assert ask("/api/swipe", {"listing_id": cards[2]["listing_id"], "decision": "skip", "reasons": ["too_dark"]})[0] == 400
+    ask("/api/undo", {})
+    assert ask("/api/undo", {})[0] == 400  # nothing left to take back

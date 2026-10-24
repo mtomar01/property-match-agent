@@ -16,7 +16,8 @@ from collections import Counter
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from core.models import Swipe
+from core import pii
+from core.models import NOTE_MAX, Swipe
 
 ROOT = Path(__file__).resolve().parents[1]
 SWIPES_DIR = ROOT / "data" / "private" / "swipes"
@@ -39,19 +40,42 @@ class SwipeStore:
         return self._swipes
 
     def record(self, listing_id: str, decision: str, reasons: list[str] | None = None, deck_position: int = 0,
-               explore_card: bool = False, ts: datetime | None = None) -> Swipe:
+               explore_card: bool = False, ts: datetime | None = None, note: str | None = None) -> Swipe:
         if self.swiped_today() >= (DAILY_CAP or float("inf")):
             raise ValueError(f"the daily cap of {DAILY_CAP} swipes is reached; come back tomorrow")
-        swipe = Swipe(user_id=self.user_id, listing_id=listing_id, decision=decision, reasons=reasons or [],
+        note = (pii.scrub(" ".join(note.split()))[:NOTE_MAX] or None) if note else None
+        swipe = Swipe(user_id=self.user_id, listing_id=listing_id, decision=decision, reasons=reasons or [], note=note,
                       deck_position=deck_position, explore_card=explore_card, ts=ts or datetime.now(timezone.utc))
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
-            fh.write(swipe.model_dump_json() + "\n")
+            fh.write(swipe.model_dump_json(exclude_none=True) + "\n")
         self.load().append(swipe)
         return swipe
 
+    def undo(self) -> Swipe | None:
+        """Take back the last decision (the back button, D71): it leaves the log as if it never happened."""
+        swipes = self.load()
+        if not swipes:
+            return None
+        last = swipes.pop()
+        self.path.write_text("".join(s.model_dump_json(exclude_none=True) + "\n" for s in swipes), encoding="utf-8")
+        return last
+
+    def verdicts(self) -> list[Swipe]:
+        """Likes and rejects: what the like rate, the check-ins and the learning read."""
+        return [s for s in self.load() if s.verdict]
+
     def swiped_ids(self) -> set[str]:
-        return {s.listing_id for s in self.load()}
+        """Homes with a verdict: they never come back in the deck."""
+        return {s.listing_id for s in self.verdicts()}
+
+    def skipped_ids(self) -> list[str]:
+        """Homes skipped and not decided since, oldest first: they come back at the end of the deck."""
+        decided, out = self.swiped_ids(), []
+        for s in self.load():
+            if s.decision == "skip" and s.listing_id not in decided and s.listing_id not in out:
+                out.append(s.listing_id)
+        return out
 
     def liked_ids(self) -> list[str]:
         seen, out = set(), []
@@ -66,13 +90,15 @@ class SwipeStore:
         return sum(1 for s in self.load() if s.ts.date() == today)
 
     def stats(self) -> dict:
-        """Counts only: no listing ids, so the numbers can be shared."""
-        swipes = self.load()
+        """Counts only: no listing ids, so the numbers can be shared. Skips are counted apart, never in the like rate."""
+        everything = self.load()
+        swipes = [s for s in everything if s.verdict]
         likes = sum(1 for s in swipes if s.decision == "like")
         explore = [s for s in swipes if s.explore_card]
         top = [s for s in swipes if not s.explore_card]
         reasons = Counter(r for s in swipes for r in s.reasons)
-        days = {s.ts.date().isoformat() for s in swipes}
+        skips = [s for s in everything if s.decision == "skip"]
+        days = {s.ts.date().isoformat() for s in everything}
         return {
             "swipes": len(swipes), "likes": likes, "rejects": len(swipes) - likes,
             "like_rate": round(likes / len(swipes), 3) if swipes else None,
@@ -80,6 +106,9 @@ class SwipeStore:
             "like_rate_top": round(sum(1 for s in top if s.decision == "like") / len(top), 3) if top else None,
             "like_rate_explore": round(sum(1 for s in explore if s.decision == "like") / len(explore), 3) if explore else None,
             "reject_reasons": dict(reasons.most_common()),
+            "skips": len(skips), "cant_judge": sum(1 for s in skips if s.reasons),
+            "cant_judge_reasons": dict(Counter(r for s in skips for r in s.reasons).most_common()),
+            "notes": sum(1 for s in everything if s.note),
             "days": len(days), "first": min(days) if days else None, "last": max(days) if days else None,
         }
 

@@ -169,3 +169,37 @@ def test_a_declined_or_already_held_suggestion_is_not_repeated(listings):
     assert patterns.taken({"hard_limits": {"min_year_built": 2020}, "preferences": []}, {"hard_limits": {"min_year_built": 2015}})
     assert not patterns.taken({"hard_limits": {"min_year_built": None}, "preferences": []}, {"hard_limits": {"min_year_built": 2015}})
     assert not patterns.taken({"preferences": []}, {"preferences": [{"feature": "balcony", "equals": True}]})
+
+
+def test_skips_and_cant_judge_are_no_verdict_and_undo_takes_the_last_one_back(tmp_path):
+    store = swipes.SwipeStore("t", tmp_path)
+    store.record("spitogatos:SYN0001", "like")
+    store.record("spitogatos:SYN0002", "skip", ["photos_unclear"])
+    store.record("spitogatos:SYN0003", "skip")
+    store.record("spitogatos:SYN0004", "reject", ["other"], note="Η κουζίνα είναι πολύ μικρή, τηλ 6912345678")
+    stats = store.stats()
+    assert (stats["swipes"], stats["likes"], stats["rejects"], stats["like_rate"]) == (2, 1, 1, 0.5)  # skips aren't verdicts
+    assert (stats["skips"], stats["cant_judge"], stats["cant_judge_reasons"], stats["notes"]) == (2, 1, {"photos_unclear": 1}, 1)
+    assert store.load()[-1].note.startswith("Η κουζίνα") and "6912345678" not in store.load()[-1].note
+    assert store.swiped_ids() == {"spitogatos:SYN0001", "spitogatos:SYN0004"}
+    assert store.skipped_ids() == ["spitogatos:SYN0002", "spitogatos:SYN0003"]
+    undone = store.undo()
+    assert undone.listing_id == "spitogatos:SYN0004" and len(swipes.SwipeStore("t", tmp_path).load()) == 3  # rewritten on disk
+    store.record("spitogatos:SYN0002", "like")  # decided later: no longer waiting as a skip
+    assert store.skipped_ids() == ["spitogatos:SYN0003"]
+    with pytest.raises(ValueError):
+        store.record("spitogatos:SYN0005", "skip", ["too_dark"])  # a reject reason isn't a can't-judge reason
+    with pytest.raises(ValueError):
+        store.record("spitogatos:SYN0005", "reject", ["too_small"], note="a note needs other")
+
+
+def test_skipped_homes_come_back_last_and_patterns_ignore_them(listings):
+    c = Criteria(user_id="t", intent="buy", hard_limits=HardLimits(max_price_eur=300000, min_price_eur=100000))
+    ranked = deck.ranked_matches(listings, c)
+    first = ranked[0].listing_id
+    built = deck.build(listings, c, set(), limit=len(ranked), today=TODAY, skipped_ids=[first])
+    assert built["cards"][-1]["listing_id"] == first and built["cards"][-1]["skipped_before"]
+    assert built["remaining"] == len(ranked) and built["skipped_waiting"] == 1
+    log = [swipe(l, "like" if (l.size_m2 or 0) >= 100 else "reject", i) for i, l in enumerate(ranked[:14])]
+    skips = [Swipe(user_id="t", listing_id=l.listing_id, decision="skip", deck_position=20 + i, ts=log[0].ts) for i, l in enumerate(ranked[14:30])]
+    assert patterns.observe(log + skips, listings, c, today=TODAY) == patterns.observe(log, listings, c, today=TODAY)

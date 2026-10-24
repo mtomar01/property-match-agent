@@ -158,22 +158,25 @@ def _criteria(criteria: SearchCriteria) -> Criteria:
 def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -> dict:
     store = SwipeStore(user_id)
     swiped = store.load()
-    return deck.build(adapter().listings(), _criteria(criteria), {s.listing_id for s in swiped}, start_position=len(swiped),
-                      limit=max(1, min(limit, MAX_LIMIT)), seed=len(swiped) // deck.EXPLORE_EVERY)
+    return deck.build(adapter().listings(), _criteria(criteria), store.swiped_ids(), start_position=len(swiped),
+                      limit=max(1, min(limit, MAX_LIMIT)), seed=len(store.verdicts()) // deck.EXPLORE_EVERY,
+                      skipped_ids=store.skipped_ids())
 
 
 @mcp.tool(
     description=(
-        "Record a swipe: like or reject, with reject reasons (too_dark, too_small, bad_floor, needs_work, too_expensive, bad_value, "
-        "wrong_area, other). Kept on this machine only. Returns the user's counts and like rate."
+        "Record a swipe: like, reject or skip. Reject reasons: too_dark, too_small, bad_floor, needs_work, too_expensive, "
+        "bad_value, wrong_area, other. A skip with reasons means the user couldn't judge it: photos_unclear, "
+        "too_little_info, other. A note goes with \"other\". Kept on this machine only. Skips never count in the like rate."
     )
 )
-def record_swipe(listing_id: str, decision: Literal["like", "reject"], user_id: str = "me",
-                 reasons: list[str] | None = None, deck_position: int = 0, explore_card: bool = False) -> dict:
+def record_swipe(listing_id: str, decision: Literal["like", "reject", "skip"], user_id: str = "me",
+                 reasons: list[str] | None = None, deck_position: int = 0, explore_card: bool = False,
+                 note: str | None = None) -> dict:
     if adapter().get(listing_id) is None:
         return {"error": f"No listing with id {listing_id}"}
     store = SwipeStore(user_id)
-    store.record(listing_id, decision, reasons or [], deck_position, explore_card)
+    store.record(listing_id, decision, reasons or [], deck_position, explore_card, note=note)
     return store.stats()
 
 
@@ -185,7 +188,7 @@ def record_swipe(listing_id: str, decision: Literal["like", "reject"], user_id: 
     )
 )
 def swipe_patterns(criteria: SearchCriteria, user_id: str = "me", declined: list[str] | None = None) -> dict:
-    found = patterns.observe(SwipeStore(user_id).load(), adapter().listings(), _criteria(criteria), set(declined or []))
+    found = patterns.observe(SwipeStore(user_id).verdicts(), adapter().listings(), _criteria(criteria), set(declined or []))
     return {"patterns": found[:3], "checkin_every": patterns.CHECKIN_EVERY}
 
 

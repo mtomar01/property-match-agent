@@ -39,6 +39,8 @@ export interface SwipeStats {
   rejects: number;
   like_rate: number | null;
   reject_reasons: Record<string, number>;
+  skips: number;
+  cant_judge: number;
 }
 
 export interface Message {
@@ -103,6 +105,7 @@ export interface DeckCard extends Summary {
   reasons: Reason[];
   preference_score: number;
   explore_card: boolean;
+  skipped_before: boolean;
   deck_position: number;
 }
 
@@ -123,6 +126,7 @@ export interface Deck {
   data: string;
   checkin_every: number;
   since_checkin: number;
+  can_undo: boolean;
 }
 
 // The assistant's check-in after a run of swipes: a pattern code found, put into words (D66).
@@ -134,6 +138,17 @@ export interface SwipeResult {
   swipes: SwipeStats;
   checkin: Checkin | null;
   since_checkin: number;
+  can_undo: boolean;
+}
+
+export type Decision = "like" | "reject" | "skip";
+
+export interface UndoResult {
+  card: DeckCard | null;
+  undone: Decision;
+  swipes: SwipeStats;
+  since_checkin: number;
+  can_undo: boolean;
 }
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
@@ -150,7 +165,8 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
 export const getState = () => call<State>("/api/state");
 export const sendChat = (text: string) => call<ChatReply>("/api/chat", { text });
 export const getDeck = (limit = 10) => call<Deck>("/api/deck", { limit });
-export const sendSwipe = (swipe: { listing_id: string; decision: "like" | "reject"; reasons: string[]; deck_position: number; explore_card: boolean }) =>
+export const sendSwipe = (swipe: { listing_id: string; decision: Decision; reasons: string[]; note?: string; deck_position: number; explore_card: boolean }) =>
   call<SwipeResult>("/api/swipe", swipe);
+export const undoSwipe = () => call<UndoResult>("/api/undo", {});
 export const getShortlist = () => call<{ homes: Summary[]; swipes: SwipeStats }>("/api/shortlist");
 export const resetSearch = () => call<State>("/api/reset", {});

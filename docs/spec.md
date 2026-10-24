@@ -191,6 +191,8 @@ One normalised record per source listing.
 }
 ```
 
+*Added by D71:* `decision` can also be `skip` (no verdict: kept out of the like rate and the learning), a skip's reasons are why the user couldn't judge it (`photos_unclear`, `too_little_info`, `other`), and `note` holds the user's words after "Other…".
+
 ### Duplicate cluster
 
 A group of listings that look like the same property, with the evidence (same size, floor and area, similar price and description, matching photo hashes) and the price range across agencies. "Listed 3 times, €185k to €199k" is useful to a buyer in its own right.

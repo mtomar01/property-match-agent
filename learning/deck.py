@@ -55,19 +55,27 @@ def order(unswiped: list[Listing], seed: int) -> list[tuple[Listing, bool]]:
     return out
 
 
+def card(listing: Listing, criteria: Criteria, typical: dict[str, int], position: int, explore: bool = False,
+         skipped: bool = False, today: date | None = None) -> dict:
+    """One swipe card: the listing's summary, its photo link, its two reasons and where it sits in the deck."""
+    item = listing.summary()
+    item.update(photo_url=listing.photo_urls[0] if listing.photo_urls else None,
+                reasons=why_this_one(listing, criteria, typical, today),
+                preference_score=round(score(listing, criteria.preferences), 3),
+                explore_card=explore, skipped_before=skipped, deck_position=position)
+    return item
+
+
 def build(listings: list[Listing], criteria: Criteria, swiped_ids: set[str], start_position: int = 0,
-          limit: int = 10, seed: int = 0, today: date | None = None) -> dict:
-    """The next cards for this user: summaries with their two reasons, explore flags and deck positions."""
+          limit: int = 10, seed: int = 0, today: date | None = None, skipped_ids: list[str] | tuple = ()) -> dict:
+    """The next cards for this user. Homes with a verdict never come back; skipped ones come back last (D71)."""
     matches = ranked_matches(listings, criteria)
-    unswiped = [l for l in matches if l.listing_id not in swiped_ids]
+    skipped = set(skipped_ids)
+    fresh = [l for l in matches if l.listing_id not in swiped_ids and l.listing_id not in skipped]
+    again = [l for l in matches if l.listing_id in skipped and l.listing_id not in swiped_ids]
     typical = typical_price_per_m2(listings)
-    cards = []
-    for i, (listing, explore) in enumerate(order(unswiped, seed)[:limit]):
-        item = listing.summary()
-        item.update(photo_url=listing.photo_urls[0] if listing.photo_urls else None,
-                    reasons=why_this_one(listing, criteria, typical, today),
-                    preference_score=round(score(listing, criteria.preferences), 3),
-                    explore_card=explore, deck_position=start_position + i)
-        cards.append(item)
-    return {"cards": cards, "total_matches": len(matches), "remaining": len(unswiped),
-            "swiped_of_these": len(matches) - len(unswiped)}
+    queue = [(l, explore, False) for l, explore in order(fresh, seed)] + [(l, False, True) for l in again]
+    cards = [card(l, criteria, typical, start_position + i, explore, was_skipped, today)
+             for i, (l, explore, was_skipped) in enumerate(queue[:limit])]
+    return {"cards": cards, "total_matches": len(matches), "remaining": len(fresh) + len(again),
+            "skipped_waiting": len(again), "swiped_of_these": len(matches) - len(fresh) - len(again)}

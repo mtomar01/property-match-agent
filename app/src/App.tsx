@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, Checkin, Deck as DeckData, DeckCard, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe } from "./api";
+import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe, undoSwipe } from "./api";
 import { Bar } from "./Bar";
 import { Chat } from "./Chat";
 import { Deck } from "./Deck";
@@ -17,6 +17,7 @@ export function App() {
   const [queue, setQueue] = useState<DeckCard[]>([]);
   const [checkin, setCheckin] = useState<Checkin | null>(null);
   const [stats, setStats] = useState<SwipeStats | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
   const [shortlist, setShortlist] = useState<Summary[]>([]);
   const [view, setView] = useState<"deck" | "shortlist">("deck");
   const [busy, setBusy] = useState<"chat" | "swipe" | "deck" | null>(null);
@@ -33,6 +34,7 @@ export function App() {
       setDeck(next);
       setQueue(next.cards);
       setStats(next.swipes);
+      setCanUndo(next.can_undo);
       setData(next.data);
     } catch (err) {
       fail(err);
@@ -82,18 +84,41 @@ export function App() {
     }
   };
 
-  const swipe = useCallback(async (home: DeckCard, decision: "like" | "reject", reasons: string[]) => {
+  const swipe = useCallback(async (home: DeckCard, decision: Decision, reasons: string[], note?: string) => {
     setBusy("swipe");
     setError(null);
     try {
-      const result = await sendSwipe({ listing_id: home.listing_id, decision, reasons, deck_position: home.deck_position, explore_card: home.explore_card });
+      const result = await sendSwipe({ listing_id: home.listing_id, decision, reasons, note, deck_position: home.deck_position, explore_card: home.explore_card });
       setStats(result.swipes);
+      setCanUndo(result.can_undo);
       setQueue((q) => q.filter((c) => c.listing_id !== home.listing_id));
-      setDeck((d) => d ? { ...d, remaining: d.remaining - 1, swipes: result.swipes, since_checkin: result.since_checkin } : d);
+      // a skipped home still waits at the end of the deck, so it stays in the count (D71)
+      setDeck((d) => d ? { ...d, remaining: d.remaining - (decision === "skip" ? 0 : 1), swipes: result.swipes, since_checkin: result.since_checkin } : d);
       if (decision === "like") setShortlist((s) => [home, ...s]);
       if (result.checkin) {
         setCheckin(result.checkin);
         setMessages((m) => [...m, { role: "assistant", text: result.checkin!.reply }]);
+      }
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  // The back button: the last decision is taken back and its home returns to the front (D71).
+  const undo = useCallback(async () => {
+    setBusy("swipe");
+    setError(null);
+    try {
+      const result = await undoSwipe();
+      setStats(result.swipes);
+      setCanUndo(result.can_undo);
+      if (result.card) {
+        const back = result.card;
+        setQueue((q) => [back, ...q.filter((c) => c.listing_id !== back.listing_id)]);
+        if (result.undone === "like") setShortlist((s) => s.filter((h) => h.listing_id !== back.listing_id));
+        setDeck((d) => d ? { ...d, remaining: d.remaining + (result.undone === "skip" ? 0 : 1), swipes: result.swipes, since_checkin: result.since_checkin } : d);
       }
     } catch (err) {
       fail(err);
@@ -162,7 +187,7 @@ export function App() {
           </nav>
           <div className="deck-and-chat">
             {view === "deck" ? (
-              <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} onSwipe={swipe} onAnswer={send} />
+              <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} canUndo={canUndo} onSwipe={swipe} onUndo={undo} onAnswer={send} />
             ) : (
               <Shortlist homes={shortlist} />
             )}
