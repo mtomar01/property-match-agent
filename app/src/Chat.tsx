@@ -18,7 +18,10 @@ export function Chat({ messages, busy, error, compact = false, onSend }: Props) 
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => end.current?.scrollIntoView({ block: "end" }), [messages, busy]);
+  // Braces matter: scrollIntoView returns a Promise in recent Chromium, and React would call it as the cleanup.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "end" });
+  }, [messages, busy]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();

@@ -84,7 +84,7 @@ def test_a_page_saved_with_its_title_and_badges_needs_no_card(tmp_path, monkeypa
     from test_spitogatos_cards import CARD
 
     page = {"source_id": "1000000001", "url": CARD["url"], "seen": "2026-10-24", "area_query": "aigaleo",
-            "title": "Διαμέρισμα, 86τ.μ.", "location": "Λιούμη (Αιγάλεω)", "rooms": "2 υ/δ\n1 μπ", "photo_url": None,
+            "title": "Διαμέρισμα, 86τ.μ.", "location": "Λιούμη, Αιγάλεω (Αθήνα - Δυτικά Προάστια)", "rooms": "2 υ/δ\n1 μπ", "photo_url": None,
             "sections": {"Περιγραφή": "Φωτεινό διαμέρισμα.",
                          "Χαρακτηριστικά": "Τιμή\n€185.000\nΕμβαδόν\n86τ.μ.\nΌροφος\n2ος\nΈτος κατασκευής\n1978\n"
                                            "Δημοσίευση αγγελίας\n09/09/2026"},

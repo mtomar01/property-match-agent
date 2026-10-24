@@ -132,12 +132,11 @@ def rooms_of(text: str | None) -> tuple[int | None, int | None]:
 
 
 def neighbourhood_of(location: str | None) -> str | None:
-    """"Λιούμη (Αιγάλεω)" or "Λιούμη, Αιγάλεω" becomes "Λιούμη", as the card parser reads its sub-area line."""
+    """"Λιούμη, Αιγάλεω (Αθήνα - Δυτικά Προάστια)" becomes "Λιούμη"; "Παγκράτι (Αθήνα - Κέντρο)" becomes "Παγκράτι"."""
     if not location:
         return None
-    first = location.split("\n")[0].strip()
-    part = re.sub(r"\s*\(.*\)$", "", first) if "(" in first else first.split(",")[0].strip()
-    return part or None
+    first = re.sub(r"\s*\(.*\)$", "", location.split("\n")[0].strip())
+    return first.split(",")[0].strip() or None
 
 
 def card_from_page(record: dict) -> dict:
@@ -184,7 +183,8 @@ def compare(pages: dict[str, dict], cards: dict[str, dict]) -> dict:
 
 
 def _lines(paths: list[Path]) -> list[dict]:
-    return [json.loads(line) for path in paths for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # split on "\n" only: splitlines() also breaks on U+2028 and U+2029, which descriptions can hold raw (run of 23 October)
+    return [json.loads(line) for path in paths for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
 
 
 def cards_from_raw(paths: list[Path]) -> tuple[dict[str, dict], list[str]]:

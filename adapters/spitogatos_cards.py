@@ -37,6 +37,19 @@ TEMPLATE = {
     "parking": re.compile(r"θέσεις στάθμευσης \(([^)]+)\)"),
 }
 FLOOR_BADGES = {"ΙΣ", "ΥΠ", "ΗΜ/ΥΠ", "ΗΜ"}
+UNITS = {"ος", "υ/δ", "μπ"}
+
+
+def _is_tail_token(line: str) -> bool:
+    """Floor badges, numbers and their units, € prices and uppercase badges: the
+    fixed-shape lines after the description. Anything else is free text."""
+    return (
+        line in FLOOR_BADGES
+        or line.isdigit()
+        or line in UNITS
+        or bool(PRICE.match(line))
+        or (line.isupper() and line.isalpha())
+    )
 
 
 def _number(text: str) -> float:
@@ -60,8 +73,11 @@ def parse_card(card: dict, seen: date) -> Listing:
     if rest and rest[0] == title:
         rest = rest[1:]  # the title is printed twice
     sub_area_line = rest[0] if rest else ""
-    description = rest[1] if len(rest) > 1 else ""
-    tail = rest[2:]
+    # Lower-tier cards have no generated sentence, so the line after the sub-area
+    # can already be the floor or a price: only free text counts as a description.
+    has_description = len(rest) > 1 and not _is_tail_token(rest[1])
+    description = rest[1] if has_description else ""
+    tail = rest[2:] if has_description else rest[1:]
 
     floor_raw = bedrooms = bathrooms = None
     prices: list[int] = []

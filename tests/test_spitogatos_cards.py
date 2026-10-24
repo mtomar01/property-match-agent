@@ -44,6 +44,18 @@ def test_phone_in_description_is_removed():
     assert "6970000000" not in (listing.description or "")
 
 
+def test_card_without_generated_sentence_keeps_its_floor():
+    card = dict(CARD, card_text=(
+        "12\nItem 1 of 12\nΔιαμέρισμα, 86τ.μ.\nΔιαμέρισμα, 86τ.μ.\nΛιούμη (Αιγάλεω)\n\n"
+        "3\nος\n2\nυ/δ\n1\nμπ\n\nΑνανεώθηκε: 20/10/2026\n\n€185.000\n\n€199.000"
+    ))
+    listing = parse_card(card, date(2026, 10, 20))
+    assert (listing.floor.raw, listing.floor.floor_class) == ("3ος", "3")
+    assert (listing.bedrooms, listing.bathrooms, listing.price_eur) == (2, 1, 185000)
+    assert listing.price_history[0].price_eur == 199000
+    assert not listing.description
+
+
 def test_ground_floor_badge_and_new_build():
     card = dict(CARD, card_text="5\nΜονοκατοικία, 1.760τ.μ.\nΜονοκατοικία, 1.760τ.μ.\nΔάσος (Χαϊδάρι)\n\nΚείμενο.\n\nΙΣ\n3\nυ/δ\n\n€1.300.000\n\nΝΕΟΔΜΗΤΟ")
     listing = parse_card(card, date(2026, 10, 20))
