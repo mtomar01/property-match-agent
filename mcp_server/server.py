@@ -164,7 +164,7 @@ def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -
 
 @mcp.tool(
     description=(
-        "Record a swipe: like or reject, with reject reasons (too_dark, too_small, bad_floor, needs_work, too_expensive, "
+        "Record a swipe: like or reject, with reject reasons (too_dark, too_small, bad_floor, needs_work, too_expensive, bad_value, "
         "wrong_area, other). Kept on this machine only. Returns the user's counts and like rate."
     )
 )

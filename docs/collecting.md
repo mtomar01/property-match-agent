@@ -17,7 +17,9 @@ Homes for sale in Egaleo, Peristeri, Chaidari, Pagrati and Kypseli, up to 200 li
 
 Find each area's results URL through the site's own search (homes for sale, the area), note the URL and how it pages, and write both in the run log.
 
-## Step 1: result cards
+## Step 1: result pages, for the links
+
+The result pages are only how the listings are found (D70). The area of every listing is the area searched: on 20 October that matched the card's own area for 270 of 270 listings. The script still saves each card as below, because it costs no extra request and the build uses the cards as a check, never as data.
 
 One record per card, one JSON object per line, in `cards_<slug>_<YYYY-MM-DD>.jsonl`:
 
@@ -31,12 +33,13 @@ One record per card, one JSON object per line, in `cards_<slug>_<YYYY-MM-DD>.jso
 - `photo_url` is the card image's `https://` address if the image has loaded, else null. Never the image itself.
 - Skip promoted mini cards that show only a price and a size. A listing seen twice keeps its first card.
 
-## Step 2: listing pages
+## Step 2: listing pages, for every value
 
-One record per listing, in `pages_<slug>_<YYYY-MM-DD>.jsonl`:
+One record per listing, in `pages_<slug>_<YYYY-MM-DD>.jsonl`. Everything in the dataset comes from here: type and size from the title, bedrooms and bathrooms from the room badges, the neighbourhood from the line under the title, the rest from the table, the features and the description.
 
 ```json
 {"source_id": "1000000001", "url": "https://www.spitogatos.gr/aggelia/1000000001", "seen": "2026-10-23",
+ "area_query": "aigaleo", "title": "Διαμέρισμα, 86τ.μ.", "location": "Λιούμη (Αιγάλεω)", "rooms": "2 υ/δ\n1 μπ",
  "photo_url": "https://...jpg",
  "sections": {"Περιγραφή": "full description", "Χαρακτηριστικά": "Τιμή\n€185.000\nΕμβαδόν\n86τ.μ.\nΌροφος\n2ος\n...\nΈτος κατασκευής\n1978",
               "Εσωτερικό": "Ασανσέρ\nΑποθήκη", "Εξωτερικά χαρακτηριστικά": "Βεράντα\nΓωνιακό", "Κατασκευή": "Ανακαινισμένο", "Κατάλληλο για": "Επενδυτικό"},
@@ -46,6 +49,7 @@ One record per listing, in `pages_<slug>_<YYYY-MM-DD>.jsonl`:
 - **Selectors that worked on 22 October** (check they still do on the first page): the title `h1.property__title`; each section starts at an `h3.property__subheading` whose text is one of the six names above; the four feature lists are `ul.property__features`, and each `li` carries an icon whose `use` `href` ends in `#i-correct` (ticked) or `#i-negative` (crossed out). `adapters/spitogatos_features.page_script()` is the script used then for the feature lists.
 - `sections`: the text under each of the six headings as `innerText` lines. In the four feature lists keep only the ticked items; the crossed-out ones go in `crossed`, each name without a trailing bracket. "Χαρακτηριστικά" is the details table as alternating name and value lines. "Περιγραφή" is the whole description: expand a "read more" first if the text is cut.
 - `photo_url`: the first gallery photo's `https://` address, or null.
+- `title`, `location`, `rooms`: the text of `h1.property__title`, of `.property__address`, and of the bedroom and bathroom badges in `ul.property__info` (one per line, bedroom first). `area_query` is the slug that was searched. `adapters/spitogatos_collect.js` saves all four.
 - **Fetch or open:** first try `fetch()` of a listing URL from a Spitogatos tab and parse it with `DOMParser`. If the six sections are in the fetched HTML, use that for every page (same load as a visit, without images). If they only appear after the page's JavaScript runs, open each page in the tab instead. Either way, one at a time, 4 to 7 seconds apart.
 
 ## Moving the files
@@ -57,20 +61,20 @@ The script keeps its results in the tab and saves them with a Blob download, one
 After the first results page and the first 5 listing pages of the first area, build from just those files and look at the summary:
 
 ```bash
-uv run python -m adapters.page_snapshot --cards 'data/private/collect/cards_aigaleo_*.jsonl' \
-  --pages 'data/private/collect/pages_aigaleo_*.jsonl' --out /tmp/pm_check.jsonl
+uv run python -m adapters.page_snapshot --pages 'data/private/collect/pages_aigaleo_*.jsonl' \
+  --check-cards 'data/private/collect/cards_aigaleo_*.jsonl' --out /tmp/pm_check.jsonl
 ```
 
-Go on only if `refused` is empty, the area is right, and year built, floor and energy class are known on most of the 5. A card the parser can't read shows up in `refused` with the reason.
+Go on only if `refused` is empty, year built, floor, energy class and bedrooms are known on most of the 5, and `check_against_cards` shows the page and the card agreeing on area, type, size, bedrooms and price.
 
 ## Step 3: build the dataset
 
 ```bash
-uv run python -m adapters.page_snapshot --cards 'data/private/collect/cards_*.jsonl' \
-  --pages 'data/private/collect/pages_*.jsonl' --out data/private/snapshot_<YYYY-MM-DD>.jsonl
+uv run python -m adapters.page_snapshot --pages 'data/private/collect/pages_*.jsonl' \
+  --check-cards 'data/private/collect/cards_*.jsonl' --out data/private/snapshot_<YYYY-MM-DD>.jsonl
 ```
 
-Code reads each page's table and features, Haiku 5.5 reads each description (prompt extraction_v3, about a tenth of a cent each, cached), and the two are merged with the rule the extraction eval measured. It needs the Anthropic key in `~/.config/property-match/anthropic.env`. A listing whose page failed keeps its card alone and is counted in `card_only`.
+Code reads each page's table and features, Haiku 5.5 reads each description (prompt extraction_v3, about a tenth of a cent each, cached), and the two are merged with the rule the extraction eval measured. It needs the Anthropic key in `~/.config/property-match/anthropic.env`. A listing whose page failed isn't in the dataset; it shows in `refused` or in the run's failures.
 
 ## Step 4: run the app on it
 

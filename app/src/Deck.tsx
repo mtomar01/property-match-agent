@@ -57,7 +57,6 @@ export function Deck({ deck, card, checkin, busy, onSwipe, onAnswer }: Props) {
           <div className="home-head">
             <strong className="price">{money(card.price_eur)}</strong>
             <span className="muted">{card.price_per_m2 ? `€${card.price_per_m2.toLocaleString("en-GB")}/m²` : ""}</span>
-            {card.explore_card && <span className="pill explore" title="Outside the ranking's top picks, so the deck keeps learning">explore</span>}
           </div>
           <p className="facts">
             {[

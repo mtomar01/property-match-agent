@@ -657,3 +657,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **The recipe is written down** (`docs/collecting.md`): the rules, the two file formats, the selectors that worked on 22 October, a checkpoint after 5 pages, and the build command, so the Mac session follows a fixed method instead of improvising, and every refresh is the same.
 - **The build command now takes raw files** (`adapters/page_snapshot.py --cards --pages`): it reads the cards itself, uses a page's own crossed-out lists and photo link, and keeps a listing whose page failed as a card alone, counted. It rebuilds the 100 pages byte for byte, and builds the 10 Pagrati pages with no model calls.
 
+## D70. Every value from the listing page; result pages only find the listings
+
+- **Your call:** take everything from the listing page and move on. The area can't be wrong, because it's the area that was searched: on 20 October, 270 of 270 listings found by an area's search were in that area by their own card.
+- **What the page gives now:** type and size from its title, bedrooms and bathrooms from its room badges, the neighbourhood from the line under the title, the date the ad was published from the table ("Δημοσίευση αγγελίας"), and everything else as before (D68). The collection script saves those parts since the 23 October run.
+- **The cards stay as a free check:** the result page is visited anyway to find the links, so its cards are saved, and `--check-cards` reports field by field how often the page reading agrees with the card. They're never used as data. A listing whose page failed is left out rather than kept as a card.
+- **Bedrooms by badge order:** if a badge shows only a number, the first is bedrooms and the second bathrooms, the order on the page. The check against the cards is what proves or breaks that assumption; it's the first thing to read on the 50-listing test.
+- **Older pages** (the 100 of 20 October, the 10 Pagrati ones) lack the title and badges, so they still take those from their card. They rebuild byte for byte.
+

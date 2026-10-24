@@ -24,6 +24,7 @@ export const REJECT_REASONS: [string, string][] = [
   ["bad_floor", "Bad floor"],
   ["needs_work", "Needs work"],
   ["too_expensive", "Too expensive"],
+  ["bad_value", "Bad value for money"],
   ["wrong_area", "Wrong area"],
 ];
 

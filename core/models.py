@@ -55,7 +55,7 @@ def set_covered_areas(areas) -> tuple[str, ...]:
     _covered = chosen
     return _covered
 RejectReason = Literal[
-    "too_dark", "too_small", "bad_floor", "needs_work", "too_expensive", "wrong_area", "other"
+    "too_dark", "too_small", "bad_floor", "needs_work", "too_expensive", "bad_value", "wrong_area", "other"
 ]
 
 

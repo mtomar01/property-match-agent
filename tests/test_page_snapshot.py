@@ -75,3 +75,36 @@ def test_the_covered_areas_follow_the_data_and_the_prompt_says_where_they_are():
     with pytest.raises(ValueError):
         models.Criteria(user_id="t", intent="buy", areas=["Kypseli"])  # the default three again
     assert sorted(data_areas(SnapshotAdapter().listings())) == ["Chaidari", "Egaleo", "Peristeri"]
+
+
+def test_a_page_saved_with_its_title_and_badges_needs_no_card(tmp_path, monkeypatch):
+    import json
+
+    from adapters import page_snapshot
+    from test_spitogatos_cards import CARD
+
+    page = {"source_id": "1000000001", "url": CARD["url"], "seen": "2026-10-24", "area_query": "aigaleo",
+            "title": "Διαμέρισμα, 86τ.μ.", "location": "Λιούμη (Αιγάλεω)", "rooms": "2 υ/δ\n1 μπ", "photo_url": None,
+            "sections": {"Περιγραφή": "Φωτεινό διαμέρισμα.",
+                         "Χαρακτηριστικά": "Τιμή\n€185.000\nΕμβαδόν\n86τ.μ.\nΌροφος\n2ος\nΈτος κατασκευής\n1978\n"
+                                           "Δημοσίευση αγγελίας\n09/09/2026"},
+            "crossed": {}}
+    no_card = dict(page, source_id="1000000003", url="https://www.spitogatos.gr/aggelia/1000000003", rooms="3\n2")
+    broken = dict(page, source_id="1000000004", title="Χωρίς τίτλο")
+    pages = tmp_path / "pages_aigaleo.jsonl"
+    pages.write_text("".join(json.dumps(p, ensure_ascii=False) + "\n" for p in (page, no_card, broken)), encoding="utf-8")
+    cards = tmp_path / "cards_aigaleo.jsonl"
+    cards.write_text(json.dumps(CARD, ensure_ascii=False) + "\n", encoding="utf-8")
+    monkeypatch.setattr(page_snapshot, "read_one", lambda *a, **k: {"raw": None, "cached": True})
+    out = tmp_path / "snapshot.jsonl"
+    summary = page_snapshot.build([pages], None, out, check_cards=[cards])
+    assert summary["listings"] == 2 and summary["page_only"] == 2 and summary["card_only"] == 0
+    assert len(summary["refused"]) == 1 and "no title" in summary["refused"][0]
+    rows = {json.loads(l)["listing_id"]: json.loads(l) for l in out.read_text(encoding="utf-8").splitlines()}
+    one = rows["spitogatos:1000000001"]
+    assert (one["area"], one["sub_area"], one["property_type"], one["bedrooms"], one["bathrooms"]) == ("Egaleo", "Λιούμη", "apartment", 2, 1)
+    assert one["first_seen"] == "2026-09-09" and one["year_built"] == 1978 and one["price_eur"] == 185000
+    assert rows["spitogatos:1000000003"]["bedrooms"] == 3  # bare numbers: the bedroom badge comes first
+    check = summary["check_against_cards"]
+    assert check["listings_compared"] == 1
+    assert all(check["by_field"][f]["agree"] == 1 for f in ("area", "sub_area", "property_type", "size_m2", "bedrooms", "price_eur"))

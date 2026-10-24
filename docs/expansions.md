@@ -30,6 +30,12 @@ Ideas for later, kept in one place so they don't get lost. Nothing here is being
 - **Greek on the cards:** the reasons code writes are English templates; a Greek set is a translation table away.
 - **Couples mode** (spec section 4): two people swipe the same deck, mutual likes go to a shared list.
 
+## Listing quality from reject reasons
+
+- **Reject reasons as data about the listing** (Mike, 24 October): a reason such as "needs work", "too dark" or "bad value for money" is a judgement about the home, not only about the user's taste. Collected across users, the reasons on one listing become a quality signal ("3 of 4 people who rejected this said needs work") that can go back into the dataset: shown on the card, used to fill an unknown condition, or weighed in ranking for everyone.
+- **What it needs first:** more than one user, since one person's reasons are taste; a minimum count before a reason counts as a fact about the home; reasons tied to the listing id, never to who gave them; and a check against the listing's own fields (a "needs work" flood on a listing whose page says renovated 2024 is worth a look, not a correction).
+- **Today:** the reasons are already logged per swipe with the listing id (`learning/swipes.py`), so the history is there when this is built.
+
 ## Interview
 
 - **Either/or musts**, such as "a ground floor or a lift": recorded today as a strong preference plus an open question (el_14).
