@@ -82,10 +82,11 @@ GROUND_FLOORS = ["basement", "semi_basement", "ground", "raised_ground"]
 # The cards rewritten to the rules Mike settled on 22 October (D53, D54). Each entry replaces those parts of a
 # card and says why; everything else stays as written. The cards as written are kept beside them.
 FIXES = {
-    "clean_gb_1": ({"hard_limits": {"max_price_eur": 200000, "min_bedrooms": 2}, "budget_around": True,
-                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True), pref("lift", 0.6, equals=True)],
+    "clean_gb_1": ({"hard_limits": {"max_price_eur": 200000, "min_bedrooms": 2, "max_floor_without_lift": 0}, "budget_around": True,
+                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True)],
                     "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
-                   "around 200 is ±10% in code; 70-120 m² wasn't said; bathrooms, parking and lift were; no ceiling or year question"),
+                   "around 200 is ±10% in code; 70-120 m² wasn't said; bathrooms and parking were; no ceiling or year question; "
+                   "'αν είναι σε όροφο, να έχει ασανσέρ' is the stairs limit at 0 since D73 (D77)"),
     "clean_gb_3": ({"user_facts": {"purpose": "Επένδυση, για να το νοικιάσω"},
                     "hard_limits": {"max_price_eur": 180000, "property_types": APT, "max_price_per_m2": 2000},
                     "must_ask": ["intent", "budget", "areas", "confirm_investor_mode", "purpose"]},
@@ -111,11 +112,12 @@ FIXES = {
                       "must_ask": ["budget_ceiling", "purpose"]},
                      "400k only by asking whether savings come on top of the loan (the fact lets the simulated user answer); "
                      "apartment only; 100 m² wasn't said; lowest price from code; high floors start at 4 (Mike, D58)"),
-    "clean_mike_5": ({"hard_limits": {"max_price_eur": 250000},
-                      "preferences": [pref("balcony", 0.9, equals=True), pref("lift", 0.7, equals=True),
+    "clean_mike_5": ({"hard_limits": {"max_price_eur": 250000, "max_floor_without_lift": 1},
+                      "preferences": [pref("balcony", 0.9, equals=True),
                                       pref("metro_walk_min", 0.6, max=10), pref("renovated_year", 0.7, min=2016)],
                       "must_ask": ["areas", "metro_minutes", "confirm_investor_mode"]},
-                     "σπίτι names no type; ideally renovated was said; an investment said unprompted is confirmed first (spec); no costs question"),
+                     "σπίτι names no type; ideally renovated was said; an investment said unprompted is confirmed first (spec); no costs question; "
+                     "'πάνω από 1ο όροφο βεβαιώσου ότι έχει ασανσέρ' is the stairs limit at 1 since D73 (D77)"),
 }
 
 
