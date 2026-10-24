@@ -1,0 +1,494 @@
+{
+ "eval": "learning",
+ "ran_at": "2026-10-24T15:38:22+00:00",
+ "data": "frozen 20 October snapshot: counts and scores only, no listing ids",
+ "summary": {
+  "buyers": 8,
+  "swiped": 160,
+  "repeats": 5,
+  "mean_auc_rules": 0.634,
+  "mean_auc_learned": 0.742,
+  "mean_auc_lift": 0.108,
+  "mean_p10_lift": 0.11,
+  "mean_auc_learned_after_30": 0.706,
+  "mean_auc_lift_after_30": 0.072,
+  "buyers_with_lift": 7,
+  "learnable_buyers_with_lift": 7,
+  "target": "mean AUC lift >= 0.05, precision at 10 no lower",
+  "passed": true
+ },
+ "buyers": [
+  {
+   "buyer": "space",
+   "matches": 348,
+   "swiped": 160,
+   "waiting": 188,
+   "like_share": 0.49,
+   "waiting_likes": 55,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 2,
+     "auc_rules": 0.693,
+     "auc_learned": 0.702,
+     "p10_rules": 0.84,
+     "p10_learned": 0.78
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.693,
+     "auc_learned": 0.701,
+     "p10_rules": 0.84,
+     "p10_learned": 0.58
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.693,
+     "auc_learned": 0.733,
+     "p10_rules": 0.84,
+     "p10_learned": 0.54
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.693,
+     "auc_learned": 0.787,
+     "p10_rules": 0.84,
+     "p10_learned": 0.68
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.693,
+     "auc_learned": 0.811,
+     "p10_rules": 0.84,
+     "p10_learned": 0.84
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.693,
+    "auc_learned": 0.811,
+    "p10_rules": 0.84,
+    "p10_learned": 0.84
+   }
+  },
+  {
+   "buyer": "value",
+   "matches": 348,
+   "swiped": 160,
+   "waiting": 188,
+   "like_share": 0.43,
+   "waiting_likes": 35,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 0,
+     "auc_rules": 0.5,
+     "auc_learned": 0.5,
+     "p10_rules": 0.54,
+     "p10_learned": 0.54
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.766,
+     "p10_rules": 0.54,
+     "p10_learned": 0.64
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.769,
+     "p10_rules": 0.54,
+     "p10_learned": 0.54
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.76,
+     "p10_rules": 0.54,
+     "p10_learned": 0.52
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.743,
+     "p10_rules": 0.54,
+     "p10_learned": 0.5
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.5,
+    "auc_learned": 0.743,
+    "p10_rules": 0.54,
+    "p10_learned": 0.5
+   }
+  },
+  {
+   "buyer": "high_up",
+   "matches": 325,
+   "swiped": 160,
+   "waiting": 165,
+   "like_share": 0.47,
+   "waiting_likes": 63,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 4,
+     "auc_rules": 0.635,
+     "auc_learned": 0.65,
+     "p10_rules": 0.52,
+     "p10_learned": 0.44
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.635,
+     "auc_learned": 0.638,
+     "p10_rules": 0.52,
+     "p10_learned": 0.56
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.635,
+     "auc_learned": 0.606,
+     "p10_rules": 0.52,
+     "p10_learned": 0.44
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.635,
+     "auc_learned": 0.662,
+     "p10_rules": 0.52,
+     "p10_learned": 0.44
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.635,
+     "auc_learned": 0.721,
+     "p10_rules": 0.52,
+     "p10_learned": 0.56
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.635,
+    "auc_learned": 0.721,
+    "p10_rules": 0.52,
+    "p10_learned": 0.56
+   }
+  },
+  {
+   "buyer": "move_in",
+   "matches": 298,
+   "swiped": 160,
+   "waiting": 138,
+   "like_share": 0.64,
+   "waiting_likes": 99,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.601,
+     "p10_rules": 0.7,
+     "p10_learned": 0.94
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.705,
+     "p10_rules": 0.7,
+     "p10_learned": 1.0
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.763,
+     "p10_rules": 0.7,
+     "p10_learned": 1.0
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.76,
+     "p10_rules": 0.7,
+     "p10_learned": 1.0
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.789,
+     "p10_rules": 0.7,
+     "p10_learned": 1.0
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.5,
+    "auc_learned": 0.789,
+    "p10_rules": 0.7,
+    "p10_learned": 1.0
+   }
+  },
+  {
+   "buyer": "family",
+   "matches": 394,
+   "swiped": 160,
+   "waiting": 234,
+   "like_share": 0.64,
+   "waiting_likes": 127,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 0,
+     "auc_rules": 0.5,
+     "auc_learned": 0.5,
+     "p10_rules": 0.6,
+     "p10_learned": 0.6
+    },
+    {
+     "train": 20,
+     "learned_active": 1,
+     "auc_rules": 0.5,
+     "auc_learned": 0.497,
+     "p10_rules": 0.6,
+     "p10_learned": 0.54
+    },
+    {
+     "train": 30,
+     "learned_active": 3,
+     "auc_rules": 0.5,
+     "auc_learned": 0.495,
+     "p10_rules": 0.6,
+     "p10_learned": 0.58
+    },
+    {
+     "train": 60,
+     "learned_active": 4,
+     "auc_rules": 0.5,
+     "auc_learned": 0.509,
+     "p10_rules": 0.6,
+     "p10_learned": 0.52
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.527,
+     "p10_rules": 0.6,
+     "p10_learned": 0.58
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.5,
+    "auc_learned": 0.527,
+    "p10_rules": 0.6,
+    "p10_learned": 0.58
+   }
+  },
+  {
+   "buyer": "neighbourhood",
+   "matches": 348,
+   "swiped": 160,
+   "waiting": 188,
+   "like_share": 0.59,
+   "waiting_likes": 113,
+   "unlearnable": true,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.539,
+     "p10_rules": 0.64,
+     "p10_learned": 0.62
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.522,
+     "p10_rules": 0.64,
+     "p10_learned": 0.64
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.529,
+     "p10_rules": 0.64,
+     "p10_learned": 0.7
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.481,
+     "p10_rules": 0.64,
+     "p10_learned": 0.58
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.5,
+     "auc_learned": 0.474,
+     "p10_rules": 0.64,
+     "p10_learned": 0.56
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.5,
+    "auc_learned": 0.474,
+    "p10_rules": 0.64,
+    "p10_learned": 0.56
+   }
+  },
+  {
+   "buyer": "thrifty",
+   "matches": 282,
+   "swiped": 160,
+   "waiting": 122,
+   "like_share": 0.36,
+   "waiting_likes": 19,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 5,
+     "auc_rules": 0.895,
+     "auc_learned": 0.931,
+     "p10_rules": 0.52,
+     "p10_learned": 0.76
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.895,
+     "auc_learned": 0.932,
+     "p10_rules": 0.52,
+     "p10_learned": 0.78
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.895,
+     "auc_learned": 0.928,
+     "p10_rules": 0.52,
+     "p10_learned": 0.74
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.895,
+     "auc_learned": 0.952,
+     "p10_rules": 0.52,
+     "p10_learned": 0.84
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.895,
+     "auc_learned": 0.957,
+     "p10_rules": 0.52,
+     "p10_learned": 0.86
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.895,
+    "auc_learned": 0.957,
+    "p10_rules": 0.52,
+    "p10_learned": 0.86
+   }
+  },
+  {
+   "buyer": "mixed",
+   "matches": 348,
+   "swiped": 160,
+   "waiting": 188,
+   "like_share": 0.51,
+   "waiting_likes": 81,
+   "unlearnable": false,
+   "curve": [
+    {
+     "train": 10,
+     "learned_active": 5,
+     "auc_rules": 0.851,
+     "auc_learned": 0.881,
+     "p10_rules": 0.62,
+     "p10_learned": 0.92
+    },
+    {
+     "train": 20,
+     "learned_active": 5,
+     "auc_rules": 0.851,
+     "auc_learned": 0.877,
+     "p10_rules": 0.62,
+     "p10_learned": 0.9
+    },
+    {
+     "train": 30,
+     "learned_active": 5,
+     "auc_rules": 0.851,
+     "auc_learned": 0.823,
+     "p10_rules": 0.62,
+     "p10_learned": 0.9
+    },
+    {
+     "train": 60,
+     "learned_active": 5,
+     "auc_rules": 0.851,
+     "auc_learned": 0.894,
+     "p10_rules": 0.62,
+     "p10_learned": 0.96
+    },
+    {
+     "train": 160,
+     "learned_active": 5,
+     "auc_rules": 0.851,
+     "auc_learned": 0.913,
+     "p10_rules": 0.62,
+     "p10_learned": 0.96
+    }
+   ],
+   "final": {
+    "train": 160,
+    "learned_active": 5,
+    "auc_rules": 0.851,
+    "auc_learned": 0.913,
+    "p10_rules": 0.62,
+    "p10_learned": 0.96
+   }
+  }
+ ]
+}

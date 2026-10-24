@@ -47,7 +47,7 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
-from learning import deck, ladder, patterns
+from learning import deck, ladder, learned, patterns
 from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
 
@@ -72,6 +72,7 @@ class App:
                  user_id: str = USER, state_dir: Path = STATE, swipes_dir: Path = SWIPES):
         self.adapter = adapter or SnapshotAdapter()
         self.areas = set_covered_areas(data_areas(self.adapter.listings()))  # what this dataset covers (D69)
+        self._learned: tuple | None = None  # (what it was fitted on, the model)
         self._client = client
         self.cache_dir = cache_dir
         self.user_id = user_id
@@ -180,12 +181,23 @@ class App:
             raise ValueError("rentals aren't supported yet")
         return interview.card(self.state["card"])
 
+    def learner(self, criteria: Criteria) -> learned.Learner | None:
+        """The learned ranking for this search, refitted only when the verdicts or the card change (D76)."""
+        verdicts = self.swipes.verdicts()
+        key = (len(verdicts), verdicts[-1].ts.isoformat() if verdicts else None, criteria.model_dump_json())
+        if self._learned and self._learned[0] == key:
+            return self._learned[1]
+        listings = self.adapter.listings()
+        model = learned.Learner.fit(verdicts, {l.listing_id: l for l in listings}, criteria, AreaStats.build(listings))
+        self._learned = (key, model)
+        return model
+
     def deck(self, limit: int = DECK_LIMIT) -> dict:
         criteria = self.criteria()
         everything = self.swipes.load()
         built = deck.build(self.adapter.listings(), criteria, self.swipes.swiped_ids(), start_position=len(everything),
                            limit=max(1, min(int(limit), MAX_LIMIT)), seed=len(self.swipes.verdicts()) // deck.EXPLORE_EVERY,
-                           skipped_ids=self.swipes.skipped_ids())
+                           skipped_ids=self.swipes.skipped_ids(), learner=self.learner(criteria))
         if built["total_matches"] < interview.THIN:  # thin: code's ways to widen, for the user to ask the assistant (D63)
             built["if_eased"] = interview.eased(criteria, self.adapter.listings())
         return {**built, "searched_as": search_card(self.state["card"])["hard_limits"], "swipes": self.swipes.stats(),

@@ -286,3 +286,15 @@ def test_area_stats_are_counted_by_code(api):
     assert status == 200 and body["data"] == "synthetic listings"
     egaleo = body["areas"]["Egaleo"]
     assert egaleo["homes"] > 5 and egaleo["typical_per_m2"] > 0 and egaleo["median_days_on_market"] is not None
+
+
+def test_the_deck_starts_learning_after_three_likes_and_three_rejects(api):
+    ask, _, _ = api
+    ask("/api/chat", {"text": "Egaleo up to 250k"})
+    _, first = ask("/api/deck", {"limit": 6})
+    assert first["learning"] is None
+    for i, c in enumerate(first["cards"]):
+        ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if i % 2 else "reject", "deck_position": i})
+    _, after = ask("/api/deck", {"limit": 3})
+    assert after["learning"]["verdicts"] == 6 and after["learning"]["share"] == 0.2 and after["learning"]["leans"] == []
+    assert all(c["learned_score"] is not None for c in after["cards"])

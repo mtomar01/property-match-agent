@@ -114,6 +114,7 @@ export interface DeckCard extends Summary {
   reasons: Reason[];
   market: MarketLine[];
   preference_score: number;
+  learned_score: number | null;
   explore_card: boolean;
   skipped_before: boolean;
   deck_position: number;
@@ -125,8 +126,16 @@ export interface Widening {
   matches: number;
 }
 
+// What the learned ranking has picked up (D76): how much of the order the swipes decide, and its clearest leanings.
+export interface Learning {
+  verdicts: number;
+  share: number;
+  leans: { feature: string; words: string; direction: "for" | "against"; weight: number }[];
+}
+
 export interface Deck {
   cards: DeckCard[];
+  learning: Learning | null;
   total_matches: number;
   remaining: number;
   swiped_of_these: number;

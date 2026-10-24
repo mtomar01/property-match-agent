@@ -89,7 +89,7 @@ class SwipeStore:
         return moved
 
     def archived(self) -> list[Swipe]:
-        """Swipes from earlier searches, oldest first, for the learned ranking (D76)."""
+        """Swipes from earlier searches, oldest first, for the learning eval (D76). The deck learns from this search only."""
         folder = self.path.parent / "archive"
         out: list[Swipe] = []
         for path in sorted(folder.glob(f"{self.user_id}_*.jsonl")) if folder.exists() else []:

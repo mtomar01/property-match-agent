@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Checkin, Deck as DeckData, DeckCard, Decision, Widening } from "./api";
+import { Checkin, Deck as DeckData, DeckCard, Decision, Learning, Widening } from "./api";
 import { CANT_JUDGE_REASONS, REJECT_REASONS, floorText, money, wideningMessage, wideningText } from "./labels";
 
 interface Props {
@@ -124,9 +124,27 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
             <button type="button" className="link small" disabled={busy} onClick={() => setAsking("skip")}>Can't judge this one?</button>
             <span className="muted small">{deck.remaining} left · {deck.swipes.swipes} swiped</span>
           </div>
+          <LearningLine learning={deck.learning} />
         </>
       )}
     </section>
+  );
+}
+
+// How the order is decided (D76): the chat's wishes at first, then more and more the user's own likes and rejects.
+function LearningLine({ learning }: { learning: Learning | null }) {
+  if (!learning) {
+    return <p className="muted small learning">Order: your wishes from the chat. Your swipes start counting after 3 likes and 3 rejects.</p>;
+  }
+  const words = (direction: "for" | "against") =>
+    learning.leans.filter((l) => l.direction === direction).map((l) => l.words).join(", ");
+  const liked = words("for"), disliked = words("against");
+  return (
+    <p className="muted small learning">
+      Order: {Math.round(learning.share * 100)}% from your {learning.verdicts} likes and rejects
+      {liked && <> · counting for: {liked}</>}
+      {disliked && <> · against: {disliked}</>}
+    </p>
   );
 }
 

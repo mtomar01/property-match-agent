@@ -34,7 +34,7 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, Intent, Preference, set_covered_areas
 from core.search import MAX_LIMIT, search
-from learning import deck, patterns
+from learning import deck, learned, patterns
 from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
 
@@ -153,15 +153,19 @@ def _criteria(criteria: SearchCriteria) -> Criteria:
 @mcp.tool(
     description=(
         "The next swipe cards for a user: the listings that pass the card, best first, each with two reasons from its "
-        "fields, one explore card in five, and cards already swiped left out. Hard limits are applied in code."
+        "fields and its market lines, one explore card in five, and cards already swiped left out. Hard limits are "
+        "applied in code. Once the user has 3 likes and 3 rejects, the order blends in what their swipes teach; "
+        "'learning' says how much and what it leans towards."
     )
 )
 def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -> dict:
     store = SwipeStore(user_id)
     swiped = store.load()
-    return deck.build(adapter().listings(), _criteria(criteria), store.swiped_ids(), start_position=len(swiped),
+    listings, card = adapter().listings(), _criteria(criteria)
+    learner = learned.Learner.fit(store.verdicts(), {l.listing_id: l for l in listings}, card, AreaStats.build(listings))
+    return deck.build(listings, card, store.swiped_ids(), start_position=len(swiped),
                       limit=max(1, min(limit, MAX_LIMIT)), seed=len(store.verdicts()) // deck.EXPLORE_EVERY,
-                      skipped_ids=store.skipped_ids())
+                      skipped_ids=store.skipped_ids(), learner=learner)
 
 
 @mcp.tool(
