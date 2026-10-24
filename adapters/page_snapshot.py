@@ -150,12 +150,13 @@ def card_from_page(record: dict) -> dict:
     if area is None:
         raise ValueError(f"the searched area {record.get('area_query')!r} isn't a known area")
     bedrooms, bathrooms = rooms_of(record.get("rooms"))
-    published = PUBLISHED.search(record["sections"].get("Χαρακτηριστικά", ""))
-    first_seen = datetime.strptime(published.group(1), "%d/%m/%Y").date() if published else seen
+    stated = PUBLISHED.search(record["sections"].get("Χαρακτηριστικά", ""))
+    published = datetime.strptime(stated.group(1), "%d/%m/%Y").date() if stated else None
     from adapters.spitogatos_details import parse_details
     table = parse_details(record).fields
     return {"listing_id": f"spitogatos:{record['source_id']}", "source": "spitogatos", "url": record["url"],
-            "listing_type": "sale", "first_seen": min(first_seen, seen).isoformat(), "last_seen": seen.isoformat(),
+            "listing_type": "sale", "first_seen": seen.isoformat(), "last_seen": seen.isoformat(),
+            "published": min(published, seen).isoformat() if published else None,
             "price_eur": table.get("price_eur"), "size_m2": table.get("size_m2") or spitogatos_cards._number(match.group("size")),
             "property_type": greek.normalise_property_type(match.group("type")), "bedrooms": bedrooms, "bathrooms": bathrooms,
             "area": area, "sub_area": neighbourhood_of(record.get("location")), "title": title_line,

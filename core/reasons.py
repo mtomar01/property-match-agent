@@ -78,16 +78,8 @@ def _preference_reason(listing: Listing, preference: Preference) -> dict | None:
 
 
 def _fact_reasons(listing: Listing, typical: dict[str, int], today: date) -> list[dict]:
+    """Notable facts about the home itself. Price per m² and time on market are market lines now (D74)."""
     facts = []
-    per_m2 = typical.get(listing.area or "")
-    if per_m2 and listing.price_per_m2 and listing.price_per_m2 <= per_m2 * (1 - TYPICAL_MARGIN):
-        share = round(100 * (1 - listing.price_per_m2 / per_m2))
-        facts.append({"text": f"€{listing.price_per_m2:,}/m², {share}% under the typical €{per_m2:,} in {listing.area}",
-                      "feature": "price_per_m2", "value": listing.price_per_m2, "typical": per_m2})
-    previous = next((p.price_eur for p in reversed(listing.price_history) if p.price_eur != listing.price_eur), None)
-    if previous and listing.price_eur and previous > listing.price_eur:
-        facts.append({"text": f"Price cut from €{previous:,} to €{listing.price_eur:,}", "feature": "price_eur",
-                      "value": listing.price_eur, "previous": previous})
     if listing.renovated_year and listing.renovated_year >= today.year - RECENT_YEARS:
         facts.append({"text": f"Renovated in {listing.renovated_year}", "feature": "renovated_year", "value": listing.renovated_year})
     elif listing.year_built and listing.year_built >= today.year - RECENT_YEARS:

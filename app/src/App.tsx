@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe, undoSwipe } from "./api";
+import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe, undoSwipe, answerCheckin } from "./api";
 import { Bar } from "./Bar";
 import { Chat } from "./Chat";
 import { Deck } from "./Deck";
@@ -103,6 +103,24 @@ export function App() {
         setCheckin(result.checkin);
         setMessages((m) => [...m, { role: "assistant", text: result.checkin!.reply }]);
       }
+      // a new search starts the like rate from zero, so the header follows the server's counts
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  // A tap on a ladder question (D75): "no" to a tapped reason, or a pulse answer. A follow-up shows in the chat.
+  const tap = useCallback(async (answer: string) => {
+    setBusy("swipe");
+    setError(null);
+    try {
+      const result = await answerCheckin(answer);
+      setStats(result.swipes);
+      setCheckin(null);
+      if (result.follow_up) setMessages((m) => [...m, { role: "assistant", text: result.follow_up! }]);
+      if (result.focus_chat) setTimeout(() => document.getElementById("message")?.focus(), 50);
     } catch (err) {
       fail(err);
     } finally {
@@ -191,7 +209,7 @@ export function App() {
           </nav>
           <div className="deck-and-chat">
             {view === "deck" ? (
-              <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} canUndo={canUndo} onSwipe={swipe} onUndo={undo} onAnswer={send} />
+              <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} canUndo={canUndo} onSwipe={swipe} onUndo={undo} onAnswer={send} onTap={tap} />
             ) : (
               <Shortlist homes={shortlist} />
             )}

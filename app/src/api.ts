@@ -104,9 +104,15 @@ export interface Summary {
   synthetic: boolean;
 }
 
+export interface MarketLine {
+  text: string;
+  feature: "price_per_m2" | "days_on_market";
+}
+
 export interface DeckCard extends Summary {
   photo_url: string | null;
   reasons: Reason[];
+  market: MarketLine[];
   preference_score: number;
   explore_card: boolean;
   skipped_before: boolean;
@@ -133,9 +139,19 @@ export interface Deck {
   can_undo: boolean;
 }
 
-// The assistant's check-in after a run of swipes: a pattern code found, put into words (D66).
+// The check-in after 10 likes or rejects (D66, D75): a pattern the assistant words, a reason the user tapped,
+// or a three-tap pulse. The last two are fixed text and answered with a tap.
 export interface Checkin extends ChatReply {
-  suggestion: { key: string; feature: string; kind: "limit" | "preference" };
+  suggestion: { key: string; feature: string | null; kind: string };
+  ladder?: "pattern" | "reason" | "pulse";
+  options?: Record<string, string> | null;
+  yes_message?: string | null;
+}
+
+export interface CheckinAnswer {
+  follow_up: string | null;
+  focus_chat: boolean;
+  swipes: SwipeStats;
 }
 
 export interface SwipeResult {
@@ -172,5 +188,6 @@ export const getDeck = (limit = 10) => call<Deck>("/api/deck", { limit });
 export const sendSwipe = (swipe: { listing_id: string; decision: Decision; reasons: string[]; note?: string; deck_position: number; explore_card: boolean }) =>
   call<SwipeResult>("/api/swipe", swipe);
 export const undoSwipe = () => call<UndoResult>("/api/undo", {});
+export const answerCheckin = (answer: string) => call<CheckinAnswer>("/api/checkin", { answer });
 export const getShortlist = () => call<{ homes: Summary[]; swipes: SwipeStats }>("/api/shortlist");
 export const resetSearch = () => call<State>("/api/reset", {});

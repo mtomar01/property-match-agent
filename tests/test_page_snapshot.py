@@ -103,7 +103,7 @@ def test_a_page_saved_with_its_title_and_badges_needs_no_card(tmp_path, monkeypa
     rows = {json.loads(l)["listing_id"]: json.loads(l) for l in out.read_text(encoding="utf-8").splitlines()}
     one = rows["spitogatos:1000000001"]
     assert (one["area"], one["sub_area"], one["property_type"], one["bedrooms"], one["bathrooms"]) == ("Egaleo", "Λιούμη", "apartment", 2, 1)
-    assert one["first_seen"] == "2026-09-09" and one["year_built"] == 1978 and one["price_eur"] == 185000
+    assert one["published"] == "2026-09-09" and one["first_seen"] == one["last_seen"] and one["year_built"] == 1978 and one["price_eur"] == 185000
     assert rows["spitogatos:1000000003"]["bedrooms"] == 3  # bare numbers: the bedroom badge comes first
     check = summary["check_against_cards"]
     assert check["listings_compared"] == 1

@@ -257,7 +257,7 @@ def _describe(p: Property, rng: random.Random, style: str) -> str:
 
 
 def _to_listing(p: Property, source: str, number: int, rng: random.Random, *, price: int | None, size: float, text: str,
-                hashes: list[str], first_seen: date) -> Listing:
+                hashes: list[str], first_seen: date, published: date | None = None) -> Listing:
     listing_id = f"{source}:SYN{number:04d}"
     title_type = {"apartment": "Διαμέρισμα", "studio": "Γκαρσονιέρα", "maisonette": "Μεζονέτα", "detached_house": "Μονοκατοικία"}[p.property_type]
     return Listing(
@@ -268,6 +268,7 @@ def _to_listing(p: Property, source: str, number: int, rng: random.Random, *, pr
         synthetic=True,
         first_seen=first_seen,
         last_seen=TODAY,
+        published=published,
         price_eur=price,
         size_m2=size,
         property_type=p.property_type,
@@ -295,6 +296,8 @@ def _to_listing(p: Property, source: str, number: int, rng: random.Random, *, pr
 
 def generate(seed: int = SEED) -> tuple[list[Listing], list[DuplicateCluster]]:
     rng = random.Random(seed)
+    # Published dates come from their own generator, so adding them (D74) left every other field as it was.
+    dates = random.Random(seed + 1)
     props = _base_properties(rng)
     sources = ["spitogatos", "xe", "spiti24"]
     listings: list[Listing] = []
@@ -303,6 +306,8 @@ def generate(seed: int = SEED) -> tuple[list[Listing], list[DuplicateCluster]]:
 
     def add(p: Property, source: str, **kw) -> None:
         nonlocal number
+        if dates.random() < 0.85:  # most real pages state when the ad went up; some don't
+            kw["published"] = kw["first_seen"] - timedelta(days=min(900, int(dates.expovariate(1 / 120))))
         listing = _to_listing(p, source, number, rng, **kw)
         number += 1
         listings.append(listing)

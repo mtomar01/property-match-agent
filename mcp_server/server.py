@@ -35,6 +35,7 @@ from core.card_rules import search_card
 from core.models import Criteria, HardLimits, Intent, Preference, set_covered_areas
 from core.search import MAX_LIMIT, search
 from learning import deck, patterns
+from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
 
 CACHE = Path(__file__).resolve().parents[1] / "data" / "private" / "cache"
@@ -203,6 +204,17 @@ def criteria_interview() -> str:
         "and after every 10 call swipe_patterns: put its top pattern to the user as a check-in and change the card only "
         "on their yes. search_listings gives the same homes as a table."
     )
+
+
+@mcp.tool(
+    description=(
+        "What's typical in each covered area, counted in code from the listings: homes for sale, the median price per "
+        "m², the median days on the market, and the neighbourhoods with at least 10 homes. Quote these numbers as they "
+        "are; never estimate a typical price yourself."
+    )
+)
+def area_stats() -> dict:
+    return {"areas": AreaStats.build(adapter().listings()).summary()}
 
 
 @mcp.tool(description="Get one listing in full by its listing_id, for example spitogatos:SYN0001.")

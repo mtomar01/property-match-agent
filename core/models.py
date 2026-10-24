@@ -124,8 +124,9 @@ class Listing(_Strict):
     listing_type: ListingType = "sale"
     synthetic: bool = False
 
-    first_seen: date
+    first_seen: date  # the day we first saw it
     last_seen: date
+    published: date | None = None  # the date the portal says the ad went up, when the page states it (D74)
 
     price_eur: int | None = Field(default=None, gt=0, description="None means price on request")
     price_history: list[PricePoint] = Field(default_factory=list)
@@ -218,6 +219,7 @@ class Listing(_Strict):
             "energy_class": self.energy_class.value,
             "property_type": self.property_type,
             "first_seen": self.first_seen.isoformat(),
+            "published": self.published.isoformat() if self.published else None,
             "previous_price_eur": next((p.price_eur for p in reversed(self.price_history)
                                         if p.price_eur != self.price_eur), None),  # the shortlist shows price changes (spec)
             "lift": self.lift,  # the no-stairs limit is checked on these two (D73)

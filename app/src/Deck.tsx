@@ -11,11 +11,12 @@ interface Props {
   onSwipe: (card: DeckCard, decision: Decision, reasons: string[], note?: string) => void;
   onUndo: () => void;
   onAnswer: (text: string) => void;
+  onTap: (answer: string) => void;
 }
 
 // One home at a time. Right to like, left to reject with a quick reason; in the middle, back and skip;
 // below them "Can't judge" for a listing that doesn't let you decide (spec section 4, D71).
-export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAnswer }: Props) {
+export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAnswer, onTap }: Props) {
   const [asking, setAsking] = useState<null | "reject" | "skip">(null);
 
   useEffect(() => setAsking(null), [card?.listing_id]);
@@ -39,7 +40,7 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
 
   if (!deck) return <section className="panel deck"><p className="muted">Loading the homes…</p></section>;
 
-  if (checkin) return <CheckinCard checkin={checkin} busy={busy} onAnswer={onAnswer} />;
+  if (checkin) return <CheckinCard checkin={checkin} busy={busy} onAnswer={onAnswer} onTap={onTap} />;
 
   if (!card) {
     return (
@@ -80,6 +81,11 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
           <ul className="reasons">
             {card.reasons.map((r) => <li key={r.feature}>{r.text}</li>)}
           </ul>
+          {card.market.length > 0 && (
+            <ul className="market" aria-label="The market">
+              {card.market.map((m) => <li key={m.feature} className={m.feature}>{m.text}</li>)}
+            </ul>
+          )}
           <a className="small" href={card.url} target="_blank" rel="noreferrer noopener">
             {card.synthetic ? "Synthetic listing (no real page)" : `Open on ${card.source} ↗`}
           </a>
@@ -171,16 +177,43 @@ function Photo({ url, card }: { url: string | null; card: DeckCard }) {
   );
 }
 
-// After a run of swipes: what the assistant noticed, as a card in the deck. The answer goes through the chat (D66).
-function CheckinCard({ checkin, busy, onAnswer }: { checkin: Checkin; busy: boolean; onAnswer: (text: string) => void }) {
+// After 10 likes or rejects, one question as a card in the deck (D66, D75). A pattern is answered in the chat; a
+// tapped reason's "yes" goes through the chat too, so the assistant makes the change; "no" and the pulse are taps.
+function CheckinCard({ checkin, busy, onAnswer, onTap }: {
+  checkin: Checkin; busy: boolean; onAnswer: (text: string) => void; onTap: (answer: string) => void;
+}) {
   const [text, setText] = useState("");
+  const step = checkin.ladder ?? "pattern";
+  const options = checkin.options ?? {};
+  if (step === "pulse") {
+    return (
+      <section className="panel deck checkin" aria-label="A quick check">
+        <span className="eyebrow">Quick check</span>
+        <p className="checkin-text">{checkin.reply}</p>
+        <div className="chips pulse">
+          {Object.entries(options).map(([code, label]) => (
+            <button key={code} type="button" className="chip" disabled={busy} onClick={() => onTap(code)}>{label}</button>
+          ))}
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="panel deck checkin" aria-label="What the assistant noticed">
       <span className="eyebrow">What I've noticed</span>
       <p className="checkin-text">{checkin.reply}</p>
       <div className="chips">
-        <button type="button" className="chip on" disabled={busy} onClick={() => onAnswer("Yes")}>Yes, do that</button>
-        <button type="button" className="chip" disabled={busy} onClick={() => onAnswer("No, keep it as it is")}>No, keep it</button>
+        {step === "reason" ? (
+          <>
+            <button type="button" className="chip on" disabled={busy} onClick={() => onAnswer(checkin.yes_message ?? "Yes")}>{options.yes ?? "Yes"}</button>
+            <button type="button" className="chip" disabled={busy} onClick={() => onTap("no")}>{options.no ?? "No"}</button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="chip on" disabled={busy} onClick={() => onAnswer("Yes")}>Yes, do that</button>
+            <button type="button" className="chip" disabled={busy} onClick={() => onAnswer("No, keep it as it is")}>No, keep it</button>
+          </>
+        )}
       </div>
       <form className="composer" onSubmit={(e) => { e.preventDefault(); if (text.trim()) { onAnswer(text.trim()); setText(""); } }}>
         <label htmlFor="checkin-answer" className="sr-only">Your answer</label>

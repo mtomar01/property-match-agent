@@ -338,6 +338,9 @@ def taken(after: dict, patch: dict) -> bool:
             return False
     if "areas" in patch and set(after.get("areas") or []) - set(patch["areas"]):
         return False
+    if "remove_area" in patch:  # the ladder's "leave Peristeri out" (D75)
+        areas = after.get("areas") or []
+        return bool(areas) and patch["remove_area"] not in areas
     for preference in patch.get("preferences") or []:
         if not any(p.get("feature") == preference["feature"] for p in after.get("preferences") or []):
             return False

@@ -52,6 +52,52 @@ class SwipeStore:
         self.load().append(swipe)
         return swipe
 
+    @property
+    def pulse_path(self) -> Path:
+        return self.path.with_name(f"{self.user_id}.pulse.jsonl")
+
+    def record_pulse(self, answer: str, at: int) -> None:
+        """A three-tap pulse answer (D75): a second measure beside the like rate, counts only."""
+        if answer not in ("spot_on", "mixed", "not_for_me"):
+            raise ValueError(f"{answer!r} isn't a pulse answer")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.pulse_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"answer": answer, "after_verdicts": at, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds")}) + "\n")
+
+    def pulse(self) -> dict[str, int]:
+        if not self.pulse_path.exists():
+            return {}
+        rows = [json.loads(l) for l in self.pulse_path.read_text(encoding="utf-8").split("\n") if l.strip()]
+        return dict(Counter(r["answer"] for r in rows))
+
+    def archive(self) -> Path | None:
+        """A new search starts clean (Mike, D75): the log moves to archive/ rather than being deleted, so the
+        learned ranking can still read what was said before (too dark, needs work) across searches."""
+        if not self.path.exists() and not self.pulse_path.exists():
+            self._swipes = []
+            return None
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        folder = self.path.parent / "archive"
+        folder.mkdir(parents=True, exist_ok=True)
+        moved = None
+        if self.path.exists():
+            moved = folder / f"{self.user_id}_{stamp}.jsonl"
+            self.path.rename(moved)
+        if self.pulse_path.exists():
+            self.pulse_path.rename(folder / f"{self.user_id}_{stamp}.pulse.jsonl")
+        self._swipes = []
+        return moved
+
+    def archived(self) -> list[Swipe]:
+        """Swipes from earlier searches, oldest first, for the learned ranking (D76)."""
+        folder = self.path.parent / "archive"
+        out: list[Swipe] = []
+        for path in sorted(folder.glob(f"{self.user_id}_*.jsonl")) if folder.exists() else []:
+            if path.name.endswith(".pulse.jsonl"):
+                continue
+            out += [Swipe.model_validate_json(l) for l in path.read_text(encoding="utf-8").split("\n") if l.strip()]
+        return out
+
     def undo(self) -> Swipe | None:
         """Take back the last decision (the back button, D71): it leaves the log as if it never happened."""
         swipes = self.load()
@@ -109,6 +155,7 @@ class SwipeStore:
             "skips": len(skips), "cant_judge": sum(1 for s in skips if s.reasons),
             "cant_judge_reasons": dict(Counter(r for s in skips for r in s.reasons).most_common()),
             "notes": sum(1 for s in everything if s.note),
+            "pulse": self.pulse(),
             "days": len(days), "first": min(days) if days else None, "last": max(days) if days else None,
         }
 

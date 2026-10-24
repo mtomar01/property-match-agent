@@ -98,6 +98,49 @@ def backed(reason: dict, home: dict, full: dict, typical: dict[str, int], criter
     return f"unknown reason feature {feature}"
 
 
+def _band_beds(n):
+    return None if n is None else "1" if n <= 1 else "2" if n == 2 else "3+"
+
+
+def _band_age(y):
+    return None if y is None else "old" if y < 1980 else "mid" if y < 2005 else "new"
+
+
+def market_backed(line: dict, home: dict, sales: list[dict], today: date) -> str | None:
+    """A market line re-checked from the summaries, with the groups and medians written a second time here."""
+    if line["feature"] == "price_per_m2":
+        if home["price_per_m2"] != line["value"] or str(f"{line['value']:,}") not in line["text"]:
+            return "price per m² isn't the listing's"
+        level = line["level"]
+        if level == "similar":
+            group = [s["price_per_m2"] for s in sales if s["area"] == home["area"] and s["price_per_m2"]
+                     and _band_beds(s["bedrooms"]) == _band_beds(home["bedrooms"]) and _band_age(s["year_built"]) == _band_age(home["year_built"])]
+            if len(group) < 8:
+                return f"similar group of {len(group)} is under the minimum of 8"
+        elif level == "neighbourhood":
+            group = [s["price_per_m2"] for s in sales if s["area"] == home["area"] and s["sub_area"] == home["sub_area"] and s["price_per_m2"]]
+        else:
+            group = [s["price_per_m2"] for s in sales if s["area"] == home["area"] and s["price_per_m2"]]
+        typical = round(statistics.median(group)) if group else None
+        if typical != line["typical"] or len(group) != line["homes"]:
+            return f"typical {line['typical']} from {line['homes']} homes; recounted {typical} from {len(group)}"
+        share = round(abs(home["price_per_m2"] - typical) / typical * 100)
+        if share >= 5 and (f"{share}%" not in line["text"] or (("under" in line["text"]) != (home["price_per_m2"] < typical))):
+            return f"the {share}% {'under' if home['price_per_m2'] < typical else 'over'} isn't what the line says"
+        return None
+    if line["feature"] == "days_on_market":
+        published = home.get("published")
+        if not published:
+            return "a time on market with no published date"
+        days = (date.fromisoformat(home["last_seen"]) - date.fromisoformat(published)).days
+        if days != line["value"]:
+            return f"{line['value']} days on market; recounted {days}"
+        if "cut" in line["text"] and not (home.get("previous_price_eur") and home["previous_price_eur"] > (home["price_eur"] or 0)):
+            return "a price cut the listing doesn't show"
+        return None
+    return f"unknown market line {line['feature']}"
+
+
 def typical_per_m2(listings: list[dict]) -> dict[str, int]:
     by_area: dict[str, list[int]] = {}
     for l in listings:
@@ -110,7 +153,10 @@ def run(snapshot: str | None = None, write: bool = True) -> dict:
     adapter = SnapshotAdapter(snapshot) if snapshot else SnapshotAdapter()
     listings = adapter.listings()
     full = {l.listing_id: l.model_dump(mode="json") for l in listings}
-    summaries = [l.summary() for l in listings]
+    summaries = [dict(l.summary(), published=full[l.listing_id].get("published"), last_seen=full[l.listing_id]["last_seen"])
+                 for l in listings]
+    sales = [s for s in summaries if s["listing_type"] == "sale"]
+    market_checked = 0
     typical = typical_per_m2(summaries)
     sets = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
     cards, checked, failures = 0, 0, []
@@ -132,10 +178,16 @@ def run(snapshot: str | None = None, write: bool = True) -> dict:
                 why = backed(reason, home, full[card["listing_id"]], typical, raw)
                 if why:
                     failures.append({"set": entry["id"], "listing": card["listing_id"], "reason": reason["text"], "why": why})
+            for line in card.get("market", []):
+                checked += 1
+                market_checked += 1
+                why = market_backed(line, home, sales, TODAY)
+                if why:
+                    failures.append({"set": entry["id"], "listing": card["listing_id"], "reason": line["text"], "why": why})
     share = round((checked - len([f for f in failures if f["reason"]])) / checked, 4) if checked else 0.0
-    summary = {"cards": cards, "reasons": checked, "backed": share, "target": TARGET, "passed": share >= TARGET and not failures,
-               "failures": failures}
-    print(f"Explanation eval: {cards} cards, {checked} reasons, {share:.1%} backed by fields (target {TARGET:.0%})"
+    summary = {"cards": cards, "reasons": checked, "market_lines": market_checked, "backed": share, "target": TARGET,
+               "passed": share >= TARGET and not failures, "failures": failures}
+    print(f"Explanation eval: {cards} cards, {checked} reasons and market lines ({market_checked} market), {share:.1%} backed by fields (target {TARGET:.0%})"
           + ("" if not failures else f"\n  failures: {json.dumps(failures, ensure_ascii=False)}"))
     if write:
         RESULTS.mkdir(parents=True, exist_ok=True)

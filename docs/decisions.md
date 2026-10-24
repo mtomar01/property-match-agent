@@ -693,3 +693,23 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Checked like every limit:** filtered in code, written a second time in the independent checker, three new search safety cases (23 in all, 0 breaks), unit tests for each edge, eight new interview chats (`evals/datasets/interview_chats_v3.jsonl`), and easing options for each.
 - **Prompt v8, still unrun,** carries the rules, so one eval run measures everything.
 
+## D74. Two market lines on every card: price per m² against similar homes, and time on the market
+
+- **Your call (brainstorm, 24 October):** you liked "€1,615/m², 20% under the typical €2,028 in Kypseli" and picked two more facts of that kind for v3: the price per m² against homes like this one, and how long it has been on the market.
+- **"Similar" is the most specific group with enough homes behind it.** First the same area, bedroom band (studio or 1, 2, 3 or more) and age band (before 1980, 1980 to 2004, 2005 on), if at least 8 homes share them; else the neighbourhood, if it has at least 10; else the whole area, if it has at least 5; else no line. The line names the group and code keeps how many homes it rests on, so a figure from 8 homes is never dressed up as one from 200. Medians, not means, so one penthouse doesn't move everyone's typical price. Under 5% either way reads "about the typical".
+- **Time on the market comes from the date the ad says it went up** ("Δημοσίευση αγγελίας" on the listing page), now its own field, `published`. `first_seen` goes back to meaning the day we first saw the listing. No date, no line: nothing is guessed. A price cut is added to the same line ("On the market for 6 months, price cut from €155,000"), since the two together are what a buyer reads as room to negotiate.
+- **These moved out of the "why this one" reasons**, which now say only how the home meets the card. Market facts are a separate list under them, with their own icons.
+- **Checked like the reasons:** the explanation eval recomputes every group, median and day count from the listing summaries with its own code. 50 cards, 194 reasons and market lines (94 of them market lines), 100% backed.
+- **Area stats for everyone else:** `/api/areas` and the MCP tool `area_stats` give each area's homes for sale, typical €/m², median days on the market and the neighbourhoods with at least 10 homes. The assistant quotes them; it never estimates a typical price itself.
+- **Synthetic data:** the public listings gained published dates from a separate random generator, so no other field changed (checked: 60 rows, 0 other changes; search safety still 23 of 23 with 0 breaks).
+
+## D75. The check-in ladder, and New search starts from scratch
+
+- **Your call (brainstorm):** check-ins felt dry and silent. Every 10 likes or rejects now says something, from the first rung that applies:
+  1. **A pattern** code found (D66): the assistant words it with the counts, as before.
+  2. **A reason you tapped,** even once: "You turned down one home for needing work. Show homes that are ready to move in first?" Your own tap is evidence enough to ask, because nothing changes without your yes. The question is fixed text in Greek or English, in the language of your last chat message, so it costs nothing. "Yes" goes through the chat as your words, so the assistant makes the change like any other (D61); "No, just that one" is a tap and isn't asked again. Reasons with a question: needs work, bad value (a €/m² wish at the search's median), too expensive, too small, the floor (a limit on that floor) and the area (leave it out).
+  3. **A pulse:** "How are these homes so far?" Spot on / Mixed / Not for me. Mixed answers with how the homes split, counted by code, and puts the cursor in the chat; Not for me asks what's off. The answers are counted in the swipe stats.
+- **Why fixed text for rungs 2 and 3:** a model call would add a wait and a few cents to say a sentence code can write, and code can't put words in your mouth: the only change it offers is the one your tap points to.
+- **New search scraps the history (your call):** the swipe log moves to `data/private/swipes/archive/` with a timestamp, so nothing is lost, and the like rate, the check-in count and the learned ranking (D76) start from zero. The old swipes are still there for the learning eval.
+- **Tested** with a fake model through the real API: a tapped reason gives the reason question, the next ten give the pulse, "Mixed" returns the counted line, and a new search archives the log.
+

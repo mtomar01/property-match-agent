@@ -159,13 +159,18 @@ def test_a_yes_to_a_checkin_changes_the_card_and_the_deck_follows(api):
     assert after["total_matches"] <= out["total_matches"]
 
 
-def test_reset_starts_a_new_search_but_keeps_the_swipes(api):
+def test_new_search_starts_clean_and_archives_the_swipes(api):
     ask, _, app = api
     ask("/api/chat", {"text": "Egaleo up to 250k"})
     _, out = ask("/api/deck", {"limit": 1})
-    ask("/api/swipe", {"listing_id": out["cards"][0]["listing_id"], "decision": "like"})
+    first = out["cards"][0]["listing_id"]
+    ask("/api/swipe", {"listing_id": first, "decision": "like"})
     _, state = ask("/api/reset", {})
-    assert state["messages"] == [] and state["card"] is None and state["swipes"]["swipes"] == 1
+    assert state["messages"] == [] and state["card"] is None and state["swipes"]["swipes"] == 0  # a clean like rate (D75)
+    assert [s.listing_id for s in app.swipes.archived()] == [first]  # kept for the learning, not deleted
+    ask("/api/chat", {"text": "Egaleo up to 250k"})
+    _, again = ask("/api/deck", {"limit": 20})
+    assert first in {c["listing_id"] for c in again["cards"]}  # a home swiped in an old search can come back
 
 
 def test_search_never_breaks_a_limit_and_refuses_rentals(api):
@@ -240,3 +245,44 @@ def test_a_waiting_checkin_survives_a_reload_and_cant_block_for_good(api):
     app.state["checkin_at"] -= 10
     app._checkin()
     assert app.state["declined"] == [checkin["suggestion"]["key"]]
+
+
+
+def test_the_ladder_asks_about_a_tapped_reason_then_a_pulse(api, monkeypatch):
+    ask, model, app = api
+    import api.server as server_module
+    monkeypatch.setattr(server_module.patterns, "observe", lambda *a, **k: [])  # no clear pattern: the ladder's next steps
+    model.card = dict(card(max_price_eur=500000, min_price_eur=10000), areas=[])  # all areas, a wide band: twenty swipes fit
+    ask("/api/chat", {"text": "anywhere up to 500k"})
+    _, out = ask("/api/deck", {"limit": 30})
+    cards = out["cards"]
+    # ten likes and rejects with no clear pattern, one reject marked "needs work"
+    for i, c in enumerate(cards[:10]):
+        body = {"listing_id": c["listing_id"], "decision": "like" if i % 2 else "reject", "deck_position": c["deck_position"]}
+        if i == 4:
+            body["reasons"] = ["needs_work"]
+        _, res = ask("/api/swipe", body)
+    checkin = res["checkin"]
+    assert checkin and checkin["ladder"] == "reason" and "needing work" in checkin["reply"]
+    assert checkin["yes_message"].startswith("Yes:") and len(model.seen) == 1  # fixed text: no model call for the question
+    status, tapped = ask("/api/checkin", {"answer": "no"})
+    assert status == 200 and app.state["pending"] is None and "reason:needs_work" in app.state["declined"]
+    # the next ten: nothing to ask about, so the pulse
+    _, more = ask("/api/deck", {"limit": 30})
+    for i, c in enumerate(more["cards"][:10]):
+        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if i % 2 else "reject",
+                                    "deck_position": c["deck_position"]})
+    assert len(more["cards"]) >= 10, len(more["cards"])
+    assert res["checkin"], (res, app.state["checkin_at"], len(app.swipes.verdicts()))
+    assert res["checkin"]["ladder"] == "pulse" and set(res["checkin"]["options"]) == {"spot_on", "mixed", "not_for_me"}
+    _, tapped = ask("/api/checkin", {"answer": "mixed"})
+    assert "homes in your search" in tapped["follow_up"] and tapped["focus_chat"] and tapped["swipes"]["pulse"] == {"mixed": 1}
+    assert ask("/api/checkin", {"answer": "mixed"})[0] == 400  # nothing waiting any more
+
+
+def test_area_stats_are_counted_by_code(api):
+    ask, _, _ = api
+    status, body = ask("/api/areas")
+    assert status == 200 and body["data"] == "synthetic listings"
+    egaleo = body["areas"]["Egaleo"]
+    assert egaleo["homes"] > 5 and egaleo["typical_per_m2"] > 0 and egaleo["median_days_on_market"] is not None

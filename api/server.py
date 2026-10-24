@@ -20,6 +20,7 @@ Routes:
                                          -> the counts, and a check-in from the assistant when code found a pattern
                                             (decision like, reject or skip; a skip with reasons is "can't judge", D71)
     POST /api/undo                       -> takes back the last decision and returns its card
+    POST /api/checkin  {"answer": ...}  -> a tap on a ladder question: "no", or spot_on / mixed / not_for_me (D75)
     GET  /api/shortlist                  -> the liked homes, newest first
     GET  /api/export.csv                 -> the liked homes as a spreadsheet
     POST /api/reset                      -> a new search (the swipes stay)
@@ -46,8 +47,8 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
-from core.reasons import typical_price_per_m2
-from learning import deck, patterns
+from learning import deck, ladder, patterns
+from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -123,15 +124,17 @@ class App:
             return None
         return {"reply": pending["reply"], "action": "ask", "asking_about": ["suggest_change"],
                 "suggestion": {"key": pending["key"], "kind": pending.get("kind"), "feature": pending.get("feature")},
-                "ladder": pending.get("ladder", "pattern"), "options": pending.get("options")}
+                "ladder": pending.get("ladder", "pattern"), "options": pending.get("options"),
+                "yes_message": pending.get("yes_message")}
 
     def data_label(self) -> str:
         return "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
 
     def reset(self) -> dict:
+        """A new search starts clean: chat, card, swipes, like rate and check-ins (Mike, D75); old swipes are archived."""
         with self.lock:
-            self.state = {"history": [], "card": None, "last": None, "declined": [], "pending": None,
-                          "checkin_at": len(self.swipes.verdicts())}
+            self.swipes.archive()
+            self.state = {"history": [], "card": None, "last": None, "declined": [], "pending": None, "checkin_at": 0}
             self._save()
         return self.snapshot()
 
@@ -189,6 +192,10 @@ class App:
                 "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
                 "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(everything)}
 
+    def area_stats(self) -> dict:
+        """What's typical in each area of this dataset, counted by code (D74): homes, €/m², days on the market."""
+        return {"data": self.data_label(), "areas": AreaStats.build(self.adapter.listings()).summary()}
+
     def shortlist(self) -> dict:
         """The liked homes, newest like first, for the table; the CSV has the same columns."""
         homes = []
@@ -222,7 +229,7 @@ class App:
         listing = self.adapter.get(last.listing_id)
         back = None
         if listing is not None:
-            back = deck.card(listing, self.criteria(), typical_price_per_m2(self.adapter.listings()), last.deck_position,
+            back = deck.card(listing, self.criteria(), AreaStats.build(self.adapter.listings()), last.deck_position,
                              last.explore_card, skipped=False)
         return {"card": back, "undone": last.decision, "swipes": self.swipes.stats(),
                 "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(self.swipes.load())}
@@ -240,7 +247,7 @@ class App:
         criteria = self.criteria()
         found = patterns.observe(self.swipes.verdicts(), self.adapter.listings(), criteria, set(self.state["declined"]))
         if not found:
-            return None
+            return self._ladder(criteria, count)
         top = found[0]
         total = len(deck.ranked_matches(self.adapter.listings(), criteria))
         note = {k: top[k] for k in ("feature", "kind", "line", "patch")}
@@ -258,6 +265,51 @@ class App:
                                  "feature": top["feature"], "ladder": "pattern"}
         self.state["checkin_at"] = count
         return {**result, "suggestion": top}
+
+    def _language(self) -> str:
+        said = [m["content"] for m in self.state["history"]
+                if m["role"] == "user" and isinstance(m["content"], str) and not m["content"].startswith("<swipe_stats>")]
+        return ladder.language(said[-1] if said else "")
+
+    def _ladder(self, criteria: Criteria, count: int) -> dict:
+        """No clear pattern: a reason the user tapped, else the three-tap pulse. Fixed text, no model call (D75)."""
+        listings = self.adapter.listings()
+        window = self.swipes.verdicts()[self.state["checkin_at"]:count]
+        lang = self._language()
+        matches = deck.ranked_matches(listings, criteria)
+        question = (ladder.reason_question(window, {l.listing_id: l for l in listings}, criteria, matches,
+                                           set(self.state["declined"]), lang)
+                    or ladder.pulse_question(lang, count))
+        self.state["pending"] = {k: question.get(k) for k in ("key", "patch", "reply", "kind", "feature", "ladder", "options",
+                                                               "yes_message")}
+        self.state["checkin_at"] = count
+        card = self.state["card"]
+        return {"reply": question["reply"], "action": "ask", "asking_about": ["suggest_change"], "unsupported": [],
+                "card": card, "searched_as": search_card(card)["hard_limits"], "deck_ready": False,
+                "ladder": question["ladder"], "options": question["options"], "yes_message": question.get("yes_message"),
+                "suggestion": {"key": question["key"], "kind": question["kind"], "feature": question["feature"]}}
+
+    def answer(self, answer: str) -> dict:
+        """A tap on a ladder question that needs no assistant: "no" to a reason, or a pulse answer (D75)."""
+        with self.lock:
+            pending = self.state["pending"]
+            if not pending or pending.get("ladder") not in ("reason", "pulse"):
+                raise ValueError("there's no question waiting for a tap")
+            lang = self._language()
+            follow_up, focus = None, False
+            if pending["ladder"] == "reason":
+                if answer != "no":
+                    raise ValueError('a "yes" goes through the chat, so the assistant makes the change')
+                self.state["declined"] = sorted({*self.state["declined"], pending["key"]})
+            else:
+                self.swipes.record_pulse(answer, self.state["checkin_at"])
+                if answer == "mixed":
+                    follow_up, focus = ladder.narrowing_line(deck.ranked_matches(self.adapter.listings(), self.criteria()), lang), True
+                elif answer == "not_for_me":
+                    follow_up, focus = ladder.NOT_FOR_ME[lang], True
+            self.state["pending"] = None
+            self._save()
+        return {"follow_up": follow_up, "focus_chat": focus, "swipes": self.swipes.stats()}
 
     def export_csv(self) -> str:
         out = io.StringIO()
@@ -337,6 +389,8 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                                                      body.get("note")))
                 if route == "/api/undo":
                     return self._json(200, app.undo())
+                if route == "/api/checkin":
+                    return self._json(200, app.answer(body.get("answer", "")))
                 if route == "/api/reset":
                     return self._json(200, app.reset())
                 if route == "/api/search":
@@ -353,6 +407,8 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
             url = urlparse(self.path)
             if url.path == "/api/state":
                 return self._json(200, app.snapshot())
+            if url.path == "/api/areas":
+                return self._json(200, app.area_stats())
             if url.path == "/api/shortlist":
                 return self._json(200, app.shortlist())
             if url.path == "/api/export.csv":
