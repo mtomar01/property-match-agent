@@ -10,7 +10,7 @@ score always sits between 0 and 1.
 from __future__ import annotations
 
 from core import greek
-from core.models import Listing, Preference
+from core.models import MOVE_IN_READY, Listing, Preference
 
 # energy_class preferences compare positions on this scale (G lowest, A+ highest);
 # a preference names letters, e.g. min "B".
@@ -28,6 +28,8 @@ def _value(listing: Listing, feature: str):
         return None if listing.parking is None else listing.parking != "none"
     if feature in ("dual_aspect", "corner", "whole_floor"):
         return feature in listing.flags
+    if feature == "move_in_ready":  # D73: the condition the listing states, or unknown
+        return None if listing.condition is None else listing.condition in MOVE_IN_READY
     return getattr(listing, feature, None)
 
 

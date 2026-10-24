@@ -83,3 +83,37 @@ def test_unknown_preference_feature_is_refused():
 
     with pytest.raises(ValidationError):
         Criteria.model_validate({"user_id": "u", "intent": "buy", "preferences": [{"feature": "brightness", "min": 3, "weight": 1}]})
+
+
+def test_price_per_m2_limit_needs_both_price_and_size():
+    c = criteria(max_price_per_m2=2000)
+    assert check(listing(1, price_eur=150000, size_m2=80), c) is None  # 1,875
+    assert check(listing(2, price_eur=170000, size_m2=80), c) == ("over_price_per_m2", "price_per_m2")  # 2,125
+    assert check(listing(3, price_eur=150000, size_m2=None), c) == ("unknown", "price_per_m2")
+
+
+def test_no_stairs_limit_lets_a_lift_through_and_fails_closed_on_unknowns():
+    c = criteria(max_floor_without_lift=1)
+    floor = lambda f: {"raw": f, "class": f}  # noqa: E731
+    assert check(listing(1, floor=floor("1"), lift=False), c) is None  # one floor of stairs is allowed
+    assert check(listing(2, floor=floor("4"), lift=True), c) is None  # a lift makes any floor fine
+    assert check(listing(3, floor=floor("3"), lift=False), c) == ("stairs_without_lift", "floor")
+    assert check(listing(4, floor=floor("3"), lift=None), c) == ("unknown", "lift")
+    assert check(listing(5, floor=floor("top"), lift=False), c) == ("unknown", "floor")  # a ρετιρέ's height is unknown
+    assert check(listing(6, floor={"raw": None, "class": None}, lift=True), c) is None
+    assert check(listing(7, floor={"raw": None, "class": None}, lift=None), c) == ("unknown", "floor")
+    ground_or_lift = criteria(max_floor_without_lift=0)
+    assert check(listing(8, floor=floor("raised_ground"), lift=False), ground_or_lift) == ("stairs_without_lift", "floor")
+    assert check(listing(9, floor=floor("ground"), lift=False), ground_or_lift) is None
+
+
+def test_condition_limit_and_the_move_in_ready_wish():
+    from core.models import Preference
+    c = criteria(exclude_conditions=["needs_work", "unfinished"])
+    assert check(listing(1, condition="renovated"), c) is None
+    assert check(listing(2, condition="needs_work"), c) == ("excluded_condition", "condition")
+    assert check(listing(3, condition=None), c) == ("unknown", "condition")
+    wish = [Preference(feature="move_in_ready", equals=True, weight=0.8)]
+    assert score(listing(4, condition="new_build"), wish) == 1.0
+    assert score(listing(5, condition="needs_work"), wish) == 0.0
+    assert score(listing(6, condition=None), wish) == 0.5  # unknown: neither rewarded nor punished

@@ -51,6 +51,8 @@ const FEATURES: Record<string, string> = {
   dual_aspect: "Dual aspect",
   corner: "Corner",
   whole_floor: "Whole floor",
+  move_in_ready: "Ready to move in",
+  price_per_m2: "€/m²",
 };
 
 const UNITS: Record<string, string> = { size_m2: " m²", metro_walk_min: " min", price_eur: " €" };
@@ -66,6 +68,7 @@ export function preferenceText(p: Preference): string {
   const name = FEATURES[p.feature] ?? p.feature;
   const unit = UNITS[p.feature] ?? "";
   if (p.equals === true) return name;
+  if (p.feature === "move_in_ready" && p.equals === false) return "A renovation project";
   if (p.equals === false) return `No ${name.toLowerCase()}`;
   if (p.feature === "energy_class" && p.min != null) return `${name} ${p.min} or better`;
   if (p.feature === "floor_level" && p.min != null) return `Floor ${p.min} or higher`;
@@ -101,6 +104,11 @@ export function barText(card: Card, searched: Partial<HardLimits>): string[] {
   if (searched.min_year_built != null) parts.push(`built from ${searched.min_year_built}`);
   if (searched.property_types?.length) parts.push(searched.property_types.map((t) => TYPES[t] ?? t).join(" or "));
   if (searched.exclude_floors?.length) parts.push(`no ${searched.exclude_floors.map((f) => f.replace("_", " ")).join(", ")}`);
+  if (searched.max_price_per_m2 != null) parts.push(`up to ${money(searched.max_price_per_m2)}/m²`);
+  if (searched.max_floor_without_lift != null) {
+    parts.push(searched.max_floor_without_lift === 0 ? "ground floor or a lift" : `lift above floor ${searched.max_floor_without_lift}`);
+  }
+  if (searched.exclude_conditions?.length) parts.push(`no ${searched.exclude_conditions.map((c) => c.replace("_", " ")).join(" or ")}`);
   if (card.intent === "invest") parts.push("investor mode");
   return parts;
 }
@@ -119,6 +127,9 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   if ("min_bedrooms" in patch) parts.push(`${patch.min_bedrooms}+ bedrooms`);
   if ("max_bedrooms" in patch) parts.push(`up to ${patch.max_bedrooms} bedrooms`);
   if ("min_year_built" in patch) parts.push(`built from ${patch.min_year_built}`);
+  if ("max_price_per_m2" in patch) parts.push(`up to ${money(patch.max_price_per_m2 as number)}/m²`);
+  if ("max_floor_without_lift" in patch) parts.push(`stairs up to floor ${patch.max_floor_without_lift}`);
+  if ("exclude_conditions" in patch) parts.push("any condition");
   if ("property_types" in patch) {
     const had = (searched.property_types as string[] | undefined) ?? [];
     const added = (patch.property_types as string[]).filter((t) => !had.includes(t));
@@ -137,10 +148,12 @@ export function wideningMessage(patch: Record<string, number | string[]>): strin
   const words: Record<string, string> = {
     max_price_eur: "top price", min_price_eur: "lowest price", min_size_m2: "minimum size", max_size_m2: "maximum size",
     min_bedrooms: "minimum bedrooms", max_bedrooms: "maximum bedrooms", min_year_built: "earliest year built",
+    max_price_per_m2: "top price per m²", max_floor_without_lift: "floors of stairs without a lift",
   };
   const parts = Object.entries(patch).map(([name, value]) =>
     name === "property_types" ? `types ${(value as string[]).map((t) => TYPES[t] ?? t).join(", ")}`
       : name === "areas" ? `areas ${(value as string[]).join(", ")}`
+      : name === "exclude_conditions" ? "drop the condition limit"
       : `${words[name] ?? name} ${value}`);
   return `Yes, widen it: ${parts.join(", ")}.`;
 }

@@ -132,11 +132,9 @@ chat("el_13", "el", "Οικογένεια που θέλει αυλή", ["propert
 chat("el_14", "el", "Αγοράζει για την ηλικιωμένη μητέρα του", ["essential_without_field"],
      ["Θέλω διαμέρισμα για τη μητέρα μου στο Περιστέρι, μέχρι 160.000. Δυσκολεύεται στις σκάλες.", "Ή ισόγειο ή να έχει ασανσέρ, ένα από τα δύο οπωσδήποτε."],
      {"budget": "160.000 €", "access": "Ισόγειο ή ασανσέρ, απαραίτητο"},
-     crit("buy", ["Peristeri"], {"max_price_eur": 160000, "property_types": ["apartment"]},
-          [pref("lift", 1.0, equals=True)],
-          ["Ground floor or lift is essential; the search can't enforce 'one or the other' yet, so check each result."]),
+     crit("buy", ["Peristeri"], {"max_price_eur": 160000, "property_types": ["apartment"], "max_floor_without_lift": 0}),
      must_ask=["stairs_requirement"], must_say=["reply_in:el"],
-     notes="Schema gap: no hard limit can express 'ground floor OR lift'. A perfect interview records it as a strong preference and says it will check results. Candidate for a v1 schema change.")
+     notes="'Ground floor OR a lift' is the no-stairs limit with 0 floors to climb (D73). Before D73 it was a strong lift preference plus an open question, because no limit could express it.")
 
 chat("el_15", "el", "Θέλει να νοικιάσει σε φοιτητές", ["investor_intent"],
      ["Θέλω να αγοράσω κάτι μικρό στο Αιγάλεω για να το νοικιάζω σε φοιτητές, μέχρι 100.000.", "Ναι, είναι επένδυση, δεν θα μείνω εγώ."],

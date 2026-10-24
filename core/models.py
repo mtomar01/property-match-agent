@@ -220,6 +220,8 @@ class Listing(_Strict):
             "first_seen": self.first_seen.isoformat(),
             "previous_price_eur": next((p.price_eur for p in reversed(self.price_history)
                                         if p.price_eur != self.price_eur), None),  # the shortlist shows price changes (spec)
+            "lift": self.lift,  # the no-stairs limit is checked on these two (D73)
+            "condition": self.condition,
             "synthetic": self.synthetic,
         }
 
@@ -241,6 +243,9 @@ class HardLimits(_Strict):
     min_year_built: int | None = Field(default=None, ge=1800, le=2035)  # D66: "built from 2015 on", from a check-in
     property_types: list[PropertyType] = Field(default_factory=list)
     exclude_floors: list[str] = Field(default_factory=list)
+    max_price_per_m2: int | None = Field(default=None, gt=0)  # D73: "up to 2,000 per m²"
+    max_floor_without_lift: int | None = Field(default=None, ge=0, le=30)  # D73: 0 is "a ground floor or a lift"
+    exclude_conditions: list[Condition] = Field(default_factory=list)  # D73: a must, e.g. no homes that need work
 
     @field_validator("exclude_floors")
     @classmethod
@@ -267,11 +272,13 @@ class HardLimits(_Strict):
 PreferenceFeature = Literal[
     "price_eur", "size_m2", "bedrooms", "bathrooms", "floor_level", "year_built", "renovated_year",
     "energy_class", "metro_walk_min", "balcony", "lift", "parking", "storage",
-    "dual_aspect", "corner", "whole_floor",
+    "dual_aspect", "corner", "whole_floor", "move_in_ready", "price_per_m2",
 ]
 
 
-YES_NO_FEATURES = ("balcony", "lift", "parking", "storage", "dual_aspect", "corner", "whole_floor")  # D53
+# D53; move_in_ready (D73) is renovated, new build or good condition, against needs work or unfinished
+YES_NO_FEATURES = ("balcony", "lift", "parking", "storage", "dual_aspect", "corner", "whole_floor", "move_in_ready")
+MOVE_IN_READY = ("renovated", "new_build", "good")
 
 
 class Preference(_Strict):

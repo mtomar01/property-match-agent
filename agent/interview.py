@@ -30,7 +30,7 @@ from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
 from core.card_rules import IDEALLY, search_card  # Mike's price, size and bedroom rules, in code (D53, D56)
 from core import greek
-from core.models import Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
+from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
@@ -55,7 +55,7 @@ WIDER_TYPES = {"apartment": ("maisonette", "loft")}  # types to offer when an ap
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "max_bedrooms", "property_types",
-               "exclude_floors", "min_year_built")
+               "exclude_floors", "min_year_built", "max_price_per_m2", "max_floor_without_lift", "exclude_conditions")
 
 
 def _nullable(kind: str) -> dict:
@@ -72,6 +72,9 @@ def _hard_limits_schema() -> dict:
             "min_year_built": _nullable("integer"),  # from a check-in the user accepted (D66)
             "property_types": {"type": "array", "items": {"type": "string", "enum": list(get_args(PropertyType))}},
             "exclude_floors": {"type": "array", "items": {"type": "string", "enum": list(FLOORS)}},
+            "max_price_per_m2": _nullable("integer"),  # D73
+            "max_floor_without_lift": _nullable("integer"),  # D73
+            "exclude_conditions": {"type": "array", "items": {"type": "string", "enum": list(get_args(Condition))}},
         },
     }
 
@@ -263,10 +266,16 @@ def eased(criteria: Criteria, listings: list) -> dict:
         numbers["max_bedrooms"] = limits.max_bedrooms + 1
     if limits.min_year_built:
         numbers["min_year_built"] = limits.min_year_built - YEAR_STEP
+    if limits.max_price_per_m2:
+        numbers["max_price_per_m2"] = max(limits.max_price_per_m2 + 50, round(limits.max_price_per_m2 * (1 + EASE) / 50) * 50)
+    if limits.max_floor_without_lift is not None:
+        numbers["max_floor_without_lift"] = limits.max_floor_without_lift + 1
     for name, value in numbers.items():
         out[name] = option({name: value})
     if len(numbers) > 1:
         out["together"] = option(dict(numbers), to="every number one step wider")
+    if limits.exclude_conditions:
+        out["drop_conditions"] = option({"exclude_conditions": []}, to="no condition limit")
     for kind, wider in WIDER_TYPES.items():
         if kind in limits.property_types:
             for extra in (t for t in wider if t not in limits.property_types):

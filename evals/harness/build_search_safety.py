@@ -1,4 +1,4 @@
-"""Build the search safety dataset: 20 criteria sets with their expected matches.
+"""Build the search safety dataset: 23 criteria sets with their expected matches.
 
 The criteria are written by hand to hit the risky cases (budgets exactly on a
 price, Greek area and floor names, rentals, unknown values, an impossible
@@ -66,6 +66,12 @@ CASES: list[tuple[str, str, dict]] = [
      {"intent": "buy", "hard_limits": {"property_types": ["studio", "apartment"], "max_size_m2": 50}}),
     ("ss20", "Mixed spelling of the same area",
      {"intent": "buy", "areas": ["aigaleo", "Egaleo", "ΑΙΓΑΛΕΩ"], "hard_limits": {"min_bedrooms": 1}}),
+    ("ss21", "Price per m² limit: a home with no size has no price per m² and must not slip in (D73)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 300000, "max_price_per_m2": 2400}}),
+    ("ss22", "No stairs above the 1st floor without a lift; an unstated floor or lift fails closed (D73)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 300000, "max_floor_without_lift": 1}}),
+    ("ss23", "No homes that need work; an unstated condition fails closed (D73)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 300000, "exclude_conditions": ["needs_work", "unfinished"]}}),
 ]
 
 

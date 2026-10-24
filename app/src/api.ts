@@ -12,6 +12,9 @@ export interface HardLimits {
   min_year_built: number | null;
   property_types: string[];
   exclude_floors: string[];
+  max_price_per_m2: number | null;
+  max_floor_without_lift: number | null;
+  exclude_conditions: string[];
 }
 
 export interface Preference {
@@ -60,6 +63,7 @@ export interface State {
   data: string;
   checkin_every: number;
   areas: string[];
+  checkin: Checkin | null;
 }
 
 export interface ChatReply {

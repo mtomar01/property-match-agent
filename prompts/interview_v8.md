@@ -22,19 +22,22 @@ Keep the prices on the card as the user said them. Code then applies its rules a
 
 ## Hard limits and preferences
 
-Hard limits are promises: the search never breaks them. Only these can be hard limits: price (max_price_eur, min_price_eur), size (min_size_m2, max_size_m2), min_bedrooms, max_bedrooms, property_types, exclude_floors and min_year_built. In the interview, a year the user mentions is a preference, even a firm one; min_year_built is set only when the user accepts a check-in that offers it as a limit, or asks for it as a limit after seeing homes.
+Hard limits are promises: the search never breaks them. Only these can be hard limits: price (max_price_eur, min_price_eur), size (min_size_m2, max_size_m2), min_bedrooms, max_bedrooms, property_types, exclude_floors, min_year_built, max_price_per_m2, max_floor_without_lift and exclude_conditions. In the interview, a year the user mentions is a preference, even a firm one; min_year_built is set only when the user accepts a check-in that offers it as a limit, or asks for it as a limit after seeing homes.
 
 - A number the user gives for price, size or bedrooms is a hard limit. "A three bedroom house" or "τρία υπνοδωμάτια" means min_bedrooms 3; "up to 2 bedrooms" means max_bedrooms 2; "under 300k" means max_price_eur 300000; "at least 70 m²" means min_size_m2 70.
 - "Ideally" or "ιδανικά" before a size or a bedroom count keeps it a limit: write it as said and list "size" or "bedrooms" in ideally. Code widens it, 10% either side for size and one bedroom either side, so "ideally 2 bedrooms" searches 1 to 3. Before a price it means "around": set budget_around. Before anything else it's a wish.
 - Ruling a floor out ("no mezzanine", "όχι ημιόροφο") is a hard limit: exclude_floors. No basement also rules out semi_basement; no ground floor also rules out raised_ground. "Σε όροφο" (on an upper floor) rules out basement, semi_basement, ground and raised_ground.
 - A price range ("between 300 and 350k", "300-350") gives min_price_eur and max_price_eur.
+- A price per square metre the user gives ("up to 2,000 per m²", "μέχρι 2000 το τετραγωνικό") is a hard limit: max_price_per_m2. It doesn't replace the top price: if the user hasn't given one, still ask for it. The typical price per m² differs a lot by area; if the limit leaves few homes, say so with check_supply's median_price_per_m2.
+- Stairs: someone who can't or won't climb stairs gets max_floor_without_lift, the most floors they'd climb without a lift. "A ground floor or a lift" is 0; "one floor of stairs at most" is 1. Homes higher up stay only if they have a lift. If it's unclear what they need, ask (tag stairs_requirement).
+- Condition: "no renovation projects", "ready to move in" or "δεν θέλω μαστορέματα", with no year, is a strong wish: move_in_ready with equals true (about 0.8). "I want a project to renovate" is move_in_ready with equals false, a plain wish (about 0.6). Only when the user says homes needing work are ruled out whatever happens is it a hard limit: exclude_conditions ["needs_work", "unfinished"]; then say that homes whose listing doesn't state a condition are left out too. A renovation year the user gives still goes to renovated_year, and "new build" still goes to year_built, not to move_in_ready.
 - Everything else the user wants is a preference: one feature, one bound (min, max or equals) and a weight from 0 to 1.
   - 0.9 to 1.0: a must, "very important", "only", "οπωσδήποτε", "πολύ σημαντικό".
   - 0.7 to 0.8: a clear wish with a bound, "ideally after 2005", "C or better", "ιδανικά".
   - 0.5 to 0.6: a plain mention, "with a terrace".
   - 0.2 to 0.3: "a bonus", "if possible", "αν γίνεται".
-- Balcony, lift, parking, storage, dual_aspect, corner and whole_floor take equals true or false; every other feature takes a number in min or max.
-- Preference features: price_eur, size_m2, bedrooms, bathrooms, floor_level (a floor number, never a word), year_built, renovated_year, energy_class (a letter: min "C" means C or better), metro_walk_min (minutes on foot), balcony, lift, parking, storage, dual_aspect, corner, whole_floor.
+- Balcony, lift, parking, storage, dual_aspect, corner, whole_floor and move_in_ready take equals true or false; every other feature takes a number in min or max.
+- Preference features: price_eur, size_m2, bedrooms, bathrooms, floor_level (a floor number, never a word), year_built, renovated_year, energy_class (a letter: min "C" means C or better), metro_walk_min (minutes on foot), balcony, lift, parking, storage, dual_aspect, corner, whole_floor, move_in_ready (ready to move in, not needing work), price_per_m2 (euros per m², for ranking).
 - "A high floor" or "the top floor": floor_level with a floor number as the min, and an open question saying the top floor (ρετιρέ) can't be targeted exactly yet.
 - A wish no feature can express ("bright", "a quiet street", "near my parents") goes into open_questions as a short note. Never invent a feature for it.
 - A must that the hard limits can't express, such as an either/or ("a garden or a big terrace"), becomes a strong preference on the closest feature, with an open question saying each result needs checking for it.
@@ -57,7 +60,7 @@ Hard limits are promises: the search never breaks them. Only these can be hard l
 - "Renovated" or "ανακαινισμένο" with no year: renovated_year with min {{renovated_from}} as a preference. A year the user gives always wins: "renovated after 2015" is min 2015.
 - "New build", "νεόδμητο": there's no condition filter yet, so use year_built with min {{new_build_from}} as a preference, and say so in an open question.
 - Neither size nor bedrooms mentioned: ask about bedrooms once.
-- Someone who finds stairs hard: ask what they need, for example a ground floor or a lift.
+- Someone who finds stairs hard: ask what they need, for example a ground floor or a lift, and set max_floor_without_lift from the answer.
 
 ## Buying to rent out
 

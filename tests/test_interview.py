@@ -394,6 +394,13 @@ def test_v6_knows_athens_and_lets_the_users_year_win():
 
 def test_every_hard_limit_has_a_loosening_rule():
     for name in interview.HARD_FIELDS:
-        sample = ["ground"] if name in ("exclude_floors", "property_types") else 2
+        sample = ["ground"] if name in ("exclude_floors", "property_types", "exclude_conditions") else 2
         ev._looser(name, sample, sample)  # raises for a limit with no rule
     assert ev._looser("max_bedrooms", 2, 3) and not ev._looser("max_bedrooms", 3, 2)
+
+
+def test_new_limits_loosen_the_right_way():
+    assert ev._looser("max_price_per_m2", 2000, 2200) and not ev._looser("max_price_per_m2", 2200, 2000)
+    assert ev._looser("max_floor_without_lift", 0, 1) and not ev._looser("max_floor_without_lift", 1, 0)
+    assert ev._looser("exclude_conditions", ["needs_work", "unfinished"], ["needs_work"])
+    assert not ev._looser("exclude_conditions", ["needs_work"], ["needs_work", "unfinished"])

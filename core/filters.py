@@ -18,6 +18,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Iterable
 
+from core import greek
 from core.models import Criteria, HardLimits, Listing
 
 INTENT_TO_LISTING_TYPE = {"buy": "sale", "invest": "sale", "rent": "rent"}
@@ -94,6 +95,27 @@ def check(listing: Listing, criteria: Criteria) -> tuple[str, str] | None:
             return ("unknown", "year_built")
         if listing.year_built < limits.min_year_built:
             return ("too_old", "year_built")
+
+    if limits.max_price_per_m2 is not None:
+        if listing.price_per_m2 is None:
+            return ("unknown", "price_per_m2")
+        if listing.price_per_m2 > limits.max_price_per_m2:
+            return ("over_price_per_m2", "price_per_m2")
+
+    if limits.max_floor_without_lift is not None and listing.lift is not True:
+        # Stairs only matter without a lift. A floor the listing doesn't state, or a ρετιρέ with no number,
+        # can't be promised to be low enough, so it fails closed like any unknown (D8, D73).
+        level = greek.floor_level(listing.floor.floor_class)
+        if level is None:
+            return ("unknown", "floor")
+        if level > limits.max_floor_without_lift:
+            return ("unknown", "lift") if listing.lift is None else ("stairs_without_lift", "floor")
+
+    if limits.exclude_conditions:
+        if listing.condition is None:
+            return ("unknown", "condition")
+        if listing.condition in limits.exclude_conditions:
+            return ("excluded_condition", "condition")
 
     return None
 

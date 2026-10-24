@@ -23,6 +23,8 @@ _AREAS = {
 }
 _FLOORS = {"υπογειο": "basement", "ημιυπογειο": "semi_basement", "ισογειο": "ground"}
 _LISTING_TYPE = {"buy": "sale", "invest": "sale", "rent": "rent"}
+# Storeys to climb, written out again here rather than imported (raised ground and mezzanine are a few steps up).
+_STOREY = {"basement": -1, "semi_basement": -0.5, "ground": 0, "raised_ground": 0.25, "mezzanine": 0.5}
 
 
 def _plain(text: str) -> str:
@@ -80,5 +82,19 @@ def breaks(result: dict, criteria: dict) -> list[str]:
     year = result.get("year_built")
     if limits.get("min_year_built") is not None and (year is None or year < limits["min_year_built"]):
         found.append(f"year built {year} breaks min {limits['min_year_built']}")
+
+    per_m2 = result.get("price_per_m2")
+    if limits.get("max_price_per_m2") is not None and (per_m2 is None or per_m2 > limits["max_price_per_m2"]):
+        found.append(f"price per m2 {per_m2} breaks max {limits['max_price_per_m2']}")
+
+    climb = limits.get("max_floor_without_lift")
+    if climb is not None and result.get("lift") is not True:
+        storey = _STOREY.get(result.get("floor"), None) if not str(result.get("floor") or "").isdigit() else int(result["floor"])
+        if storey is None or storey > climb:
+            found.append(f"floor {result.get('floor')} without a known lift breaks {climb} floors of stairs")
+
+    banned = set(limits.get("exclude_conditions") or [])
+    if banned and (result.get("condition") is None or result.get("condition") in banned):
+        found.append(f"condition {result.get('condition')} is excluded or unknown")
 
     return found

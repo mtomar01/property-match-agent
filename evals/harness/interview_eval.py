@@ -397,14 +397,14 @@ def _looser(name: str, before, after) -> bool:
         return False
     if _blank(after):
         return True
-    if name in ("max_price_eur", "max_size_m2", "max_bedrooms"):
+    if name in ("max_price_eur", "max_size_m2", "max_bedrooms", "max_price_per_m2", "max_floor_without_lift"):
         return after > before
     if name in ("min_price_eur", "min_size_m2", "min_bedrooms", "min_year_built"):
         return after < before
     if name == "property_types":
         return bool(set(after) - set(before))
-    if name == "exclude_floors":
-        return bool(set(before) - set(after))  # a floor no longer ruled out
+    if name in ("exclude_floors", "exclude_conditions"):
+        return bool(set(before) - set(after))  # a floor or a condition no longer ruled out
     raise ValueError(f"no loosening rule for {name}")  # a new limit must say what looser means
 
 
@@ -617,4 +617,6 @@ if __name__ == "__main__":
         sys.exit(0)
     only = args[args.index("--only") + 1].split(",") if "--only" in args else None
     limit = int(args[args.index("--limit") + 1]) if "--limit" in args else None
-    run(only=only, limit=limit)
+    chats = Path(args[args.index("--chats") + 1]) if "--chats" in args else CHATS
+    name = args[args.index("--name") + 1] if "--name" in args else None
+    run(only=only, limit=limit, chats_path=chats, set_name=name)

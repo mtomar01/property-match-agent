@@ -52,7 +52,11 @@ export function App() {
       setData(state.data);
       setAreas(state.areas);
       setUnsupported(state.unsupported.includes("rent") || state.card?.intent === "rent");
-      if (state.action === "confirm" && state.card && state.card.intent !== "rent") {
+      if (state.checkin && state.card) {  // a check-in left waiting: show it again (D72)
+        setReady(true);
+        setCheckin(state.checkin);
+        void loadDeck();
+      } else if (state.action === "confirm" && state.card && state.card.intent !== "rent") {
         setReady(true);
         void loadDeck();
       }

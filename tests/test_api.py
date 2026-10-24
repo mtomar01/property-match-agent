@@ -220,3 +220,23 @@ def test_skip_doesnt_count_toward_a_checkin_and_back_returns_the_card(api):
     assert ask("/api/swipe", {"listing_id": cards[2]["listing_id"], "decision": "skip", "reasons": ["too_dark"]})[0] == 400
     ask("/api/undo", {})
     assert ask("/api/undo", {})[0] == 400  # nothing left to take back
+
+
+def test_a_waiting_checkin_survives_a_reload_and_cant_block_for_good(api):
+    ask, model, app = api
+    ask("/api/chat", {"text": "Egaleo up to 250k"})
+    _, out = ask("/api/deck", {"limit": 20})
+    checkin = None
+    for c in out["cards"]:
+        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if (c["year_built"] or 0) >= 2005 else "reject",
+                                    "deck_position": c["deck_position"]})
+        if res["checkin"]:
+            checkin = res["checkin"]
+            break
+    assert checkin
+    _, state = ask("/api/state")
+    assert state["checkin"]["reply"] == checkin["reply"]  # a reload shows it again
+    # ten more verdicts without an answer (another tab, the MCP tools): the question is dropped as a no
+    app.state["checkin_at"] -= 10
+    app._checkin()
+    assert app.state["declined"] == [checkin["suggestion"]["key"]]

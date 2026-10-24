@@ -87,9 +87,10 @@ FIXES = {
                     "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
                    "around 200 is ±10% in code; 70-120 m² wasn't said; bathrooms, parking and lift were; no ceiling or year question"),
     "clean_gb_3": ({"user_facts": {"purpose": "Επένδυση, για να το νοικιάσω"},
-                    "hard_limits": {"max_price_eur": 180000, "property_types": APT},
+                    "hard_limits": {"max_price_eur": 180000, "property_types": APT, "max_price_per_m2": 2000},
                     "must_ask": ["intent", "budget", "areas", "confirm_investor_mode", "purpose"]},
-                   "an investment the chat doesn't say, so the purpose question finds it; lowest price from code; no costs or year question"),
+                   "an investment the chat doesn't say, so the purpose question finds it; lowest price from code; no costs or year question; "
+                   "'up to 2000 per m²' is a hard limit since D73"),
     "clean_gb_5": ({"hard_limits": {"max_price_eur": 250000, "min_bedrooms": 3},
                     "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True)],
                     "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},

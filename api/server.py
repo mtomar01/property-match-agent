@@ -114,7 +114,16 @@ class App:
                 "asking_about": last.get("asking_about", []), "unsupported": last.get("unsupported", []),
                 "searched_as": search_card(self.state["card"])["hard_limits"] if self.state["card"] else None,
                 "swipes": self.swipes.stats(), "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
-                "areas": list(self.areas)}
+                "areas": list(self.areas), "checkin": self._waiting()}
+
+    def _waiting(self) -> dict | None:
+        """A check-in still waiting for its answer, so a reload shows it again instead of losing it (D72)."""
+        pending = self.state["pending"]
+        if not pending or not pending.get("reply"):
+            return None
+        return {"reply": pending["reply"], "action": "ask", "asking_about": ["suggest_change"],
+                "suggestion": {"key": pending["key"], "kind": pending.get("kind"), "feature": pending.get("feature")},
+                "ladder": pending.get("ladder", "pattern"), "options": pending.get("options")}
 
     def data_label(self) -> str:
         return "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
@@ -221,7 +230,12 @@ class App:
     def _checkin(self) -> dict | None:
         """Every 10 likes or rejects, code looks for a pattern; when it finds one, the assistant puts it to the user (D66)."""
         count = len(self.swipes.verdicts())
-        if self.state["pending"] or count - self.state["checkin_at"] < patterns.CHECKIN_EVERY:
+        pending = self.state["pending"]
+        if pending and count - self.state["checkin_at"] >= patterns.CHECKIN_EVERY:
+            # a question left unanswered for 10 more verdicts is taken as a no, so it can never block for good (D72)
+            self.state["declined"] = sorted({*self.state["declined"], pending["key"]})
+            self.state["pending"] = pending = None
+        if pending or count - self.state["checkin_at"] < patterns.CHECKIN_EVERY:
             return None
         criteria = self.criteria()
         found = patterns.observe(self.swipes.verdicts(), self.adapter.listings(), criteria, set(self.state["declined"]))
@@ -240,7 +254,8 @@ class App:
                    "Put this one suggestion to the user with its counts and ask whether to make the change. "
                    "Don't change the card until they answer.\n</swipe_stats>")
         result = self._assistant(message)
-        self.state["pending"] = {"key": top["key"], "patch": top["patch"]}
+        self.state["pending"] = {"key": top["key"], "patch": top["patch"], "reply": result["reply"], "kind": top["kind"],
+                                 "feature": top["feature"], "ladder": "pattern"}
         self.state["checkin_at"] = count
         return {**result, "suggestion": top}
 

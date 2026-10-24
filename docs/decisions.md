@@ -678,3 +678,18 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Back takes back the last decision:** it's removed from the log as if it never happened, and its card returns to the front with its reasons. While the assistant's check-in question is waiting, back is off: answer the question first. Keyboard: ← reject, → like, ↓ skip, Backspace back.
 - **The swipe record** gains "skip" as a decision, the can't-judge reasons and an optional note. Older logs read as before.
 
+## D72. A check-in can't get lost or block for good
+
+- **What you saw:** "the chat doesn't interrupt me no matter how many swipes". Replaying your 30 swipes of 23 October through the pattern finder, it should have asked after 20 (5 rejects on a ground floor, 4 marked needs work).
+- **The likely cause:** a check-in waits for its answer, and while it waits no new one is made. The app didn't keep the waiting question across a reload, so a check-in shown once and lost on a reload blocked every later one until the next chat message.
+- **The fix:** the server returns a waiting check-in with the state, so a reload shows it again; and a question left unanswered for 10 more likes or rejects is taken as a no, so it can never block for good. The check-in ladder (D75) also means every 10 swipes say something.
+
+## D73. Three search additions: condition, price per m² and stairs
+
+- **Your calls (24 October):** condition in the chat search, a price per m² limit, and a limit for no stairs above the 1st floor without a lift. Planned for v3 and built first.
+- **Condition is a wish by default:** "no renovation projects" or "δεν θέλω μαστορέματα" sets move_in_ready (renovated, new build or good, against needs work or unfinished) as a strong wish. In your 1,000 listings 286 don't state a condition, and a hard limit would hide them too. Only when the user insists does it become a hard limit (exclude_conditions), and the assistant says how many unstated homes drop out. A renovation year still goes to renovated_year and "new build" to year_built: both rules are measured, and year built is known for far more homes.
+- **Price per m² is a hard limit** (max_price_per_m2). Code computes it from price and size, so only homes missing one of them are unknown. It isn't a top price: the assistant still asks for the budget.
+- **Stairs are one limit** (max_floor_without_lift): the most floors the user would climb. A home higher up stays only with a lift; an unstated floor, an unstated lift on a high floor, or a ρετιρέ with no number fail closed. "A ground floor or a lift" is 0, which finally expresses interview chat el_14, so its label changed from a lift wish plus an open question to the limit. The clean test's gb_3 ("μέχρι 2000 ανά τετραγωνικό") now expects the price per m² limit.
+- **Checked like every limit:** filtered in code, written a second time in the independent checker, three new search safety cases (23 in all, 0 breaks), unit tests for each edge, eight new interview chats (`evals/datasets/interview_chats_v3.jsonl`), and easing options for each.
+- **Prompt v8, still unrun,** carries the rules, so one eval run measures everything.
+
