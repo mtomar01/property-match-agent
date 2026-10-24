@@ -47,6 +47,7 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
+from dedupe import finder
 from learning import deck, ladder, learned, patterns
 from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
@@ -73,6 +74,7 @@ class App:
         self.adapter = adapter or SnapshotAdapter()
         self.areas = set_covered_areas(data_areas(self.adapter.listings()))  # what this dataset covers (D69)
         self._learned: tuple | None = None  # (what it was fitted on, the model)
+        self.duplicates = finder.index(finder.clusters(self.adapter.listings()))  # one card per home (D78)
         self._client = client
         self.cache_dir = cache_dir
         self.user_id = user_id
@@ -197,7 +199,7 @@ class App:
         everything = self.swipes.load()
         built = deck.build(self.adapter.listings(), criteria, self.swipes.swiped_ids(), start_position=len(everything),
                            limit=max(1, min(int(limit), MAX_LIMIT)), seed=len(self.swipes.verdicts()) // deck.EXPLORE_EVERY,
-                           skipped_ids=self.swipes.skipped_ids(), learner=self.learner(criteria))
+                           skipped_ids=self.swipes.skipped_ids(), learner=self.learner(criteria), duplicates=self.duplicates)
         if built["total_matches"] < interview.THIN:  # thin: code's ways to widen, for the user to ask the assistant (D63)
             built["if_eased"] = interview.eased(criteria, self.adapter.listings())
         return {**built, "searched_as": search_card(self.state["card"])["hard_limits"], "swipes": self.swipes.stats(),
@@ -241,8 +243,9 @@ class App:
         listing = self.adapter.get(last.listing_id)
         back = None
         if listing is not None:
-            back = deck.card(listing, self.criteria(), AreaStats.build(self.adapter.listings()), last.deck_position,
-                             last.explore_card, skipped=False)
+            listings = self.adapter.listings()
+            back = deck.card(listing, self.criteria(), AreaStats.build(listings), last.deck_position, last.explore_card,
+                             skipped=False, duplicates=self.duplicates, by_id={l.listing_id: l for l in listings})
         return {"card": back, "undone": last.decision, "swipes": self.swipes.stats(),
                 "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(self.swipes.load())}
 

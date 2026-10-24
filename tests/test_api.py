@@ -25,7 +25,8 @@ class FakeModel:
     """Answers like the interview: ready to search on the first message, then a check-in or a change by chat."""
 
     def __init__(self):
-        self.messages, self.seen, self.card = self, [], card(max_price_eur=250000)
+        # every covered area: Egaleo alone has 8 homes once its duplicates show as one (D78), too few for ten swipes
+        self.messages, self.seen, self.card = self, [], {**card(max_price_eur=250000), "areas": []}
 
     def create(self, **body):
         self.seen.append(body["messages"])
@@ -41,7 +42,7 @@ class FakeModel:
         elif text.lower() == "no":
             reply, action, asking = "Kept as it was.", "confirm", []
         else:
-            reply, action, asking = "Buying in Egaleo up to €250,000: here come the homes.", "confirm", []
+            reply, action, asking = "Buying in any covered area up to €250,000: here come the homes.", "confirm", []
         out = {"reasoning": "", "reply": reply, "action": action, "asking_about": asking, "not_covered_areas": [],
                "declined_advice": [], "unsupported": [], "criteria": self.card}
         usage = SimpleNamespace(input_tokens=1, output_tokens=1, cache_creation_input_tokens=0, cache_read_input_tokens=0)
@@ -87,10 +88,10 @@ def test_the_deck_needs_a_card_then_shows_reasons_and_explore_cards(api):
     assert status == 400 and "first" in out["error"]
     ask("/api/chat", {"text": "Egaleo up to 250k"})
     status, out = ask("/api/deck", {"limit": 10})
-    assert status == 200 and out["total_matches"] == 11 and len(out["cards"]) == 10
-    assert all(125000 <= c["price_eur"] <= 250000 and c["area"] == "Egaleo" for c in out["cards"])
+    assert status == 200 and out["total_matches"] == 18 and out["listings_folded"] == 4 and len(out["cards"]) == 10
+    assert all(125000 <= c["price_eur"] <= 250000 for c in out["cards"])
     assert all(1 <= len(c["reasons"]) <= 2 for c in out["cards"])
-    assert [c["explore_card"] for c in out["cards"]] == [False] * 4 + [True] + [False] * 5  # one in five while the top lasts
+    assert [c["explore_card"] for c in out["cards"]] == ([False] * 4 + [True]) * 2  # one in five while the top lasts
     assert [c["deck_position"] for c in out["cards"]] == list(range(10))
 
 
@@ -120,8 +121,8 @@ def test_a_checkin_comes_after_ten_swipes_with_a_pattern_and_a_no_is_not_repeate
     ask("/api/chat", {"text": "Egaleo up to 250k"})
     _, out = ask("/api/deck", {"limit": 20})
     checkins = []
-    for i, c in enumerate(out["cards"][:12]):  # a taste: only recent builds
-        decision = "like" if (c["year_built"] or 0) >= 2005 else "reject"
+    for i, c in enumerate(out["cards"][:12]):  # a taste: only homes with a lift
+        decision = "like" if c["lift"] else "reject"
         _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": decision, "deck_position": c["deck_position"],
                                     "explore_card": c["explore_card"]})
         if res["checkin"]:
@@ -148,7 +149,7 @@ def test_a_yes_to_a_checkin_changes_the_card_and_the_deck_follows(api):
     for c in out["cards"]:
         if checkin:
             break
-        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if (c["year_built"] or 0) >= 2005 else "reject",
+        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if c["lift"] else "reject",
                                     "deck_position": c["deck_position"]})
         checkin = res["checkin"]
     assert checkin
@@ -233,7 +234,7 @@ def test_a_waiting_checkin_survives_a_reload_and_cant_block_for_good(api):
     _, out = ask("/api/deck", {"limit": 20})
     checkin = None
     for c in out["cards"]:
-        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if (c["year_built"] or 0) >= 2005 else "reject",
+        _, res = ask("/api/swipe", {"listing_id": c["listing_id"], "decision": "like" if c["lift"] else "reject",
                                     "deck_position": c["deck_position"]})
         if res["checkin"]:
             checkin = res["checkin"]

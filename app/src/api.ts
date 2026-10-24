@@ -115,6 +115,7 @@ export interface DeckCard extends Summary {
   market: MarketLine[];
   preference_score: number;
   learned_score: number | null;
+  listed: Listed | null;
   explore_card: boolean;
   skipped_before: boolean;
   deck_position: number;
@@ -124,6 +125,14 @@ export interface DeckCard extends Summary {
 export interface Widening {
   limits: Record<string, number | string[]>;
   matches: number;
+}
+
+// The same home listed more than once (D78): the card is the cheapest version, the others are links.
+export interface Listed {
+  times: number;
+  price_min: number | null;
+  price_max: number | null;
+  others: { listing_id: string; source: string; url: string; price_eur: number | null }[];
 }
 
 // What the learned ranking has picked up (D76): how much of the order the swipes decide, and its clearest leanings.

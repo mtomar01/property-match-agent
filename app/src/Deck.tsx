@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Checkin, Deck as DeckData, DeckCard, Decision, Learning, Widening } from "./api";
+import { Checkin, Deck as DeckData, DeckCard, Decision, Learning, Listed, Widening } from "./api";
 import { CANT_JUDGE_REASONS, REJECT_REASONS, floorText, money, wideningMessage, wideningText } from "./labels";
 
 interface Props {
@@ -81,9 +81,20 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
           <ul className="reasons">
             {card.reasons.map((r) => <li key={r.feature}>{r.text}</li>)}
           </ul>
-          {card.market.length > 0 && (
+          {(card.market.length > 0 || card.listed) && (
             <ul className="market" aria-label="The market">
               {card.market.map((m) => <li key={m.feature} className={m.feature}>{m.text}</li>)}
+              {card.listed && (
+                <li className="listed">
+                  {listedText(card.listed, card.price_eur)}:{" "}
+                  {card.listed.others.map((o, i) => (
+                    <span key={o.listing_id}>
+                      {i > 0 && ", "}
+                      <a href={o.url} target="_blank" rel="noreferrer noopener">{o.source}{o.price_eur ? ` ${money(o.price_eur)}` : ""} ↗</a>
+                    </span>
+                  ))}
+                </li>
+              )}
             </ul>
           )}
           <a className="small" href={card.url} target="_blank" rel="noreferrer noopener">
@@ -129,6 +140,15 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
       )}
     </section>
   );
+}
+
+// "Listed 3 times, €185,000 to €199,000" (spec section 11): this card is the cheapest version.
+function listedText(listed: Listed, price: number | null): string {
+  const times = listed.times === 2 ? "twice" : `${listed.times} times`;
+  if (listed.price_min && listed.price_max && listed.price_min !== listed.price_max) {
+    return `Listed ${times}, ${money(listed.price_min)} to ${money(listed.price_max)}${price === listed.price_min ? "; this is the cheapest" : ""}`;
+  }
+  return `Listed ${times} at the same price`;
 }
 
 // How the order is decided (D76): the chat's wishes at first, then more and more the user's own likes and rejects.

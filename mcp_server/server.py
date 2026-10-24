@@ -34,6 +34,7 @@ from core import greek
 from core.card_rules import search_card
 from core.models import Criteria, HardLimits, Intent, Preference, set_covered_areas
 from core.search import MAX_LIMIT, search
+from dedupe import finder
 from learning import deck, learned, patterns
 from learning.area_stats import AreaStats
 from learning.swipes import SwipeStore
@@ -63,11 +64,23 @@ _adapter: SnapshotAdapter | None = None
 
 def adapter() -> SnapshotAdapter:
     """Load the snapshot once, on first use."""
-    global _adapter
+    global _adapter, _duplicates
     if _adapter is None:
         _adapter = SnapshotAdapter()
         set_covered_areas(data_areas(_adapter.listings()))  # the areas this dataset covers (D69)
+        _duplicates = None
     return _adapter
+
+
+_duplicates: list | None = None
+
+
+def duplicates() -> list:
+    """The duplicate groups in this dataset, found once by code (D78)."""
+    global _duplicates
+    if _duplicates is None:
+        _duplicates = finder.clusters(adapter().listings())
+    return _duplicates
 
 
 class SearchCriteria(BaseModel):
@@ -165,7 +178,7 @@ def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -
     learner = learned.Learner.fit(store.verdicts(), {l.listing_id: l for l in listings}, card, AreaStats.build(listings))
     return deck.build(listings, card, store.swiped_ids(), start_position=len(swiped),
                       limit=max(1, min(limit, MAX_LIMIT)), seed=len(store.verdicts()) // deck.EXPLORE_EVERY,
-                      skipped_ids=store.skipped_ids(), learner=learner)
+                      skipped_ids=store.skipped_ids(), learner=learner, duplicates=finder.index(duplicates()))
 
 
 @mcp.tool(
@@ -219,6 +232,22 @@ def criteria_interview() -> str:
 )
 def area_stats() -> dict:
     return {"areas": AreaStats.build(adapter().listings()).summary()}
+
+
+@mcp.tool(
+    description=(
+        "Listings that are the same home listed more than once, found in code: each group with its evidence (size, "
+        "floor, price, wording, photos) and its price range, for example 'listed 3 times, €185k to €199k'. Give "
+        "listing_ids to ask about those listings only; leave it out for every group. Built for precision: a pair "
+        "the evidence doesn't settle stays apart."
+    )
+)
+def find_duplicates(listing_ids: list[str] | None = None) -> dict:
+    groups = duplicates()
+    if listing_ids:
+        wanted = set(listing_ids)
+        groups = [g for g in groups if wanted & set(g.listing_ids)]
+    return {"groups": [g.model_dump() for g in groups], "count": len(groups)}
 
 
 @mcp.tool(description="Get one listing in full by its listing_id, for example spitogatos:SYN0001.")

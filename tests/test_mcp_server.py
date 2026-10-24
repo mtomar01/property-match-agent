@@ -29,8 +29,8 @@ def test_lists_the_tools_and_the_interview_prompt():
             return tools, prompts, text
 
     tools, prompts, text = asyncio.run(go())
-    assert tools == ["area_stats", "check_supply", "extract_listing", "get_listing", "next_cards", "record_swipe", "search_listings",
-                     "swipe_patterns"]
+    assert tools == ["area_stats", "check_supply", "extract_listing", "find_duplicates", "get_listing", "next_cards", "record_swipe",
+                     "search_listings", "swipe_patterns"]
     assert prompts == ["criteria_interview"]
     assert "in Athens" in text and "next_cards" in text and "## Output fields" not in text
 
