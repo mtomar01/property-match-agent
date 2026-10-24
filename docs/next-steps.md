@@ -21,7 +21,7 @@ Updated 23 October 2026, after the v2 build (D64 to D67).
 2. **You swipe real listings** (README, "The app", with `PM_SNAPSHOT`): about 100 swipes over a few days, tapping a reject reason when one fits. Then `uv run python -m learning.swipes me` records the baseline like rate, which finishes v2 and is what v3's learning has to beat.
 3. **Two data gaps to decide on:** photo links were captured for 29 of your 484 listings, so most real cards show a placeholder; year built is known for 47. Both need another pass over the portals (a live-site step, your call) or the detail pages from D24.
 4. **Connect the server to the Claude desktop app** (`docs/connect-claude-desktop.md`): the demo now includes the deck tools.
-5. **v3, learning:** logistic regression on your swipes against the rule baseline, duplicates across portals (the synthetic deck already shows the same flat twice from two sources), area stats.
+5. **v3, learning:** first the two search additions from the expansions list, condition in the chat (a strong wish by default) and a price per m² limit, since the learned ranking uses the same fields; then logistic regression on your swipes against the rule baseline, duplicates across portals (the synthetic deck already shows the same flat twice from two sources), area stats.
 
 ## Interview eval (22 October, D46, D47)
 
