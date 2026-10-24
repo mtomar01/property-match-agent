@@ -1,6 +1,6 @@
 # Collecting a dataset from Spitogatos
 
-How a new, refreshed or expanded product dataset is built (D68). It runs on Mike's Mac, in his own Chrome, through Claude Code with the Claude in Chrome extension (`claude --chrome`). Everything collected stays in `data/private/`, which git ignores. The evals never use it: they stay on the frozen 20 October snapshot.
+How a new, refreshed or expanded product dataset is built (D68). It runs on Mike's Mac, in his own Chrome, through Claude Code with the Claude in Chrome extension (`claude --chrome`). Everything collected stays in `data/private/`, which git ignores. The evals stay on the frozen 20 October snapshot; the learning eval also runs on a frozen, read-only copy of the 23 October dataset (D76), because the older snapshot lacks most of the fields the learned ranking reads.
 
 ## Rules
 

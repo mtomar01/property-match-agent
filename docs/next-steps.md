@@ -1,27 +1,22 @@
 # Next steps
 
-Updated 23 October 2026, after the v2 build (D64 to D67).
+Updated 24 October 2026, after the v3 build (D72 to D78).
 
 ## Where we are
 
-- **v0 foundations done:** models, Greek normalisation, contact-detail scrubbing, 60 synthetic listings, labelling guide and templates.
-- **Thin slice of v1 done:** MCP server with `search_listings` and `get_listing`, a command-line demo, the search safety eval (20 cases, 0 breaks), CI.
-- **Real data:** 484 listings (270 Spitogatos, 214 spiti24) for Egaleo, Peristeri and Chaidari, private and local only. 204 spiti24 listings match a Spitogatos one, so the duplicates eval has real material.
-- **Interview set done:** 40 scripted chats, 20 Greek and 20 English (`evals/datasets/interview_chats.jsonl`).
-- **Extraction set collected:** full pages for 100 Spitogatos listings (33 Egaleo, 33 Peristeri, 34 Chaidari), scrubbed, in `data/private/`. Code reads each page's table and ticks (`adapters/spitogatos_details.py`). Labelling runs on five hosted pages of 20 (D24 to D29).
-
-## Labelling: where it stands (21 October)
-
-- **All 100 labelled** on the hosted pages (D28): GB 60 (1 to 20, 41 to 60, 81 to 100), you 40 (21 to 40, 61 to 80). All valid, copies in `data/private/labels/`.
-- **Rule versions differ:** 1 to 40 were labelled before D29; 41 to 100 after. No consistency pass, because more rounds are coming.
+- **v3 built:** waiting check-ins survive a reload (D72); condition, a price per m² limit and a stairs limit (D73); market lines and area stats (D74); the check-in ladder and a fresh start on New search (D75); the learned ranking (D76); one card per home for duplicates (D78). Prompt v8's eval is in (D77) and prompt v9 is written but not run.
+- **Data:** your product dataset is the 1,000 listings of 23 October (five areas, 200 each), private and on your Mac. The evals stay on the frozen 20 October snapshot (484 listings), plus the 23 October file as a second frozen set for the learning eval.
+- **Tests:** the whole suite passes; the app builds and works at phone width.
+- **Spent:** about $20.60 of the $100 in total ($3.56 on the v8 run).
 
 ## Next steps
 
-1. **Prompt v8 eval run** (about $3, your go): the deck's prompt says what it will search in one sentence instead of asking to confirm, and words the check-ins. The 40 chats and the clean 10 should hold at v7's scores.
-2. **You swipe real listings** (README, "The app", with `PM_SNAPSHOT`): about 100 swipes over a few days, tapping a reject reason when one fits. Then `uv run python -m learning.swipes me` records the baseline like rate, which finishes v2 and is what v3's learning has to beat.
-3. **Two data gaps to decide on:** photo links were captured for 29 of your 484 listings, so most real cards show a placeholder; year built is known for 47. Both need another pass over the portals (a live-site step, your call) or the detail pages from D24.
-4. **Connect the server to the Claude desktop app** (`docs/connect-claude-desktop.md`): the demo now includes the deck tools.
-5. **v3, learning:** first the two search additions from the expansions list, condition in the chat (a strong wish by default) and a price per m² limit, since the learned ranking uses the same fields; then logistic regression on your swipes against the rule baseline, duplicates across portals (the synthetic deck already shows the same flat twice from two sources), area stats.
+1. **Prompt v9 eval run** (about $3.60, your go). Two sentences fix v8's one slip, a bare bedroom count that also became a maximum (D77). The app stays on v8 until v9 is measured.
+2. **On your Mac:** pull, rebuild the app, and rebuild the dataset page-only, so each listing gets its published date and the cards show time on the market (the 84 early Egaleo pages read from cards are refetched first, if not done yet). Then run the server on it. The prompt for Claude Code on your Mac is in the chat.
+3. **Check the two relabels** in the clean test (gb_1 and your mike_5, D77): both said "a lift if it's above the ground or 1st floor", which is the stairs limit. Say if you'd rather keep them as lift wishes.
+4. **Swipe:** about 100 swipes gives the baseline like rate (v2's finishing line); at about 200, `uv run python -m evals.harness.learning_eval --real me` measures the learned ranking on your own taste, the spec's real test.
+5. **Label 60 duplicate pairs, you and GB** (D78): `uv run python -m evals.harness.build_duplicate_labels`, then `--links-only` for GB. Targets 0.95 precision, 0.85 recall.
+6. **Photo hashes for duplicates** (your call, a live-site step): reworded copies need them.
 
 ## Interview eval (22 October, D46, D47)
 
@@ -34,6 +29,7 @@ Updated 23 October 2026, after the v2 build (D64 to D67).
 - Prompt v6 (D57): 40 chats 100%; clean 10 at 92.1% fields, behaviours 100%.
 - Prompt v7 (D63, D65): 40 chats 100%, 13 of 13 narrowing questions when wide; clean 10 at 97.3% fields, behaviours 100%.
 - Spent about $15.40 of the $100 in total.
+- Prompt v8 (D77, 24 October): 40 chats 99.4%, 1 invented (a bare bedroom count became a maximum); 8 new chats 100%; clean 10 90.2% as labelled, 95.1% with two lift wishes relabelled to the stairs limit. $3.56.
 
 ## Pagrati clean test, scored (22 October, D45)
 

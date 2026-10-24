@@ -2,7 +2,7 @@
 
 A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
 
-**Status:** v2, the swipe deck: the interview, the deck with reasons from fields, swipes with reject reasons, check-ins that read the swipes, the shortlist and its CSV. Built, with its evals passing; the baseline like rate waits for real swipes. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
+**Status:** v3, learning: the interview, a swipe deck that learns your taste from your likes and rejects, one card per home when a flat is listed more than once, market facts on every card, check-ins every 10 swipes, the shortlist and its CSV. Built, with its evals passing on development sets; the real-swipe and labelled-duplicate scores wait for your swipes and labels. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
 
 ## Run it on the synthetic data
 
@@ -14,6 +14,7 @@ uv run pytest                            # unit tests
 uv run python -m evals.harness.run       # eval suite, prints a results table
 uv run python -m core.synthetic          # regenerate the synthetic listings
 uv run python -m mcp_server.demo         # search through the MCP server, prints a table
+uv run python -m evals.harness.duplicates_eval    # the duplicate finder on the synthetic copies
 ```
 
 Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basements --limit 20`.
@@ -29,11 +30,12 @@ cd app && npm install && npm run build && cd ..   # build the React app once
 uv run python -m api.server                       # http://127.0.0.1:8765, synthetic listings
 PM_SNAPSHOT=data/private/snapshot.jsonl uv run python -m api.server   # your private listings, your machine only
 uv run python -m learning.swipes me               # your like rate so far, counts only (v2's finishing line)
+uv run python -m evals.harness.learning_eval --real me   # once you have about 200 swipes: learned against rules
 ```
 
-How it flows (D61, D66): you chat until the assistant has what it needs, then the homes come up one at a time with the hard limits on a bar above them. Right to like, left to reject with a quick reason or your own words; in the middle, back and skip; and "Can't judge" when a listing's photos or details don't let you decide, which never counts against the home (D71). Every fifth card comes from outside the ranking's top, so the deck keeps learning. After every 10 swipes code compares your likes with your rejects; when it finds a clear pattern, the assistant puts one change to you with the counts, and nothing changes until you say yes. Any change goes through the chat, and the shortlist of liked homes downloads as a CSV that opens in Google Sheets.
+How it flows (D61, D66, D74 to D78): you chat until the assistant has what it needs, then the homes come up one at a time with the hard limits on a bar above them. Each card says why it fits and two market facts counted by code: its price per m² against similar homes, and how long it has been on the market. A home listed more than once shows once, at its cheapest, with the other listings as links. Right to like, left to reject with a quick reason or your own words; in the middle, back and skip; and "Can't judge" when a listing's photos or details don't let you decide, which never counts against the home (D71). From 3 likes and 3 rejects the order blends in what your swipes teach, all of it from 30, and the line under the deck says how much and what it leans towards. Every fifth card comes from outside the ranking's top, so it keeps learning. Every 10 likes or rejects there's one question: a pattern code found, put by the assistant with the counts; else a reason you tapped; else "How are these homes so far?" Nothing changes until you say yes. Any change goes through the chat, New search starts the swipes from zero, and the shortlist of liked homes downloads as a CSV that opens in Google Sheets.
 
-Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents, and so is a check-in. The deck, the reasons on the cards, the swipe log and the pattern finding are code and cost nothing. Swipes and the chat are saved in `data/private/`, which git ignores. Photos load from the portal only while a card is on screen and are never stored; the public synthetic listings show a placeholder.
+Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents, and so is a pattern check-in. The deck, the reasons and market facts, the learned ranking, the duplicate finder, the swipe log, the pattern finding and the other check-in questions are code and cost nothing. Swipes and the chat are saved in `data/private/`, which git ignores. Photos load from the portal only while a card is on screen and are never stored; the public synthetic listings show a placeholder.
 
 For changes to the app, run `npm run dev` in `app/` with the server running: Vite serves the page and passes `/api` to Python.
 
@@ -47,6 +49,8 @@ uv run python -m evals.harness.agreement first.jsonl second.jsonl  # how often t
 ```
 
 The rules are in `docs/labelling-guide.md`.
+
+Duplicates (D78): `uv run python -m evals.harness.build_duplicate_labels` writes a page of 60 pairs from the frozen snapshot to mark "same home" or not (add `--links-only` for a page without listing text, to share). Check the exports with `uv run python -m evals.harness.duplicates_eval --labels mike.jsonl gb.jsonl`.
 
 ## Results by version
 
@@ -97,16 +101,26 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v1 | **Interview clean test, prompt v6**, with Mike's last two calls (D57, D58) | 10 | **97.3%** | **0** | 13 of 13 | **100%** |
 | v1 | **Interview, prompt v7**: the lowest price from code, an early supply check, widening together under 5 matches (D60, D63) | 40 | **100%** | **0** | 17 of 17 | **100%** |
 | v1 | **Interview clean test, prompt v7** | 10 | **97.3%** | **0** | 13 of 13 | **100%** |
+| v3 | Interview, prompt v8: one-sentence search instead of a confirmation, check-ins, condition, price per m², stairs (D73, D77) | 40 | 99.4% | 1 | 16 of 16, 1 extra | 100% |
+| v3 | Interview, prompt v8, the 8 new chats for condition, price per m² and stairs | 8 | 100% | 0 | 3 of 3 | 100% |
+| v3 | Interview clean test, prompt v8, as labelled | 10 | 90.2% | 3 | 11 of 13 | 97.1% |
+| v3 | **Interview clean test, prompt v8**, two lift wishes relabelled to the stairs limit (D77) | 10 | **95.1%** | 1 | 11 of 11 | 97.1% |
 
 | Version | Eval | Size | Result | Target |
 |---|---|---|---|---|
 | v2 | Explanations: every "why this one" reason checked against the listing's fields (D64) | 50 cards, 100 reasons | **100%** backed | 98% |
+| v3 | Explanations, with the market lines recomputed independently (D74) | 50 cards, 194 reasons and market lines | **100%** backed | 98% |
+| v3 | Learning: 8 simulated buyers, learn from the first swipes, rank the homes waiting after 160 (D76) | 5 runs each, frozen 20 October snapshot | AUC 0.634 rules, **0.742** learned; precision at 10 +0.110 | AUC lift 0.05, precision at 10 no lower |
+| v3 | Learning, the same on the 23 October dataset | 5 runs each | AUC 0.650 rules, **0.756** learned; precision at 10 +0.170 | same |
+| v3 | Duplicates, synthetic copies (development check) (D78) | 12 known groups | with photo hashes precision **1.0**, recall **1.0**; without, 1.0 and 0.67 | 0.95 and 0.85 |
+| v3 | Duplicates, 60 labelled real pairs | 60 pairs | not labelled yet | 0.95 and 0.85 |
+| v3 | Learning on your real swipes | about 200 | not recorded yet | a clear lift over the rules |
 | v2 | Suggestions: the pattern a check-in offers from a swipe history, or silence (D66, D67) | 30 histories | precision **94.4%**, recall 94.4%, evidence counts all correct, 0 false alarms on random swipes | 80% precision, evidence always correct |
 | v2 | Baseline like rate, the share of cards swiped right before any learning | about 100 real swipes | not recorded yet | recorded |
 
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
-Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. Prompt v8, which the deck uses, hasn't had its interview run yet.
+Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). Prompt v9 fixes the v8 slip (a bare bedroom count also became a maximum) and waits for its run; the app uses v8 until then.
 
 ## Docs
 

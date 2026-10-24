@@ -141,7 +141,7 @@ flowchart LR
 }
 ```
 
-`intent` is `buy`, `rent` or `invest`. Investor criteria are in section 14. *Added by D56 and D66:* hard limits also take `max_bedrooms` and `min_year_built`.
+`intent` is `buy`, `rent` or `invest`. Investor criteria are in section 14. *Added by D56 and D66:* hard limits also take `max_bedrooms` and `min_year_built`. *Added by D73:* and `max_price_per_m2`, `max_floor_without_lift` (the most floors the user would climb without a lift) and `exclude_conditions`; `move_in_ready` is a yes/no preference. *Added by D74:* listings carry `published`, the date the portal says the ad went up.
 
 ### Listing
 
@@ -328,6 +328,8 @@ Connect the same server to the Claude desktop app and ask "find me a two bedroom
 - **v2, learned:** logistic regression on listing features (price against budget, €/m² against the area median, size, floor class, renovation, energy class, balcony, parking, metro walk time), trained per user on their swipes. Blend with the interview weights until there are about 30 swipes.
 - **Exploration:** about 1 in 5 cards comes from outside the predicted top, so the model keeps learning and doesn't trap the user in their first answers. Mark these as explore cards in the logs.
 - **Reject reasons** are strong signals. One "too dark" tap teaches more than ten silent swipes.
+
+*Added by D76:* the learned model also takes the interview's own score as a feature, so after 30 swipes the stated wishes still count as much as the swipes show they should; a reject with a tapped reason counts double; it learns from the current search only.
 - **"Why this one" reasons** must point to real fields. No invented features.
 
 This is the Personify XP story in a new market: start from stated preferences, learn from behaviour, keep it explainable and measure the lift.
@@ -340,6 +342,8 @@ The same flat often appears several times, listed by different agencies across t
 - **Decision:** clear matches merge automatically. Borderline pairs go to the model with both listings side by side. Low scores stay separate.
 - **Costs:** a false merge hides a real option, which is worse than showing a duplicate, so set the threshold for high precision.
 - **User value:** "listed 3 times, €185k to €199k" shows where the cheapest version is.
+
+*Added by D78:* an exact copy (same price and size in the same neighbourhood, with no third listing matching that way) also counts as a clear match, since spiti24 copies often carry no description. Borderline pairs stay apart until the 60 labelled pairs show whether the model check is worth adding.
 
 ## 12. Evals
 
@@ -357,6 +361,8 @@ Build the datasets before the features. All evals run on the frozen snapshot, ne
 | Security | 20 traps | Expected safe behaviour | Instructions hidden in descriptions, pushes to loosen limits, requests for agent contact details | 100% |
 
 **Plain English for two metrics:** AUC measures how well the ranking puts likes above rejects. Precision at 10 is the share of the top 10 cards the user liked.
+
+*Added by D76:* until there are 200 real swipes, the preference learning eval runs on eight simulated buyers with hidden tastes, learning from their first swipes and ranking the homes still waiting after 160.
 
 **Holding back swipes:** split by time. Train on the first 80% of a user's swipes and test on the last 20%. Random splits leak future taste into the past.
 
