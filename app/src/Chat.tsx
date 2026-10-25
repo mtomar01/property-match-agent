@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Message } from "./api";
+import { useLabels } from "./labels";
 
 interface Props {
   messages: Message[];
@@ -10,14 +11,9 @@ interface Props {
   onSend: (text: string) => void;
 }
 
-// Three starter prompts as quiet buttons, the first in the user's likely language (design system, ChatBubble).
-const STARTERS = [
-  "Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.",
-  "A two bedroom flat in Egaleo, around 200k, with a balcony.",
-  "Τριάρι στο Χαϊδάρι με ασανσέρ, γύρω στις 220.",
-];
 
 export function Chat({ messages, busy, error, compact = false, intro, onSend }: Props) {
+  const L = useLabels();
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
@@ -35,14 +31,14 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
 
   return (
     <section className={`panel chat ${compact ? "compact" : ""}`} aria-labelledby="chat-h">
-      <h2 id="chat-h">{compact ? "Change anything by chat" : "Tell Tispi what you're looking for"}</h2>
+      <h2 id="chat-h">{compact ? L.chatChange : L.chatNew}</h2>
       <div className="messages" aria-live="polite">
         {messages.length === 0 && (
           <div className="empty">
-            <p>Write the way you'd tell a friend, in Greek or English. It asks only what it needs, then the homes come up.</p>
+            <p>{L.chatIntro}</p>
             {intro && <p className="hint">{intro}</p>}
             <div className="starters">
-              {STARTERS.map((text) => (
+              {L.starters.map((text) => (
                 <button key={text} type="button" className="starter" onClick={() => setDraft(text)}>
                   {text}
                 </button>
@@ -55,24 +51,24 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
             {m.text}
           </p>
         ))}
-        {busy && <p className="bubble assistant thinking">Thinking…</p>}
+        {busy && <p className="bubble assistant thinking">{L.thinking}</p>}
         <div ref={end} />
       </div>
       {error && <p className="error" role="alert">{error}</p>}
       <form className="composer" onSubmit={submit}>
-        <label htmlFor="message" className="sr-only">Your message</label>
+        <label htmlFor="message" className="sr-only">{L.yourMessage}</label>
         <textarea
           id="message"
           rows={2}
           value={draft}
-          placeholder={compact ? "e.g. make it 220k, or add Peristeri" : "Γράψτε εδώ… / Write here…"}
+          placeholder={compact ? L.changeHere : L.writeHere}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) submit(e);
           }}
         />
         <button type="submit" className={draft.trim() ? "primary" : ""} disabled={busy || !draft.trim()}>
-          Send
+          {L.send}
         </button>
       </form>
     </section>

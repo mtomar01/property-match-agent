@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Card, HardLimits, Preference } from "./api";
-import { UI, barText, preferenceText, weightWord } from "./labels";
+import { barText, preferenceText, useLabels, weightWord } from "./labels";
 
 interface Props {
   card: Card;
@@ -13,7 +13,8 @@ interface Props {
 // lime-soft, with the wishes and the open questions behind a fold-out (D61, D89, D90). Hard limits are never
 // hidden by rule: on a phone code measures what fits on one row and folds the rest, so nothing is cut off.
 export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
-  const limits = barText(card, searched);  // firm wishes code made limits show here, not in the wishes (D79)
+  const L = useLabels();
+  const limits = barText(card, searched, L);  // firm wishes code made limits show here, not in the wishes (D79)
   const [open, setOpen] = useState(false);
   const [fit, setFit] = useState(limits.length);
   const row = useRef<HTMLUListElement>(null);
@@ -44,12 +45,12 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
   const hidden = limits.slice(fit);
   const folded = hidden.length + wishes.length;
   // "+3" when limits are folded too (the button says how much is behind it, D89), "+1 wish" when only wishes are
-  const label = !folded ? UI.details : hidden.length ? `+${folded}` : `+${UI.wish(wishes.length)}`;
+  const label = !folded ? L.details : hidden.length ? `+${folded}` : `+${L.wish(wishes.length)}`;
 
   return (
-    <section className={`bar ${oneRow ? "one-row" : ""}`} aria-label={UI.limits}>
+    <section className={`bar ${oneRow ? "one-row" : ""}`} aria-label={L.limits}>
       <div className="bar-line">
-        {!oneRow && <span className="label bar-label">{UI.limits}</span>}
+        {!oneRow && <span className="label bar-label">{L.limits}</span>}
         <ul className="bar-limits" ref={row}>
           {limits.map((text, i) => <li key={text} className={i >= fit ? "folded" : ""}>{text}</li>)}
         </ul>
@@ -60,7 +61,7 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
       {open && (
         <>
           <div className="dim on sheet-dim" onClick={() => setOpen(false)} aria-hidden="true" />
-          <div className="bar-details" role="region" aria-label={UI.limits}>
+          <div className="bar-details" role="region" aria-label={L.limits}>
             {(oneRow ? limits : hidden).length > 0 && (  // the fold-out lists every limit in full on a phone
               <ul className="bar-limits wrap">
                 {(oneRow ? limits : hidden).map((text) => <li key={text}>{text}</li>)}
@@ -70,8 +71,8 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
               <ul className="prefs">
                 {wishes.map((p, i) => (
                   <li key={`${p.feature}-${i}`}>
-                    <span>{preferenceText(p)}</span>
-                    <span className="weight">{weightWord(p.weight)}</span>
+                    <span>{preferenceText(p, L)}</span>
+                    <span className="weight">{weightWord(p.weight, L)}</span>
                   </li>
                 ))}
               </ul>
@@ -81,8 +82,8 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
                 {card.open_questions.map((q) => <li key={q}>{q}</li>)}
               </ul>
             )}
-            <p className="hint">{UI.limitsHint}</p>
-            {oneRow && <button type="button" className="wide" onClick={() => setOpen(false)}>{UI.close}</button>}
+            <p className="hint">{L.limitsHint}</p>
+            {oneRow && <button type="button" className="wide" onClick={() => setOpen(false)}>{L.close}</button>}
           </div>
         </>
       )}

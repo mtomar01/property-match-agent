@@ -94,8 +94,11 @@ button.wide { width: 100%; }
 .options { position: fixed; z-index: 30; background: var(--surface-raised); display: grid; gap: var(--space-4); padding: var(--space-5); align-content: start; overflow: auto; }
 .options-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
 .options h2 { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; }
-.option { display: grid; gap: var(--space-1); }
+.option { display: grid; gap: var(--space-2); }
 .option p { margin: 0; }
+.seg { display: flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-pill); max-width: 420px; }
+.seg-btn { flex: 1; border: 0; background: none; border-radius: var(--radius-pill); min-height: 36px; padding: 6px 14px; font-weight: 400; color: var(--ink-muted); white-space: nowrap; }
+.seg-btn.on { background: var(--lime-soft); color: var(--lime-deep); font-weight: 600; }
 
 /* Desktop: a 272px sidebar, the chat pane and the homes pane side by side, the card's right edge 30px from the screen */
 @media (min-width: 900px) {
@@ -245,9 +248,9 @@ td.num { font-weight: 600; }
   .results td { border: 0; padding: 0; white-space: normal; text-align: left; }
   .results td.num:first-child { font-size: 17px; line-height: 24px; }
   .results td.num:nth-child(2) { display: inline; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-  .results td.num:nth-child(2)::after { content: " €/m²"; }
+  .results td.num:nth-child(2)::after { content: attr(data-unit); }
   .results td:nth-child(5) { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
-  .results td:nth-child(5)::before { content: "first seen "; }
+  .results td:nth-child(5)::before { content: attr(data-label); }
   .results td:last-child { margin-top: var(--space-1); }
 }
 .change { font-size: 12px; }

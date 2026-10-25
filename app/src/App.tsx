@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Preference, SearchSummary, State, Summary, SwipeStats, getDeck, getSearches, getShortlist, getState, newSearch, selectSearch, sendChat, sendSwipe, undoSwipe, answerCheckin } from "./api";
 import { Chat } from "./Chat";
 import { Deck } from "./Deck";
 import { SearchesIcon } from "./Icons";
 import { LimitsBar } from "./LimitsBar";
-import { UI, titleText } from "./labels";
+import { LABELS, LabelsContext, Lang, LangPref, Theme, detectLanguage, titleText } from "./labels";
 import { Options } from "./Options";
 import { Searches } from "./Searches";
 import { Shortlist } from "./Shortlist";
@@ -12,6 +12,20 @@ import { Shortlist } from "./Shortlist";
 type View = "chat" | "deck" | "shortlist";
 const DESKTOP = "(min-width: 900px)";
 const isDesktop = () => window.matchMedia(DESKTOP).matches;
+const VERSION = "Version 0.4";
+
+// The two choices in Options live in the browser (D96); a read can fail in a private window, so each is guarded.
+function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const value = localStorage.getItem(key);
+    return allowed.includes(value as T) ? (value as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+function store(key: string, value: string) {
+  try { localStorage.setItem(key, value); } catch { /* a private window: the choice lasts the session */ }
+}
 
 // The shell follows a chat app (D90, D91): the search is the title, past searches live in a sidebar (desktop) or a
 // drawer (phone), the limits bar carries every other limit, and the three things to look at are the chat, the
@@ -39,6 +53,28 @@ export function App() {
   const [data, setData] = useState("");
   const [areas, setAreas] = useState<string[]>([]);
   const [phone, setPhone] = useState(() => !isDesktop());
+  const [theme, setTheme] = useState<Theme>(() => stored("tispi.theme", ["system", "light", "dark"], "system"));
+  const [langPref, setLangPref] = useState<LangPref>(() => stored("tispi.lang", ["auto", "en", "el"], "auto"));
+
+  // Appearance: System is color-scheme "light dark" on the root; a pinned theme is one attribute (D94).
+  useEffect(() => {
+    if (theme === "system") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = theme;
+    store("tispi.theme", theme);
+  }, [theme]);
+
+  // Language: Automatic follows the user's last message, as the server's check-ins already do (D92); before any
+  // message, the browser's language. A fixed choice pins the screen for a household that writes in one language.
+  const lang: Lang = useMemo(() => {
+    if (langPref !== "auto") return langPref;
+    const last = [...messages].reverse().find((m) => m.role === "user")?.text;
+    return detectLanguage(last, navigator.language.toLowerCase().startsWith("el") ? "el" : "en");
+  }, [langPref, messages]);
+  const L = LABELS[lang];
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    store("tispi.lang", langPref);
+  }, [lang, langPref]);
 
   useEffect(() => {
     const media = window.matchMedia(DESKTOP);
@@ -222,16 +258,17 @@ export function App() {
   const closeSide = useCallback(() => setSideOpen(false), []);
   const current = queue[0] ?? null;
   const nextCheckin = deck ? Math.max(0, deck.checkin_every - deck.since_checkin) : null;
-  const title = titleText(card, searchedAs);
+  const title = titleText(card, searchedAs, L);
   const rightView: "deck" | "shortlist" = view === "shortlist" ? "shortlist" : "deck";
 
   return (
+    <LabelsContext.Provider value={L}>
     <div className={`shell ${sideOpen ? "side-open" : ""} ${ready ? "ready" : "asking"}`}>
       <Searches searches={searches} open={sideOpen} onClose={closeSide} onSelect={pick} onNew={startNew} onOptions={() => setOptionsOpen(true)} />
 
       <div className="mainarea">
         <header className="hdr">
-          <button type="button" className="icon-btn open-side" aria-label={UI.yourSearches} aria-expanded={sideOpen} onClick={() => setSideOpen(true)}>
+          <button type="button" className="icon-btn open-side" aria-label={L.yourSearches} aria-expanded={sideOpen} onClick={() => setSideOpen(true)}>
             <SearchesIcon />
           </button>
           <div className="where">
@@ -240,25 +277,25 @@ export function App() {
           </div>
           {stats && stats.swipes > 0 && (
             <span className="status muted small">
-              {UI.swipedLine(stats.swipes, stats.likes)}
-              {stats.like_rate != null ? ` · ${UI.likeRate(Math.round(stats.like_rate * 100))}` : ""}
-              {ready && nextCheckin != null ? ` · ${UI.checkinIn(nextCheckin)}` : ""}
+              {L.swipedLine(stats.swipes, stats.likes)}
+              {stats.like_rate != null ? ` · ${L.likeRate(Math.round(stats.like_rate * 100))}` : ""}
+              {ready && nextCheckin != null ? ` · ${L.checkinIn(nextCheckin)}` : ""}
             </span>
           )}
         </header>
 
         <main className="panes">
-          <section className={`pane chat-pane ${view === "chat" ? "on" : ""}`} aria-label={UI.chat}>
-            <Chat messages={messages} busy={busy === "chat"} error={error} compact={ready} intro={UI.covers(areas, data)} onSend={send} />
-            {unsupported && <p className="hint center">{UI.rentNotYet}</p>}
+          <section className={`pane chat-pane ${view === "chat" ? "on" : ""}`} aria-label={L.chat}>
+            <Chat messages={messages} busy={busy === "chat"} error={error} compact={ready} intro={L.covers(areas, data)} onSend={send} />
+            {unsupported && <p className="hint center">{L.rentNotYet}</p>}
           </section>
 
           {ready && (
-            <section className={`pane homes-pane ${view !== "chat" ? "on" : ""}`} aria-label={UI.homes}>
-              <nav className="tabs" aria-label={UI.views}>
-                <button type="button" className={`tab ${rightView === "deck" ? "on" : ""}`} onClick={() => setView("deck")}>{UI.homes}</button>
+            <section className={`pane homes-pane ${view !== "chat" ? "on" : ""}`} aria-label={L.homes}>
+              <nav className="tabs" aria-label={L.views}>
+                <button type="button" className={`tab ${rightView === "deck" ? "on" : ""}`} onClick={() => setView("deck")}>{L.homes}</button>
                 <button type="button" className={`tab ${rightView === "shortlist" ? "on" : ""}`} onClick={() => setView("shortlist")}>
-                  {UI.shortlist}{shortlist.length ? ` (${shortlist.length})` : ""}
+                  {L.shortlist}{shortlist.length ? ` (${shortlist.length})` : ""}
                 </button>
               </nav>
               {rightView === "deck" && card && searchedAs && <LimitsBar card={card} searched={searchedAs} wishes={wishes} oneRow={phone} />}
@@ -271,16 +308,18 @@ export function App() {
           )}
         </main>
 
-        <nav className="views" aria-label={UI.views}>
-          <button type="button" className={`view ${view === "chat" ? "on" : ""}`} onClick={() => setView("chat")}>{UI.chat}</button>
-          <button type="button" className={`view ${view === "deck" ? "on" : ""}`} disabled={!ready} onClick={() => setView("deck")}>{UI.homes}</button>
+        <nav className="views" aria-label={L.views}>
+          <button type="button" className={`view ${view === "chat" ? "on" : ""}`} onClick={() => setView("chat")}>{L.chat}</button>
+          <button type="button" className={`view ${view === "deck" ? "on" : ""}`} disabled={!ready} onClick={() => setView("deck")}>{L.homes}</button>
           <button type="button" className={`view ${view === "shortlist" ? "on" : ""}`} disabled={!ready} onClick={() => setView("shortlist")}>
-            {UI.shortlist}{shortlist.length ? ` (${shortlist.length})` : ""}
+            {L.shortlist}{shortlist.length ? ` (${shortlist.length})` : ""}
           </button>
         </nav>
       </div>
 
-      <Options open={optionsOpen} data={data} areas={areas} onClose={() => setOptionsOpen(false)} />
+      <Options open={optionsOpen} data={data} areas={areas} theme={theme} langPref={langPref} lang={lang} version={VERSION}
+        onTheme={setTheme} onLang={setLangPref} onClose={() => setOptionsOpen(false)} />
     </div>
+    </LabelsContext.Provider>
   );
 }
