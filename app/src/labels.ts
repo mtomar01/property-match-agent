@@ -1,6 +1,39 @@
 // Words for the codes the search uses, so the bar, the cards and the table read like a person wrote them.
 
-import { Card, HardLimits, Preference } from "./api";
+import { Card, HardLimits, Preference, SearchSummary } from "./api";
+
+// The shell's own words (D90, D91), in one place so the language switch (step 4) has one thing to swap.
+export const UI = {
+  app: "Tispi",
+  newSearch: "New search",
+  searches: "Searches",
+  yourSearches: "Your searches",
+  hideSearches: "Hide the searches",
+  options: "Options",
+  chat: "Chat",
+  homes: "Homes",
+  shortlist: "Shortlist",
+  views: "Views",
+  allAreas: "All areas",
+  limits: "Limits",
+  details: "details",
+  send: "Send",
+  today: "Today",
+  close: "Close",
+  wish: (n: number) => `${n} wish${n === 1 ? "" : "es"}`,
+  homesCount: (n: number) => `${n} ${n === 1 ? "home" : "homes"}`,
+  verdictsCount: (n: number) => `${n} ${n === 1 ? "verdict" : "verdicts"}`,
+  shortlistedCount: (n: number) => `${n} shortlisted`,
+  swipedLine: (swiped: number, liked: number) => `${swiped} swiped · ${liked} liked`,
+  likeRate: (pct: number) => `${pct}% like rate`,
+  checkinIn: (n: number) => `check-in in ${n}`,
+  limitsHint: "Hard limits are checked in code and never broken. Wishes only rank. To change anything, tell Tispi in the chat.",
+  rentNotYet: "Rentals aren't supported yet; the deck is for buying.",
+  covers: (areas: string[], data: string) => `Covers ${areas.join(", ")} · ${data}`,
+  dataLabel: "Data",
+  about: "About Tispi",
+  aboutText: "Tispi turns a chat into search limits, searches the portals' listings, shows one card per home and learns your taste from your likes and rejects. Photos are linked, never stored; nothing is kept about agents or owners.",
+};
 
 export const AREAS: [string, string][] = [
   ["Egaleo", "Egaleo · Αιγάλεω"],
@@ -91,11 +124,52 @@ export const money = (value: number | null | undefined) => (value == null ? "–
 const MUST_WORDS: Record<string, string> = { parking: "parking", lift: "a lift", balcony: "a balcony", storage: "a storage room" };
 const floorWord = (level: number) => (level <= 0 ? "ground" : level < 1 ? "mezzanine" : `${level}`);
 
-// The one-line bar above the deck: every hard limit, always visible (D61).
+// "€90,000 to €220,000", "up to €250,000", "from €90,000": the price as a phrase, or nothing when none is set.
+export function priceText(min: number | null | undefined, max: number | null | undefined, intent?: string | null): string {
+  const rent = intent === "rent" ? "rent " : "";
+  if (min != null && max != null) return `${rent}${money(min)} to ${money(max)}`;
+  if (max != null) return `${rent}up to ${money(max)}`;
+  if (min != null) return `${rent}from ${money(min)}`;
+  return "";
+}
+
+// The search is the title (D90, D91): the areas on one line, the price under them, in place of a logo.
+export function titleText(card: Card | null, searched: Partial<HardLimits> | null): { areas: string; price: string } {
+  if (!card) return { areas: UI.newSearch, price: "" };
+  const limits = searched ?? card.hard_limits;
+  return { areas: card.areas.length ? card.areas.join(" · ") : UI.allAreas, price: priceText(limits.min_price_eur, limits.max_price_eur, card.intent) };
+}
+
+// "€90–220k", "up to €250k": the price in the searches list, short enough for a row.
+function shortMoney(value: number): string {
+  return value >= 1000 && value % 1000 === 0 ? `${value / 1000}k` : euro.format(value).replace("€", "");
+}
+export function searchTitle(s: SearchSummary): string {
+  if (!s.has_card) return UI.newSearch;
+  const areas = s.areas.length ? s.areas.join(" · ") : UI.allAreas;
+  const rent = s.intent === "rent" ? "rent " : "";
+  let price = "";
+  if (s.min_price_eur != null && s.max_price_eur != null) price = `€${shortMoney(s.min_price_eur).replace("k", "")}–${shortMoney(s.max_price_eur)}`;
+  else if (s.max_price_eur != null) price = `up to €${shortMoney(s.max_price_eur)}`;
+  else if (s.min_price_eur != null) price = `from €${shortMoney(s.min_price_eur)}`;
+  return price ? `${areas} · ${rent}${price}` : areas;
+}
+
+// "Today · 41 homes · 8 verdicts · 4 shortlisted": the counts that tell two searches apart.
+export function searchSub(s: SearchSummary, today = new Date()): string {
+  const created = new Date(s.created);
+  const sameDay = created.toDateString() === today.toDateString();
+  const when = sameDay ? UI.today : created.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const parts = [when];
+  if (s.homes != null) parts.push(UI.homesCount(s.homes));
+  if (s.verdicts) parts.push(UI.verdictsCount(s.verdicts));
+  if (s.shortlisted) parts.push(UI.shortlistedCount(s.shortlisted));
+  return parts.join(" · ");
+}
+
+// The bar above the deck: every hard limit other than the areas and the price, which are the title (D90, D91).
 export function barText(card: Card, searched: Partial<HardLimits>): string[] {
   const parts: string[] = [];
-  parts.push(card.areas.length ? card.areas.join(" · ") : "All areas");
-  if (searched.max_price_eur != null) parts.push(`${money(searched.min_price_eur)} to ${money(searched.max_price_eur)}`);
   const lo = searched.min_size_m2, hi = searched.max_size_m2;
   if (lo != null && hi != null) parts.push(`${lo} to ${hi} m²`);
   else if (lo != null) parts.push(`from ${lo} m²`);

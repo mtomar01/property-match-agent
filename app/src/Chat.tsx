@@ -6,6 +6,7 @@ interface Props {
   busy: boolean;
   error: string | null;
   compact?: boolean;
+  intro?: string;  // what the data covers, under the opening line
   onSend: (text: string) => void;
 }
 
@@ -14,7 +15,7 @@ const STARTERS = [
   "A two bedroom flat in Egaleo, around 200k, with a balcony.",
 ];
 
-export function Chat({ messages, busy, error, compact = false, onSend }: Props) {
+export function Chat({ messages, busy, error, compact = false, intro, onSend }: Props) {
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
 
@@ -32,11 +33,12 @@ export function Chat({ messages, busy, error, compact = false, onSend }: Props) 
 
   return (
     <section className={`panel chat ${compact ? "compact" : ""}`} aria-labelledby="chat-h">
-      <h2 id="chat-h">{compact ? "Change anything by chat" : "Tell it what you're looking for"}</h2>
+      <h2 id="chat-h">{compact ? "Change anything by chat" : "Tell Tispi what you're looking for"}</h2>
       <div className="messages" aria-live="polite">
         {messages.length === 0 && (
           <div className="empty">
             <p>Write the way you'd tell a friend, in Greek or English. It asks only what it needs, then the homes come up.</p>
+            {intro && <p className="hint">{intro}</p>}
             <div className="starters">
               {STARTERS.map((text) => (
                 <button key={text} type="button" className="starter" onClick={() => setDraft(text)}>

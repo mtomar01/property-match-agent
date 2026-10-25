@@ -23,7 +23,10 @@ Routes:
     POST /api/checkin  {"answer": ...}  -> a tap on a ladder question: "no", or spot_on / mixed / not_for_me (D75)
     GET  /api/shortlist                  -> the liked homes, newest first
     GET  /api/export.csv                 -> the liked homes as a spreadsheet
-    POST /api/reset                      -> a new search (the swipes stay)
+    GET  /api/searches                   -> every search this user has made, titled by its limits, newest first (D94)
+    POST /api/searches/new               -> a new, blank search becomes the current one; the old one stays in the list
+    POST /api/searches/select {"id"}     -> another search becomes the current one, with its chat, deck and shortlist
+    POST /api/reset                      -> the same as /api/searches/new (kept for the old app)
     POST /api/search   {"card": {...}, "limit": 20}            -> the v1 table: listings that pass the card's limits
     GET  /api/listing?id=spitogatos:SYN0001                     -> one listing, its description marked untrusted
 """
@@ -36,7 +39,7 @@ import json
 import mimetypes
 import os
 import threading
-from datetime import date
+from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -78,10 +81,11 @@ class App:
         self._client = client
         self.cache_dir = cache_dir
         self.user_id = user_id
-        self.state_path = state_dir / f"{user_id}.json"
-        self.swipes = SwipeStore(user_id, swipes_dir)
+        self.state_dir, self.swipes_dir = state_dir, swipes_dir
+        self.index_path = state_dir / f"{user_id}.json"  # the list of this user's searches and which one is current (D94)
         self.lock = threading.Lock()
-        self.state = self._load()
+        self.index = self._load_index()
+        self._open(self.index["current"])
 
     @property
     def client(self):
@@ -91,15 +95,74 @@ class App:
 
     # -- state --------------------------------------------------------------
 
-    def _load(self) -> dict:
-        blank = {"history": [], "card": None, "last": None, "declined": [], "pending": None, "checkin_at": 0}
-        if self.state_path.exists():
-            return {**blank, **json.loads(self.state_path.read_text(encoding="utf-8"))}
-        return blank
+    BLANK = {"history": [], "card": None, "last": None, "declined": [], "pending": None, "checkin_at": 0}
+
+    def _load_index(self) -> dict:
+        """The user's searches: {"current": id or None, "searches": [{"id", "created"}, ...]} oldest first.
+
+        Before D94 there was one search per user, in this very file, with its swipes in one log. That file is
+        recognised by its "history" key and becomes the first search in the list, so nothing Mike swiped is lost."""
+        if not self.index_path.exists():
+            return {"current": None, "searches": []}
+        loaded = json.loads(self.index_path.read_text(encoding="utf-8"))
+        if "history" not in loaded:
+            return {"current": None, "searches": [], **loaded}
+        stamp = datetime.fromtimestamp(self.index_path.stat().st_mtime, timezone.utc)
+        search_id = stamp.strftime("%Y%m%dT%H%M%S")
+        (self.state_dir / f"{self.user_id}.{search_id}.json").write_text(json.dumps(loaded, ensure_ascii=False), encoding="utf-8")
+        for suffix in (".jsonl", ".pulse.jsonl"):
+            old = self.swipes_dir / f"{self.user_id}{suffix}"
+            if old.exists():
+                old.rename(self.swipes_dir / f"{self.user_id}.{search_id}{suffix}")
+        index = {"current": search_id, "searches": [{"id": search_id, "created": stamp.isoformat(timespec="seconds")}]}
+        self.index_path.write_text(json.dumps(index), encoding="utf-8")
+        return index
+
+    def _save_index(self) -> None:
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+        self.index_path.write_text(json.dumps(self.index), encoding="utf-8")
+
+    def _state_path(self, search_id: str) -> Path:
+        return self.state_dir / f"{self.user_id}.{search_id}.json"
+
+    def _read_state(self, search_id: str | None) -> dict:
+        if search_id and self._state_path(search_id).exists():
+            return {**self.BLANK, **json.loads(self._state_path(search_id).read_text(encoding="utf-8"))}
+        return json.loads(json.dumps(self.BLANK))
+
+    def _open(self, search_id: str | None) -> None:
+        """Make a search the current one: its chat and card, its swipe log, and a learned ranking fitted fresh."""
+        self.search_id = search_id
+        self.state = self._read_state(search_id)
+        self.swipes = SwipeStore(self.user_id, self.swipes_dir, search=search_id)
+        self._learned = None
+
+    def _ensure_search(self) -> None:
+        """The first message of a fresh user starts the first search, keeping what is already in memory."""
+        if self.search_id is None:
+            self._register_search()
+            self.swipes = SwipeStore(self.user_id, self.swipes_dir, search=self.search_id)
+
+    def _register_search(self) -> None:
+        now = datetime.now(timezone.utc)
+        search_id = now.strftime("%Y%m%dT%H%M%S")
+        while any(s["id"] == search_id for s in self.index["searches"]):  # two in one second: keep them apart
+            search_id += "x"
+        self.index["searches"].append({"id": search_id, "created": now.isoformat(timespec="seconds")})
+        self.index["current"] = search_id
+        self._save_index()
+        self.search_id = search_id
+
+    def _new_search(self) -> None:
+        """"New search": a fresh entry, opened blank."""
+        self._register_search()
+        self._open(self.search_id)
 
     def _save(self) -> None:
-        self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        self.state_path.write_text(json.dumps(self.state, ensure_ascii=False), encoding="utf-8")
+        self._ensure_search()
+        path = self._state_path(self.search_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.state, ensure_ascii=False), encoding="utf-8")
 
     def snapshot(self) -> dict:
         """What the app needs after a reload: the chat as shown, the card and the counts."""
@@ -118,7 +181,49 @@ class App:
                 "asking_about": last.get("asking_about", []), "unsupported": last.get("unsupported", []),
                 **self._searched(self.state["card"]),
                 "swipes": self.swipes.stats(), "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
-                "areas": list(self.areas), "checkin": self._waiting()}
+                "areas": list(self.areas), "checkin": self._waiting(), "search": self._current_entry(),
+                "searches": self.searches()}
+
+    def _current_entry(self) -> dict | None:
+        return next((s for s in self.index["searches"] if s["id"] == self.search_id), None)
+
+    def searches(self) -> list[dict]:
+        """Every search, newest first, titled by its limits: the areas and the price as said, with the counts that
+        tell the searches apart (homes that pass, verdicts, shortlisted). The title is never a name to invent (D90)."""
+        out = []
+        for entry in reversed(self.index["searches"]):
+            state = self.state if entry["id"] == self.search_id else self._read_state(entry["id"])
+            store = self.swipes if entry["id"] == self.search_id else SwipeStore(self.user_id, self.swipes_dir, search=entry["id"])
+            card = state.get("card")
+            limits = (card or {}).get("hard_limits") or {}
+            homes = None
+            if card and card.get("intent") != "rent":
+                try:
+                    homes = len(deck.ranked_matches(self.adapter.listings(), interview.card(card)))
+                except (ValueError, TypeError, KeyError):  # a card the search rules can't read yet
+                    homes = None
+            out.append({"id": entry["id"], "created": entry["created"], "current": entry["id"] == self.search_id,
+                        "areas": (card or {}).get("areas") or [], "intent": (card or {}).get("intent"),
+                        "min_price_eur": limits.get("min_price_eur"), "max_price_eur": limits.get("max_price_eur"),
+                        "has_card": bool(card), "messages": sum(1 for m in state["history"] if m["role"] == "user"),
+                        "homes": homes, "verdicts": len(store.verdicts()), "shortlisted": len(store.liked_ids())})
+        return out
+
+    def new_search(self) -> dict:
+        """"New search": a blank chat, card and deck; the one before stays in the list with its swipes (D94)."""
+        with self.lock:
+            self._new_search()
+        return self.snapshot()
+
+    def select_search(self, search_id: str) -> dict:
+        with self.lock:
+            if not any(s["id"] == search_id for s in self.index["searches"]):
+                raise KeyError(search_id)
+            if search_id != self.search_id:
+                self.index["current"] = search_id
+                self._save_index()
+                self._open(search_id)
+        return self.snapshot()
 
     def _waiting(self) -> dict | None:
         """A check-in still waiting for its answer, so a reload shows it again instead of losing it (D72)."""
@@ -142,12 +247,9 @@ class App:
         return "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
 
     def reset(self) -> dict:
-        """A new search starts clean: chat, card, swipes, like rate and check-ins (Mike, D75); old swipes are archived."""
-        with self.lock:
-            self.swipes.archive()
-            self.state = {"history": [], "card": None, "last": None, "declined": [], "pending": None, "checkin_at": 0}
-            self._save()
-        return self.snapshot()
+        """A new search starts clean: chat, card, swipes, like rate and check-ins (Mike, D75). Since D94 the old
+        search is not archived but kept in the list, so the user can come back to it."""
+        return self.new_search()
 
     # -- chat ---------------------------------------------------------------
 
@@ -173,6 +275,7 @@ class App:
         if not text:
             raise ValueError("write a message first")
         with self.lock:
+            self._ensure_search()
             pending = self.state["pending"]
             result = self._assistant(text)
             if pending:  # the user answered a check-in: a suggestion the card didn't take isn't offered again (D66)
@@ -194,7 +297,7 @@ class App:
     def learner(self, criteria: Criteria) -> learned.Learner | None:
         """The learned ranking for this search, refitted only when the verdicts or the card change (D76)."""
         verdicts = self.swipes.verdicts()
-        key = (len(verdicts), verdicts[-1].ts.isoformat() if verdicts else None, criteria.model_dump_json())
+        key = (self.search_id, len(verdicts), verdicts[-1].ts.isoformat() if verdicts else None, criteria.model_dump_json())
         if self._learned and self._learned[0] == key:
             return self._learned[1]
         listings = self.adapter.listings()
@@ -414,13 +517,15 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                     return self._json(200, app.undo())
                 if route == "/api/checkin":
                     return self._json(200, app.answer(body.get("answer", "")))
-                if route == "/api/reset":
-                    return self._json(200, app.reset())
+                if route in ("/api/reset", "/api/searches/new"):
+                    return self._json(200, app.new_search())
+                if route == "/api/searches/select":
+                    return self._json(200, app.select_search(str(body.get("id", ""))))
                 if route == "/api/search":
                     return self._json(200, app.search(body.get("card") or {}, body.get("limit", 20)))
                 return self._json(404, {"error": "no such route"})
             except KeyError as err:
-                return self._json(404, {"error": f"no such listing: {err}"})
+                return self._json(404, {"error": f"no such listing or search: {err}"})
             except (ValueError, TypeError) as err:
                 return self._json(400, {"error": str(err)})
             except Exception as err:  # noqa: BLE001 - the app shows the reason instead of hanging
@@ -432,6 +537,8 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                 return self._json(200, app.snapshot())
             if url.path == "/api/areas":
                 return self._json(200, app.area_stats())
+            if url.path == "/api/searches":
+                return self._json(200, {"current": app.search_id, "searches": app.searches()})
             if url.path == "/api/shortlist":
                 return self._json(200, app.shortlist())
             if url.path == "/api/export.csv":

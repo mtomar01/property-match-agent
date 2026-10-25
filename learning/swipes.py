@@ -25,9 +25,11 @@ DAILY_CAP: int | None = None  # cards a user may swipe a day in the final versio
 
 
 class SwipeStore:
-    def __init__(self, user_id: str, directory: Path = SWIPES_DIR):
+    def __init__(self, user_id: str, directory: Path = SWIPES_DIR, search: str | None = None):
         self.user_id = user_id
-        self.path = directory / f"{user_id}.jsonl"
+        # one log per search (D94): me.20261025T193000.jsonl; a store without a search id is the old single log
+        self.stem = f"{user_id}.{search}" if search else user_id
+        self.path = directory / f"{self.stem}.jsonl"
         self._swipes: list[Swipe] | None = None
 
     def load(self) -> list[Swipe]:
@@ -54,7 +56,7 @@ class SwipeStore:
 
     @property
     def pulse_path(self) -> Path:
-        return self.path.with_name(f"{self.user_id}.pulse.jsonl")
+        return self.path.with_name(f"{self.stem}.pulse.jsonl")
 
     def record_pulse(self, answer: str, at: int) -> None:
         """A three-tap pulse answer (D75): a second measure beside the like rate, counts only."""
@@ -81,10 +83,10 @@ class SwipeStore:
         folder.mkdir(parents=True, exist_ok=True)
         moved = None
         if self.path.exists():
-            moved = folder / f"{self.user_id}_{stamp}.jsonl"
+            moved = folder / f"{self.stem}_{stamp}.jsonl"
             self.path.rename(moved)
         if self.pulse_path.exists():
-            self.pulse_path.rename(folder / f"{self.user_id}_{stamp}.pulse.jsonl")
+            self.pulse_path.rename(folder / f"{self.stem}_{stamp}.pulse.jsonl")
         self._swipes = []
         return moved
 
@@ -92,7 +94,7 @@ class SwipeStore:
         """Swipes from earlier searches, oldest first, for the learning eval (D76). The deck learns from this search only."""
         folder = self.path.parent / "archive"
         out: list[Swipe] = []
-        for path in sorted(folder.glob(f"{self.user_id}_*.jsonl")) if folder.exists() else []:
+        for path in sorted(folder.glob(f"{self.stem}_*.jsonl")) if folder.exists() else []:
             if path.name.endswith(".pulse.jsonl"):
                 continue
             out += [Swipe.model_validate_json(l) for l in path.read_text(encoding="utf-8").split("\n") if l.strip()]

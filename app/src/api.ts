@@ -60,8 +60,26 @@ export interface Message {
   text: string;
 }
 
+// One of the user's searches (D94): titled by its limits, told apart by its counts. Never a name to invent.
+export interface SearchSummary {
+  id: string;
+  created: string;
+  current: boolean;
+  areas: string[];
+  intent: Intent | null;
+  min_price_eur: number | null;
+  max_price_eur: number | null;
+  has_card: boolean;
+  messages: number;
+  homes: number | null;
+  verdicts: number;
+  shortlisted: number;
+}
+
 // What the server keeps for this user: GET /api/state, and the shape /api/chat answers with.
 export interface State {
+  search: { id: string; created: string } | null;
+  searches: SearchSummary[];
   messages: Message[];
   card: Card | null;
   action: "ask" | "confirm" | null;
@@ -219,4 +237,6 @@ export const sendSwipe = (swipe: { listing_id: string; decision: Decision; reaso
 export const undoSwipe = () => call<UndoResult>("/api/undo", {});
 export const answerCheckin = (answer: string) => call<CheckinAnswer>("/api/checkin", { answer });
 export const getShortlist = () => call<{ homes: Summary[]; swipes: SwipeStats }>("/api/shortlist");
-export const resetSearch = () => call<State>("/api/reset", {});
+export const newSearch = () => call<State>("/api/searches/new", {});
+export const selectSearch = (id: string) => call<State>("/api/searches/select", { id });
+export const getSearches = () => call<{ current: string | null; searches: SearchSummary[] }>("/api/searches");

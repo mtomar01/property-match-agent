@@ -116,7 +116,7 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
           onPick={(reasons, note) => onSwipe(card, "skip", reasons, note)} onCancel={() => setAsking(null)}
         />
       ) : (
-        <>
+        <div className="actions">
           <div className="swipe-buttons">
             <button type="button" className="swipe reject" disabled={busy} onClick={() => setAsking("reject")} aria-keyshortcuts="ArrowLeft">
               ← Reject
@@ -136,7 +136,7 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
             <span className="muted small">{deck.remaining} left · {deck.swipes.swipes} swiped</span>
           </div>
           <LearningLine learning={deck.learning} />
-        </>
+        </div>
       )}
     </section>
   );

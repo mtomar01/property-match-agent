@@ -38,7 +38,7 @@ def test_lists_the_tools_and_the_interview_prompt():
 def test_the_deck_tools_share_one_swipe_log(tmp_path, monkeypatch):
     import learning.swipes as swipes
     monkeypatch.setattr(swipes, "SWIPES_DIR", tmp_path)
-    monkeypatch.setattr(swipes.SwipeStore.__init__, "__defaults__", (tmp_path,))
+    monkeypatch.setattr(swipes.SwipeStore.__init__, "__defaults__", (tmp_path, None))  # directory, search (D94)
     card = {"intent": "buy", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 250000}}
     first = call("next_cards", {"criteria": card, "user_id": "t", "limit": 3})
     assert len(first["cards"]) == 3 and all(c["reasons"] for c in first["cards"])

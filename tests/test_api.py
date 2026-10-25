@@ -160,18 +160,50 @@ def test_a_yes_to_a_checkin_changes_the_card_and_the_deck_follows(api):
     assert after["total_matches"] <= out["total_matches"]
 
 
-def test_new_search_starts_clean_and_archives_the_swipes(api):
+def test_new_search_starts_clean_and_the_old_one_stays_in_the_list(api):
     ask, _, app = api
+    _, fresh = ask("/api/state")
+    assert fresh["search"] is None and fresh["searches"] == []  # nothing until the first message
     ask("/api/chat", {"text": "Egaleo up to 250k"})
     _, out = ask("/api/deck", {"limit": 1})
     first = out["cards"][0]["listing_id"]
     ask("/api/swipe", {"listing_id": first, "decision": "like"})
-    _, state = ask("/api/reset", {})
+    _, state = ask("/api/searches/new", {})
     assert state["messages"] == [] and state["card"] is None and state["swipes"]["swipes"] == 0  # a clean like rate (D75)
-    assert [s.listing_id for s in app.swipes.archived()] == [first]  # kept for the learning, not deleted
+    old, now = state["searches"][1], state["searches"][0]  # newest first
+    assert now["current"] and not now["has_card"]
+    assert not old["current"] and old["areas"] == [] and old["max_price_eur"] == 250000  # titled by its limits (D90)
+    assert old["verdicts"] == 1 and old["shortlisted"] == 1 and old["homes"] > 1  # its counts, not a name to invent
     ask("/api/chat", {"text": "Egaleo up to 250k"})
     _, again = ask("/api/deck", {"limit": 20})
-    assert first in {c["listing_id"] for c in again["cards"]}  # a home swiped in an old search can come back
+    assert first in {c["listing_id"] for c in again["cards"]}  # a home swiped in another search can come back
+    # back to the old search: its chat, its swipes and its shortlist are all still there (D94)
+    _, back = ask("/api/searches/select", {"id": old["id"]})
+    assert back["search"]["id"] == old["id"] and len(back["messages"]) == 2 and back["swipes"]["likes"] == 1
+    _, shortlist = ask("/api/shortlist")
+    assert [h["listing_id"] for h in shortlist["homes"]] == [first]
+    _, deck_again = ask("/api/deck", {"limit": 20})
+    assert first not in {c["listing_id"] for c in deck_again["cards"]}  # swiped here, so not shown here again
+    status, _ = ask("/api/searches/select", {"id": "nope"})
+    assert status == 404
+
+
+def test_an_old_single_search_state_becomes_the_first_search(tmp_path):
+    """Before D94 one file held the one search and one log held its swipes; both move under a search id."""
+    state_dir, swipes_dir = tmp_path / "state", tmp_path / "swipes"
+    state_dir.mkdir(), swipes_dir.mkdir()
+    old_state = {"history": [{"role": "user", "content": "Egaleo up to 250k"}], "card": card(max_price_eur=250000), "last": {"action": "confirm"},
+                 "declined": [], "pending": None, "checkin_at": 0}
+    (state_dir / "me.json").write_text(json.dumps(old_state), encoding="utf-8")
+    (swipes_dir / "me.jsonl").write_text(
+        '{"user_id":"me","listing_id":"xe:SYN0017","decision":"like","reasons":[],"deck_position":0,"explore_card":false,"ts":"2026-10-24T10:00:00Z"}\n')
+    app = App(client=FakeModel(), cache_dir=None, user_id="me", state_dir=state_dir, swipes_dir=swipes_dir)
+    snapshot = app.snapshot()
+    assert len(snapshot["searches"]) == 1 and snapshot["search"]["id"] == snapshot["searches"][0]["id"]
+    assert snapshot["card"]["hard_limits"]["max_price_eur"] == 250000 and snapshot["swipes"]["likes"] == 1
+    assert not (swipes_dir / "me.jsonl").exists() and json.loads((state_dir / "me.json").read_text())["current"] == snapshot["search"]["id"]
+    again = App(client=FakeModel(), cache_dir=None, user_id="me", state_dir=state_dir, swipes_dir=swipes_dir)  # a second start reads the index
+    assert again.snapshot()["swipes"]["likes"] == 1
 
 
 def test_search_never_breaks_a_limit_and_refuses_rentals(api):
