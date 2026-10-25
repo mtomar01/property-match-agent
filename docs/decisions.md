@@ -872,3 +872,14 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **One rule across devices:** the title holds the areas and the price; the bar holds every other limit and the wishes fold-out; past searches are titled by their limits. The desktop bar keeps its "Limits" label and wraps if it must, since it has the room; only the phone's is one row (D89).
 - **Why a sidebar and not a drawer on desktop:** the width is there, and a list that is always visible is how people keep several searches going (a buyer compares two or three areas over weeks). The collapse button exists for a narrow window; collapsed, it behaves like the phone's drawer.
 - **Say:** "Same shell on both: the search is the title, the searches are on the left, the promise is above the homes."
+
+## D92. Options: appearance and language are the user's, and the screens canvas is a full matrix
+
+- **Context (Mike, 25 October):** tidy the screens into English and Greek, each with dark and light, each with desktop and mobile; and put the light/dark and English/Greek switches in Options.
+- **Options, same content on both devices** (a dialog over the desktop, a full screen on the phone, reached from the sidebar or drawer):
+  - *Appearance:* System · Light · Dark. System follows the device; the two themes are first class, so neither is the default look.
+  - *Language:* Automatic · English · Ελληνικά. Automatic follows the language of the user's last message, for the chat and for the screen, which is what the prompt already does (D-series on language); the two fixed choices pin the screen for a household that writes in one language and reads in the other.
+  - *Data:* the snapshot date and size, and the two promises in one line: photos linked never stored, nothing kept about agents or owners.
+  - *About Tispi:* the one place the anagram is explained, as the brand book allows ("say it once in the About text and nowhere else"), plus the version.
+- **The canvas** is now two pages, English and Greek, each with four rows: Dark · Desktop (the app and its Options dialog), Dark · Mobile (chat, homes, check-in, searches drawer, shortlist, options), then the same two rows for Light. 32 artboards; every row is the same screens in another theme or language, so a difference between any two is the theme or the language and nothing else. The phone screens link to each other in Play within their own theme and language.
+- **Say:** "Two switches in Options, and nothing else there a buyer did not ask for. The canvas has every combination, so a reviewer can flip language or theme and see the same screen."
