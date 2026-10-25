@@ -38,7 +38,8 @@ Quiet and typographic, in the spirit of the best assistant apps: the content is 
 - **Real Greek type.** The typeface must set "Διαμέρισμα, 86τ.μ., Λιούμη (Αιγάλεω)" as well as it sets English. Inter, IBM Plex Sans and Noto Sans pass; most display fonts fail. One family, two weights, generous size on phones.
 - **Space over decoration.** Few borders, soft surfaces, clear hierarchy: price first, then the facts, then why it fits, then the market.
 - **Numbers are the ornament.** Prices, m², percentages and counts are set with care, in tabular figures, because they are what Tispi has to offer.
-- **The limits bar is always visible.** It is the promise; it never scrolls away.
+- **The search is the title.** The header shows the areas and the price range where a chat app shows the conversation's name; past searches are a sidebar on desktop and a drawer on the phone, each titled by its limits (D90, D91).
+- **The limits bar is always visible.** It is the promise; it never scrolls away. It carries the limits the title does not.
 - **Nothing that looks like a portal:** no listing grids, no badges, no "featured", no agent cards, no star ratings.
 
 ## What success looks like
