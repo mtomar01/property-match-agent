@@ -846,3 +846,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Where it lives:** `assets/Icons` in the design system (version 4), the Button and SwipeActions guidelines, and the screens canvas. The React app follows in the UI build.
 - **The screens canvas** now shows every screen in Greek and English side by side (a Greek desktop, English phone screens), so the two languages can be judged against each other: same layout, different lengths. Greek runs about 15% longer, which the chips and buttons must absorb.
 - **Say:** "Two icons in the whole product, both drawn from the owner's sketch; everything else is a word."
+
+## D89. The limits bar on a phone: one row, the rest folds
+
+- **Context (Mike, 25 October):** on the phone screens the limits wrapped to a second row, and the chat button at the bottom was pushed off the screen.
+- **The rule:** on a phone the bar is one row and never wraps. The "Limits" label is dropped, the chips use a compact form ("€90–220k", "90–220 χιλ. €"), and every chip that would not fit the row goes behind the fold-out button together with the wishes, which is labelled with the count of what it holds ("+3 ▾"). The fold-out lists every limit in full. On desktop the bar is unchanged.
+- **Why this way:** the promise (D61) is that every hard limit is always on screen or one tap away, never silently gone. Hiding by width, with the count on the button, keeps that honest: nothing is dropped by rule, and the number tells the user how much is folded. A horizontal scroll was the alternative; it hides the overflow without saying so, and on a phone a scrolled bar reads as decoration.
+- **In the build:** code measures the chips against the row width and moves whole chips behind the button; the count is hidden chips plus wishes. The design system's limits-bar guideline (version 5) carries the rule.
+- **Say:** "One row on the phone. What doesn't fit is one tap away, and the button says how much."
