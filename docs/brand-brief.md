@@ -32,9 +32,9 @@ Plain words, short sentences, the user's language (Greek or English, following t
 
 Quiet and typographic, in the spirit of the best assistant apps: the content is the design.
 
-- **One wordmark, one small abstract mark** (five tiles: four in ink on a baseline, one lifted above the gap in the signal). No mascot, no face, no illustration, no scout imagery (no lanterns, trails, trees, compasses, uniforms).
+- **One wordmark, one small abstract mark** (five tiles, one per letter of Tispi: three in ink on a baseline, the two i's lifted above their places like the dots of the i's, in the signal). No mascot, no face, no illustration, no scout imagery (no lanterns, trails, trees, compasses, uniforms).
 - **The one wink is the anagram:** the letters settling into place, at most a small moment in the mark or the loading state.
-- **Graphite with one signal.** Light and dark, both first class, and the same product in each. The chrome is neutral graphite; the one colour is lime (#c8f542), and it appears only where Tispi commits or the user decides: the primary action, a limit on the bar, the active tab, the check-in, the learning line, the lifted tile of the mark. Lime is a fill, never text; at text size it is a deep green on light and a pale lime on dark (D87).
+- **Graphite with one signal.** Light and dark, both first class, and the same product in each. The chrome is neutral graphite; the one colour is lime (#c8f542), and it appears only where Tispi commits or the user decides: the primary action, a limit on the bar, the active tab, the check-in, the learning line, the two dots of the mark. Lime is a fill, never text; at text size it is a deep green on light and a pale lime on dark (D87).
 - **Real Greek type.** The typeface must set "Διαμέρισμα, 86τ.μ., Λιούμη (Αιγάλεω)" as well as it sets English. Inter, IBM Plex Sans and Noto Sans pass; most display fonts fail. One family, two weights, generous size on phones.
 - **Space over decoration.** Few borders, soft surfaces, clear hierarchy: price first, then the facts, then why it fits, then the market.
 - **Numbers are the ornament.** Prices, m², percentages and counts are set with care, in tabular figures, because they are what Tispi has to offer.
