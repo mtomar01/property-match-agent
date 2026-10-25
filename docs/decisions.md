@@ -800,3 +800,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **What would fix it, measured on the same labels:** an exact price and size in the same area as enough on its own: 41 of 41 merges right, recall 0.91. That's fitted to these 53 pairs, so it's a development score; a fresh batch of about 30 labelled pairs would be the clean check. Merging every borderline pair instead gives 36 of 37 (0.97) and recall 0.80.
 - **Not changed yet:** your call.
 
+## D84. Duplicates: an exact copy is enough, and groups never chain
+
+- **Your call (25 October):** use the exact price and size rule; no more labelling.
+- **The rule:** two listings in the same area with the same price to the euro and the same size to the m², and nothing contradicting (bedrooms, floor, type, years, bathrooms), are the same home. The neighbourhood name no longer has to match, and a third or fourth match no longer blocks the merge.
+- **One thing the change exposed, fixed before shipping:** grouping by chains (a like b, b like c, so all three together) let an exact copy pull a different flat of the same new build into a group: 82 and 80 m² at €260,000, with the same developer's wording, which you labelled different. A group now only grows when the newcomer is "same" with every listing already in it, strongest evidence first (a shared photo, then an exact copy, then wording). It also split a 600 m² building listed nine times with 8, 10 and 12 bedrooms into its consistent parts.
+- **Result on your labels:** precision 1.0 (40 of 40 merges right), recall 0.89 (40 of 45): both targets met. That's a development score, since the rule came from the same labels, and it's the number to quote with that caveat.
+- **On the data:** the frozen 20 October snapshot folds 216 of its 484 listings into 199 homes (mostly spiti24 copies of Spitogatos ads); your 23 October dataset (Spitogatos only) folds 53 of 1,000. The synthetic check is unchanged: 12 of 12 with photo hashes, nothing merged wrongly without.
+

@@ -1,20 +1,20 @@
 {
  "eval": "duplicates",
- "ran_at": "2026-10-25T09:59:29+00:00",
+ "ran_at": "2026-10-25T10:41:11+00:00",
  "data": "labelled pairs from snapshot.jsonl: counts only",
  "labellers": 1,
  "pairs_labelled": 60,
  "labelled_by_both": 0,
  "agreement": null,
  "pairs_scored": 53,
- "merged_pairs": 22,
+ "merged_pairs": 40,
  "true_pairs": 45,
- "correct": 22,
+ "correct": 40,
  "precision": 1.0,
- "recall": 0.489,
+ "recall": 0.889,
  "borderline": {
-  "pairs": 15,
-  "labelled_same": 14
+  "pairs": 1,
+  "labelled_same": 0
  },
- "passed": false
+ "passed": true
 }

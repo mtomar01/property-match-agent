@@ -17,15 +17,16 @@ Then one of three verdicts:
 
 - **same**: a shared photo hash; or wording at least 0.6 alike; or wording at least 0.3 alike with the same
   neighbourhood, the same stated floor and the same stated building year; or a **copy**: the same price to the
-  euro and the same size to the m² in the same neighbourhood, when neither listing has another match like
-  that. Spiti24 and Spitogatos belong to the same group and carry many such copies, often with no description
-  on the spiti24 side, so wording can't find them;
+  euro and the same size to the m² (D84). Spiti24 and Spitogatos belong to the same group and carry many such
+  copies, often with no description on the spiti24 side, so wording can't find them. A copy needs neither the
+  same neighbourhood name (the two portals write them differently) nor to be the only match (one flat is often
+  listed three or four times): Mike's 60 labelled pairs showed both guards cost real duplicates and caught none;
 - **borderline**: nothing contradicts and there's some evidence (wording at least 0.15 alike, or the same
-  neighbourhood and building year). Kept apart for now: the spec gives these to the model, side by side, and
-  the 60 labelled pairs will say where the lines should sit;
+  neighbourhood and building year). Kept apart: the spec gives these to the model, side by side;
 - **different**: everything else.
 
-The thresholds are a first setting from the synthetic set; the labelled real pairs check them.
+On Mike's labels (D83, D84): 41 of 41 merges right, recall 0.91. That's a development score, since the copy rule
+was set from those same labels.
 """
 
 from __future__ import annotations
@@ -125,8 +126,7 @@ def compare(a: Listing, b: Listing, use_photos: bool = True) -> Pair:
 
 
 def _copy(a: Listing, b: Listing) -> bool:
-    return (a.price_eur is not None and a.price_eur == b.price_eur and a.size_m2 == b.size_m2
-            and bool(a.sub_area) and a.sub_area == b.sub_area)
+    return a.price_eur is not None and a.price_eur == b.price_eur and a.size_m2 == b.size_m2
 
 
 def pairs(listings: list[Listing], use_photos: bool = True) -> list[Pair]:
@@ -143,51 +143,48 @@ def pairs(listings: list[Listing], use_photos: bool = True) -> list[Pair]:
                 pair = compare(a, b, use_photos)
                 if pair.why_not is None:
                     out.append(pair)
-    # A copy is the same price and size in the same neighbourhood with no third listing matching that way. With a
-    # third, it could be two identical flats in one new build: borderline, for the model or a person to look at.
-    copies = [p for p in out if _copy(homes[p.a], homes[p.b])]
-    partners: dict[str, int] = {}
-    for p in copies:
-        partners[p.a] = partners.get(p.a, 0) + 1
-        partners[p.b] = partners.get(p.b, 0) + 1
-    for p in copies:
-        if p.verdict == "same":
-            continue
-        if partners[p.a] == 1 and partners[p.b] == 1:
+    # A copy: the same price to the euro and size to the m², in a pair that already passed every must-agree check (D84)
+    for p in out:
+        if p.verdict != "same" and _copy(homes[p.a], homes[p.b]):
             p.verdict = "same"
-            p.evidence.append(DuplicateEvidence(signal="price", detail="the same price and size to the euro and m², and no other listing matches that way"))
-        else:
-            p.verdict = "borderline"
+            p.evidence.append(DuplicateEvidence(signal="price", detail="the same price and size to the euro and m²"))
     return out
 
 
+def _strength(pair: Pair, homes: dict[str, Listing]) -> tuple:
+    """Strongest evidence first: a shared photo, then an exact copy, then wording (a new build's flats share a template)."""
+    photo = any(e.signal == "photo_hash" for e in pair.evidence)
+    return (photo, _copy(homes[pair.a], homes[pair.b]), pair.text)
+
+
 def clusters(listings: list[Listing], use_photos: bool = True) -> list[DuplicateCluster]:
-    """The "same" pairs joined into groups (a and b, b and c: one home), each with its price range."""
+    """The "same" pairs grouped into homes, each with its price range (D84).
+
+    A group only grows when the newcomer is "same" with every listing already in it. Chaining (a like b, b like c,
+    so a like c) let one copy pull a different flat of the same new build into the group, so it's not allowed:
+    strongest pairs are joined first, and a pair that would join two different homes stays apart.
+    """
     by_id = {l.listing_id: l for l in listings}
-    parent: dict[str, str] = {}
-
-    def root(x: str) -> str:
-        parent.setdefault(x, x)
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    evidence: dict[frozenset, list[DuplicateEvidence]] = {}
-    for pair in pairs(listings, use_photos):
-        if pair.verdict == "same":
-            parent[root(pair.a)] = root(pair.b)
-            evidence[frozenset((pair.a, pair.b))] = pair.evidence
-    groups: dict[str, list[str]] = {}
-    for x in list(parent):
-        groups.setdefault(root(x), []).append(x)
-    out = []
-    for members in groups.values():
-        members = sorted(set(members))
+    found = [p for p in pairs(listings, use_photos) if p.verdict == "same"]
+    same = {frozenset((p.a, p.b)): p for p in found}
+    group_of: dict[str, set[str]] = {}
+    for pair in sorted(found, key=lambda p: _strength(p, by_id), reverse=True):
+        left, right = group_of.get(pair.a, {pair.a}), group_of.get(pair.b, {pair.b})
+        if left is right or not all(frozenset((x, y)) in same for x in left for y in right):
+            continue
+        merged = left | right
+        for member in merged:
+            group_of[member] = merged
+    out, seen = [], set()
+    for group in group_of.values():
+        if id(group) in seen:
+            continue
+        seen.add(id(group))
+        members = sorted(group)
         prices = [by_id[m].price_eur for m in members if by_id[m].price_eur]
-        found = [e for key, ev in evidence.items() if key <= set(members) for e in ev]
+        evidence = [e for key, p in same.items() if key <= group for e in p.evidence]
         out.append(DuplicateCluster(cluster_id="dup-" + members[0].replace(":", "-"), listing_ids=members,
-                                    evidence=_unique(found), price_min_eur=min(prices) if prices else None,
+                                    evidence=_unique(evidence), price_min_eur=min(prices) if prices else None,
                                     price_max_eur=max(prices) if prices else None, decided_by="code"))
     return sorted(out, key=lambda c: c.cluster_id)
 

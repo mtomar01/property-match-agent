@@ -47,12 +47,27 @@ def test_a_price_on_request_needs_a_photo_or_the_same_words():
     assert finder.compare(home(1, price_eur=None), home(2, price_eur=None)).verdict == "borderline"
 
 
-def test_a_copy_is_the_same_price_and_size_with_no_third_match():
+def test_a_copy_is_the_same_price_and_size_whatever_the_neighbourhood_is_called():
+    # D84: Mike's labels showed a flat listed three or four times, and the two portals naming neighbourhoods differently
     a, b = home(1, source="spitogatos", listing_id="spitogatos:1"), home(2, source="spiti24", listing_id="spiti24:2", floor={})
-    pairs = {(p.a, p.b): p.verdict for p in finder.pairs([a, b])}
-    assert list(pairs.values()) == ["same"]
-    third = home(3, floor={})  # a twin flat in the same building, perhaps: then none of them is merged
-    assert {p.verdict for p in finder.pairs([a, b, third])} == {"borderline"}
+    third = home(3, floor={}, sub_area="Κέντρο")
+    assert {p.verdict for p in finder.pairs([a, b, third])} == {"same"}
+    groups = finder.clusters([a, b, third])
+    assert [g.listing_ids for g in groups] == [["spiti24:2", "spitogatos:1", "xe:3"]]
+    assert {p.verdict for p in finder.pairs([a, home(4, price_eur=181000)])} == {"borderline"}  # €1,000 apart: no copy
+
+
+def test_a_group_never_chains_two_different_flats_together():
+    # D84: a new build's flats share a template. a and b share the wording, b and c are an exact copy, but a and c
+    # only look alike (82 and 80 m²): c mustn't be pulled into a and b's group through b.
+    words = TEXT.replace("80 τ.μ.", "νεόδμητο")
+    a = home(1, size_m2=82, description=words, sub_area="Κέντρο", year_built=None)
+    b = home(2, size_m2=80, description=words, sub_area="Άλλη", year_built=None)
+    c = home(3, size_m2=80, sub_area="Τρίτη", year_built=None)
+    verdicts = {frozenset((p.a, p.b)): p.verdict for p in finder.pairs([a, b, c])}
+    assert verdicts[frozenset(("xe:1", "xe:2"))] == "same" and verdicts[frozenset(("xe:2", "xe:3"))] == "same"
+    assert verdicts[frozenset(("xe:1", "xe:3"))] != "same"
+    assert [g.listing_ids for g in finder.clusters([a, b, c])] == [["xe:2", "xe:3"]]  # the exact copy is the stronger pair
 
 
 def test_pairs_join_into_one_group_with_its_price_range():

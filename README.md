@@ -123,6 +123,7 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v3 | Learning, the same on the 23 October dataset | 5 runs each | AUC 0.650 rules, **0.756** learned; precision at 10 +0.170 | same |
 | v3 | Duplicates, synthetic copies (development check) (D78) | 12 known groups | with photo hashes precision **1.0**, recall **1.0**; without, 1.0 and 0.67 | 0.95 and 0.85 |
 | v3 | Duplicates, 60 labelled real pairs (53 scored, D83) | 60 pairs | precision **1.0**, recall 0.49 | 0.95 and 0.85 |
+| v3 | **Duplicates, the same labels after the exact-copy rule** (D84; a development score, the rule came from these labels) | 60 pairs | precision **1.0**, recall **0.89** | 0.95 and 0.85 |
 | v3 | Learning on your real swipes | about 200 | not recorded yet | a clear lift over the rules |
 | v2 | Suggestions: the pattern a check-in offers from a swipe history, or silence (D66, D67) | 30 histories | precision **94.4%**, recall 94.4%, evidence counts all correct, 0 false alarms on random swipes | 80% precision, evidence always correct |
 | v2 | Baseline like rate, the share of cards swiped right before any learning | about 100 real swipes | not recorded yet | recorded |
