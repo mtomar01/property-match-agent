@@ -87,6 +87,9 @@ CASES: list[tuple[str, str, dict]] = [
       "preferences": [{"feature": "parking", "equals": True, "weight": 0.7, "firm": True},
                       {"feature": "renovated_year", "min": 2021, "weight": 0.8, "firm": True},
                       {"feature": "balcony", "equals": True, "weight": 0.6, "firm": False}]}),
+    ("ss30", "Parking a must for houses only; apartments unaffected; a house that doesn't say fails closed (D86)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 400000, "property_types": ["apartment", "detached_house"]},
+      "preferences": [{"feature": "parking", "equals": True, "weight": 0.9, "firm": True, "only_for_types": ["detached_house"]}]}),
 ]
 
 

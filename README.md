@@ -114,6 +114,7 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v3 | Interview clean test, prompt v11 | 10 | **95.8%** | 0 | 3 of 3, 2 split | 97.1% |
 | v3 | Interview, prompt v11, the 8 D73 chats | 8 | 97.5% | 0 | 3 of 3 | 96.4% |
 | v3 | **Interview stress set, prompt v11**: 30 chats written blind, held out, run once (D82) | 30 | **95.7%** | 1 | 25 of 27 | 94.6% |
+| v3 | **Interview, prompt v12**: your stress-set feedback, the bedroom question first (D86) | 40 / 10 / 8 / 30 | **100%** / 97.9% / 100% / 95.7% | 0 / 0 / 0 / 1 | 10 of 10 / 3 of 3 / 4 of 4 / 25 of 27 | 99.2% / 97.1% / 100% / 97.3% |
 
 | Version | Eval | Size | Result | Target |
 |---|---|---|---|---|
@@ -130,7 +131,7 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
-Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). The app runs prompt v11 (D82). Every wish it writes carries the user's own words in a hidden field, and the eval found all 75 of them in what the users wrote.
+Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). The app runs prompt v12 (D86). Every wish it writes carries the user's own words in a hidden field, and the eval found all 77 of them in what the users wrote.
 
 ## Docs
 

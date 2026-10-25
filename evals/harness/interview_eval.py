@@ -200,7 +200,7 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
 
 
 def _blank(value) -> bool:
-    return value in (None, [], "")
+    return value in (None, [], "", {})
 
 
 def _same(a, b) -> bool:
@@ -377,7 +377,7 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
             out[item] = said and not confirmed_rent
         elif item == "confirm_change":
             # The first card shown after the change has to show it; a question in between is fine (D57).
-            last_script = max(i for i, t in enumerate(log) if t["role"] == "user" and t["source"] == "script")
+            last_script = max((i for i, t in enumerate(log) if t["role"] == "user" and t["source"] == "script"), default=-1)
             after = next((t for t in log[last_script + 1:] if t["role"] == "assistant" and t.get("output")
                           and t["output"]["action"] == "confirm"), None)
             new_price = (final.get("hard_limits") or {}).get("max_price_eur")
@@ -416,6 +416,9 @@ def _looser(name: str, before, after) -> bool:
         return after > before
     if name == "property_types":
         return bool(set(after) - set(before))
+    if name == "must_have_if_type":  # D86: a must for a property type no longer there
+        pairs = lambda d: {(k, f) for k, v in (d or {}).items() for f in v}  # noqa: E731
+        return bool(pairs(before) - pairs(after))
     if name in ("exclude_floors", "exclude_conditions", "must_have"):
         return bool(set(before) - set(after))  # a floor or a condition no longer ruled out, a must-have dropped (D79)
     raise ValueError(f"no loosening rule for {name}")  # a new limit must say what looser means

@@ -22,6 +22,7 @@ export interface HardLimits {
   min_floor_level?: number | null;
   max_floor_level?: number | null;
   max_metro_walk_min?: number | null;
+  must_have_if_type?: Record<string, string[]>;  // D86: e.g. parking a must for houses only
 }
 
 export interface Preference {

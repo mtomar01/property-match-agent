@@ -14,6 +14,8 @@ Two design rules run through this file:
 
 from __future__ import annotations
 
+import re
+
 from datetime import date, datetime
 from typing import Literal
 
@@ -261,6 +263,8 @@ class HardLimits(_Strict):
     min_floor_level: float | None = Field(default=None, ge=-1, le=40)  # storeys up: ground 0, raised ground 0.25
     max_floor_level: float | None = Field(default=None, ge=-1, le=40)
     max_metro_walk_min: int | None = Field(default=None, gt=0, le=120)  # only when the user takes the offer: few listings say
+    # D86: a must for some property types only, e.g. parking if it's a house: {"detached_house": ["parking"]}
+    must_have_if_type: dict[PropertyType, list[MustHave]] = Field(default_factory=dict)
 
     @field_validator("exclude_floors")
     @classmethod
@@ -285,6 +289,8 @@ class HardLimits(_Strict):
             raise ValueError("min_floor_level is above max_floor_level")
         if len(set(self.must_have)) != len(self.must_have):
             raise ValueError("a must-have appears twice")
+        if any(len(set(v)) != len(v) or not v for v in self.must_have_if_type.values()):
+            raise ValueError("a must for a property type is empty or appears twice")
         return self
 
 
@@ -319,6 +325,16 @@ class Preference(_Strict):
     firm: bool = False
     # D82: the user's own words that set this wish, so the eval can check every wish traces back to the chat. Never shown.
     said: str | None = Field(default=None, max_length=300)
+    # D86: the property types this wish applies to, when the user ties it to some ("parking if it's a house").
+    # The interview writes them as one comma-separated string (a list made its reply grammar too large).
+    only_for_types: list[PropertyType] = Field(default_factory=list)
+
+    @field_validator("only_for_types", mode="before")
+    @classmethod
+    def _types_from_text(cls, value):
+        if isinstance(value, str):
+            return [t for t in re.split(r"[\s,]+", value.strip()) if t]
+        return value
 
     @model_validator(mode="after")
     def _has_target(self) -> "Preference":

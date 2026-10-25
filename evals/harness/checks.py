@@ -103,6 +103,18 @@ def breaks(result: dict, criteria: dict) -> list[str]:
         if not present:
             found.append(f"{feature} is {value!r}, and it's a must")
 
+    for kind, features in (limits.get("must_have_if_type") or {}).items():
+        if result.get("property_type") is None:
+            found.append("property type unknown, so a must for some types can't be checked")
+            break
+        if result.get("property_type") != kind:
+            continue
+        for feature in features:
+            value = result.get(feature)
+            present = value not in (None, "none", False) if feature == "parking" else value is True
+            if not present:
+                found.append(f"{feature} is {value!r}, and it's a must for a {kind}")
+
     baths = result.get("bathrooms")
     if limits.get("min_bathrooms") is not None and (baths is None or baths < limits["min_bathrooms"]):
         found.append(f"bathrooms {baths} breaks min {limits['min_bathrooms']}")

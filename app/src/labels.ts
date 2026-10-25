@@ -120,6 +120,9 @@ export function barText(card: Card, searched: Partial<HardLimits>): string[] {
   else if (fl != null) parts.push(`floor ${floorWord(fl)} or higher`);
   else if (fh != null) parts.push(`floor ${floorWord(fh)} or lower`);
   if (searched.max_metro_walk_min != null) parts.push(`metro within ${searched.max_metro_walk_min} min on foot`);
+  for (const [kind, features] of Object.entries(searched.must_have_if_type ?? {})) {
+    parts.push(`${features.map((f) => MUST_WORDS[f] ?? f).join(", ")} for a ${TYPES[kind] ?? kind}`);
+  }
   if (card.intent === "invest") parts.push("investor mode");
   return parts;
 }
@@ -151,6 +154,11 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   if ("min_floor_level" in patch) parts.push(`floor ${floorWord(patch.min_floor_level as number)} or higher`);
   if ("max_floor_level" in patch) parts.push(`floor ${floorWord(patch.max_floor_level as number)} or lower`);
   if ("max_metro_walk_min" in patch) parts.push(`metro within ${patch.max_metro_walk_min} min`);
+  if ("must_have_if_type" in patch) {
+    const kept = Object.keys(patch.must_have_if_type as unknown as Record<string, string[]>);
+    const dropped = Object.keys((searched.must_have_if_type as Record<string, string[]> | undefined) ?? {}).filter((k) => !kept.includes(k));
+    parts.push(`no must for a ${dropped.map((k) => TYPES[k] ?? k).join(" or ")}`);
+  }
   if ("property_types" in patch) {
     const had = (searched.property_types as string[] | undefined) ?? [];
     const added = (patch.property_types as string[]).filter((t) => !had.includes(t));
@@ -178,6 +186,7 @@ export function wideningMessage(patch: Record<string, number | string[]>): strin
       : name === "areas" ? `areas ${(value as string[]).join(", ")}`
       : name === "exclude_conditions" ? "drop the condition limit"
       : name === "must_have" ? `keep ${(value as string[]).length ? (value as string[]).join(", ") : "nothing"} as a must and make the rest wishes`
+      : name === "must_have_if_type" ? "drop the must for that property type"
       : `${words[name] ?? name} ${value}`);
   return `Yes, widen it: ${parts.join(", ")}.`;
 }

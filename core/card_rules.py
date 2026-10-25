@@ -46,6 +46,21 @@ def harden(raw: dict) -> dict:
     kept, moved = [], []
     for preference in raw.get("preferences") or []:
         targets = hard_form(preference) if preference.get("firm") else []
+        types = preference.get("only_for_types") or []
+        if isinstance(types, str):  # the interview writes them comma separated (D86)
+            types = [t for t in types.replace(",", " ").split() if t]
+        if types:
+            # D86: a must for some property types only. Only the yes/no musts can be tied to a type; anything else
+            # tied to one ("renovated if it's a house") can't be promised, so it stays a wish.
+            if [name for name, _ in targets] != ["must_have"]:
+                kept.append(preference)
+                continue
+            by_type = {k: list(v) for k, v in (limits.get("must_have_if_type") or {}).items()}
+            for kind in types:
+                by_type[kind] = sorted({*by_type.get(kind, []), preference["feature"]})
+            limits["must_have_if_type"] = by_type
+            moved.append(preference["feature"])
+            continue
         if not targets:
             kept.append(preference)
             continue

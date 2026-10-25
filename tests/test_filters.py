@@ -166,3 +166,34 @@ def test_firm_wishes_become_limits_and_soft_ones_stay_wishes():
     assert limits["min_year_built"] == 2010  # a looser firm wish never loosens a stricter limit
     assert [p["feature"] for p in applied["preferences"]] == ["balcony", "lift", "metro_walk_min"]
     assert applied["from_wishes"] == ["parking", "year_built", "floor_level"]
+
+
+def test_a_must_for_some_property_types_only():
+    # D86: parking a must if it's a house; apartments don't need it; a house that doesn't say fails closed
+    c = criteria(max_price_eur=400000, property_types=["apartment", "detached_house"], must_have_if_type={"detached_house": ["parking"]})
+    assert check(listing(1, parking="none"), c) is None  # an apartment without parking is fine
+    assert check(listing(2, property_type="detached_house", parking="garage"), c) is None
+    assert check(listing(3, property_type="detached_house", parking="none"), c) == ("no_parking", "parking")
+    assert check(listing(4, property_type="detached_house", parking=None), c) == ("unknown", "parking")
+    assert check(listing(5, property_type=None), c) == ("unknown", "property_type")
+
+
+def test_a_firm_wish_tied_to_a_type_becomes_a_must_for_that_type_only():
+    from core.card_rules import search_card
+    raw = {"intent": "buy", "hard_limits": {"max_price_eur": 300000},
+           "preferences": [{"feature": "parking", "equals": True, "weight": 0.9, "firm": True, "only_for_types": ["detached_house", "building"]},
+                           {"feature": "renovated_year", "min": 2021, "weight": 0.8, "firm": True, "only_for_types": ["detached_house"]}]}
+    applied = search_card(raw)
+    assert applied["hard_limits"]["must_have_if_type"] == {"detached_house": ["parking"], "building": ["parking"]}
+    assert "must_have" not in applied["hard_limits"] and "min_renovated_year" not in applied["hard_limits"]
+    assert [p["feature"] for p in applied["preferences"]] == ["renovated_year"]  # can't be promised for one type: a wish
+
+
+def test_the_interview_writes_the_types_as_one_string():
+    from core.card_rules import search_card
+    raw = {"intent": "buy", "hard_limits": {"max_price_eur": 300000},
+           "preferences": [{"feature": "parking", "equals": True, "weight": 0.9, "firm": True, "only_for_types": "detached_house"},
+                           {"feature": "balcony", "equals": True, "weight": 0.6, "firm": False, "only_for_types": ""}]}
+    applied = search_card(raw)
+    assert applied["hard_limits"]["must_have_if_type"] == {"detached_house": ["parking"]}
+    assert [p["feature"] for p in applied["preferences"]] == ["balcony"]

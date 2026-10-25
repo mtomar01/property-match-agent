@@ -9,18 +9,17 @@ Updated 25 October 2026, after D79 to D83: firm wishes as hard limits, the inter
 - **Tests:** the whole suite passes; the app builds and works at phone width.
 - **Since then (25 October):** the move-in-ready crash fixed; what a user says outright about parking, lift, balcony, storage, bathrooms, building or renovation year and floor is a hard limit (D79); the interview eval runs on the frozen 23 October file (D80); the app runs prompt v10 (D81).
 - **Then (25 October):** prompt v11 with a fuller must or wish vocabulary and a hidden quote behind every wish, and a blind stress set of 30 chats (D82); your 60 duplicate labels scored (D83). The app runs v11.
-- **Then:** the duplicate finder's exact-copy rule, with groups that never chain (D84).
-- **Spent:** about $36.50 of the $100 in total ($7.30 on D82).
+- **Then:** the duplicate finder's exact-copy rule, with groups that never chain (D84); your stress-set spot-check (D85); prompt v12 with parking a must for houses only and the bedroom question first (D86). The app runs v12.
+- **Spent:** about $45.50 of the $100 in total ($9.05 on D86).
 
 ## Next steps
 
-1. **Spot-check 10 stress-set labels** (the sheet is in the chat, D82).
-2. **Duplicates: done** (D84). An exact copy is enough and groups never chain: precision 1.0, recall 0.89 on your labels (a development score). No more labelling, your call.
-3. **Next prompt:** the bedroom question comes before optional ones (five stress chats ended without a bedroom count), tuned on the dev chats, not the stress set.
-4. **On your Mac:** pull, rebuild the app, and rebuild the dataset page-only, so each listing gets its published date and the cards show time on the market (the 84 early Egaleo pages read from cards are refetched first, if not done yet). Then run the server on it. The prompt for Claude Code on your Mac is in the chat.
-5. **Check the two relabels** in the clean test (gb_1 and your mike_5, D77): both said "a lift if it's above the ground or 1st floor", which is the stairs limit. Say if you'd rather keep them as lift wishes.
-6. **Swipe:** about 100 swipes gives the baseline like rate (v2's finishing line); at about 200, `uv run python -m evals.harness.learning_eval --real me` measures the learned ranking on your own taste, the spec's real test.
-7. **Photo hashes for duplicates** (your call, a live-site step): reworded copies need them.
+1. **Test the app on your Mac** with v12 (pull, rebuild the app, run the server), then the UI round.
+2. **Next prompt:** "a high floor" is floor 4 (D58), written into the prompt; v12 wrote 3 twice (D86).
+3. **On your Mac:** pull, rebuild the app, and rebuild the dataset page-only, so each listing gets its published date and the cards show time on the market (the 84 early Egaleo pages read from cards are refetched first, if not done yet). Then run the server on it. The prompt for Claude Code on your Mac is in the chat.
+4. **Check the two relabels** in the clean test (gb_1 and your mike_5, D77): both said "a lift if it's above the ground or 1st floor", which is the stairs limit. Say if you'd rather keep them as lift wishes.
+5. **Swipe:** about 100 swipes gives the baseline like rate (v2's finishing line); at about 200, `uv run python -m evals.harness.learning_eval --real me` measures the learned ranking on your own taste, the spec's real test.
+6. **Photo hashes for duplicates** (your call, a live-site step): reworded copies need them.
 
 ## Interview eval (22 October, D46, D47)
 

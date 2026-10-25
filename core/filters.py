@@ -125,6 +125,16 @@ def check(listing: Listing, criteria: Criteria) -> tuple[str, str] | None:
         if not has:
             return (f"no_{feature}", feature)
 
+    if limits.must_have_if_type:  # D86: musts for some property types only, e.g. parking for houses
+        if listing.property_type is None:
+            return ("unknown", "property_type")  # can't tell whether the must applies
+        for feature in limits.must_have_if_type.get(listing.property_type, []):
+            has = (None if listing.parking is None else listing.parking != "none") if feature == "parking" else getattr(listing, feature)
+            if has is None:
+                return ("unknown", feature)
+            if not has:
+                return (f"no_{feature}", feature)
+
     if limits.min_bathrooms is not None:
         if listing.bathrooms is None:
             return ("unknown", "bathrooms")

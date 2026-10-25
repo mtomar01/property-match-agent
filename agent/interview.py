@@ -34,7 +34,7 @@ from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeatu
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v11"  # D82
+PROMPT_VERSION = "interview_v12"  # D86
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -57,9 +57,11 @@ ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "max_bedrooms", "property_types",
                "exclude_floors", "min_year_built", "max_price_per_m2", "max_floor_without_lift", "exclude_conditions",
-               "must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level", "max_metro_walk_min")
+               "must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level", "max_metro_walk_min",
+               "must_have_if_type")
 LIST_FIELDS = ("property_types", "exclude_floors", "exclude_conditions", "must_have")
-FROM_WISHES = ("must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level")  # code writes these (D79)
+FROM_WISHES = ("must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level",
+               "must_have_if_type")  # code writes these from firm wishes (D79, D86)
 MODEL_FIELDS = tuple(f for f in HARD_FIELDS if f not in FROM_WISHES)  # the hard limits the model writes itself
 METRO_STEP = 5  # easing a metro limit: five more minutes on foot
 # A firm wish that stays a wish (D79) and the hard limit it would become if the user takes the offer
@@ -94,11 +96,14 @@ def _preference_schema() -> dict:
     bound = {"anyOf": [{"type": "number"}, {"type": "string"}, {"type": "null"}]}
     return {
         "type": "object", "additionalProperties": False,
-        "required": ["feature", "min", "max", "equals", "weight", "firm", "said"],
+        "required": ["feature", "min", "max", "equals", "weight", "firm", "said", "only_for_types"],
         "properties": {"feature": {"type": "string", "enum": list(get_args(PreferenceFeature))},
                        "min": bound, "max": bound, "equals": {"enum": [True, False, None]}, "weight": {"type": "number"},
                        "firm": {"type": "boolean"},  # said outright, not "ideally": code may make it a limit (D79)
-                       "said": {"type": "string"}},  # the user's own words behind it, never shown (D82)
+                       "said": {"type": "string"},  # the user's own words behind it, never shown (D82)
+                       # D86: the property types a must applies to, comma separated, usually empty. A plain string:
+                       # an array of types made the reply grammar too large for structured output.
+                       "only_for_types": {"type": "string"}},
     }
 
 
@@ -200,7 +205,7 @@ def request(messages: list[dict], today: str, model: str = MODEL, version: str =
 
 
 def _blank(value) -> bool:
-    return value in (None, [], "")
+    return value in (None, [], "", {})
 
 
 def card(raw: dict) -> Criteria:
@@ -234,6 +239,8 @@ def check_supply(args: dict, listings: list) -> dict:
         if name == "must_have":  # one count per must-have: "without parking, 41"
             for feature in value:
                 if_dropped[f"must_have:{feature}"] = without({"must_have": [f for f in value if f != feature]})
+        elif name == "must_have_if_type":
+            if_dropped[name] = without({name: {}})
         else:
             if_dropped[name] = without({name: [] if name in LIST_FIELDS else None})
     kind = INTENT_TO_LISTING_TYPE[criteria.intent]
@@ -351,6 +358,9 @@ def eased(criteria: Criteria, listings: list) -> dict:
         out["drop_conditions"] = option({"exclude_conditions": []}, to="no condition limit")
     for feature in limits.must_have:  # D79: a must-have can't be "a little" looser, only dropped (it stays a wish)
         out[f"drop_must:{feature}"] = option({"must_have": [f for f in limits.must_have if f != feature]}, to=f"{feature} not a must")
+    for kind, features in limits.must_have_if_type.items():  # D86: the same for a must tied to a property type
+        out[f"drop_must_if:{kind}"] = option({"must_have_if_type": {k: v for k, v in limits.must_have_if_type.items() if k != kind}},
+                                             to=f"{', '.join(features)} not a must for a {kind.replace('_', ' ')}")
     for kind, wider in WIDER_TYPES.items():
         if kind in limits.property_types:
             for extra in (t for t in wider if t not in limits.property_types):

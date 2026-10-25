@@ -1,6 +1,6 @@
 {
   "eval": "search_safety",
-  "cases": 29,
+  "cases": 30,
   "total_breaks": 0,
   "mean_recall_at_20": 1.0,
   "mean_precision_at_10": 1.0,
@@ -402,10 +402,24 @@
         "renovated_year": 7,
         "price_eur": 2
       }
+    },
+    {
+      "id": "ss30",
+      "description": "Parking a must for houses only; apartments unaffected; a house that doesn't say fails closed (D86)",
+      "expected": 23,
+      "total_matches": 23,
+      "returned": 20,
+      "breaks": 0,
+      "break_details": {},
+      "recall_at_20": 1.0,
+      "precision_at_10": 1.0,
+      "excluded_because_unknown": {
+        "price_eur": 2
+      }
     }
   ],
   "version": "v0.1",
-  "commit": "123c023",
-  "ran_at": "2026-10-25T08:10:48+00:00",
+  "commit": "01ffdce",
+  "ran_at": "2026-10-25T10:50:20+00:00",
   "data": "synthetic"
 }

@@ -816,3 +816,13 @@ One entry per decision: what we had to choose, the options, the choice and why. 
   - **st_23, "tria dwmatia":** 3 bedrooms, as labelled; τριάρι would be 2.
 - **Rescored for free:** fields 95.7% and the 41 of 41 quotes are unchanged; wishes 25 of 28.
 
+## D86. Prompt v12: your stress-set feedback
+
+- **Parking a must only for houses (st_15):** a new kind of limit, `must_have_if_type`, for example {"detached_house": ["parking"]}. Sonnet marks the wish with `only_for_types`; code makes it a must for those types only, so apartments in the same search aren't touched and a house that doesn't say whether it has parking is left out. It works for parking, lift, balcony and storage; anything else tied to a type stays a wish. Filtered in code, written again in the independent checker, a new search safety case (30 in all, 0 breaks), a widening option to drop it, and "parking for a house" on the bar. One build snag: as a list of types the reply grammar became too large for structured output, so Sonnet writes the types as one comma-separated string and code reads it.
+- **"No renovation projects, full stop" (st_13):** the condition limit plus a move-in-ready wish. v3_02 says the same thing, so its label gained the wish too.
+- **The bedroom question comes first:** before searching, the user has answered about bedrooms if they gave neither a size nor a count ("no preference" counts); it comes before optional questions and before a widening, since the answer changes the count; and it's asked once more if the next message skips it.
+- **Results, frozen 23 October file:** the 40 chats 100% of fields, 0 invented, behaviours 99.2%; the clean 10 97.9% (from 95.8%); the 8 D73 chats 100% of fields and behaviours (v3_07's bedroom question, missed since v8, is now asked); the stress set 95.7% of fields, behaviours 97.3% (from 94.6%), 1 invented ("κάπως ψηλό όροφο" again). Every wish's quote found in the user's words: 77 of 77.
+- **A new miss to fix next:** "a high floor" came out as floor 3 in mike_4 and st_06. Your rule (D58) is 4, and it isn't written in the prompt.
+- **The stress set is no longer fully held out:** st_13 and st_15 shaped v12. The other 28 still are.
+- **The app runs v12.** Spent $9.05 on this round (estimate $7.30; replies got longer, about 9 cents a chat in the dev set, from 6), about $45.50 in total.
+
