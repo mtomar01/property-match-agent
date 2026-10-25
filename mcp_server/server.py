@@ -92,12 +92,15 @@ class SearchCriteria(BaseModel):
     budget_around: bool = Field(default=False, description='The user said "around" their top price: the server searches 10% either side')
     ideally: list[Literal["size", "bedrooms"]] = Field(
         default_factory=list, description='"Ideally" before a size or bedroom count: the server widens it (10%, one bedroom)')
-    preferences: list[Preference] = Field(default_factory=list, description="Weighted wishes, used for ranking only")
+    preferences: list[Preference] = Field(default_factory=list, description=(
+        "Weighted wishes, used for ranking. Mark one firm when the user said it outright, not 'ideally': the server then "
+        "makes parking, lift, balcony, storage, a bathroom count, a building or renovation year and a floor level hard limits"))
 
 
 def _raw(criteria: SearchCriteria) -> dict:
     return {"intent": criteria.intent, "areas": criteria.areas, "hard_limits": criteria.hard_limits.model_dump(),
-            "budget_around": criteria.budget_around, "ideally": list(criteria.ideally)}
+            "budget_around": criteria.budget_around, "ideally": list(criteria.ideally),
+            "preferences": [p.model_dump() for p in criteria.preferences]}  # firm ones become limits in code (D79)
 
 
 @mcp.tool(
@@ -118,7 +121,7 @@ def search_listings(
         intent=criteria.intent,
         areas=criteria.areas,
         hard_limits=HardLimits(**limits),
-        preferences=criteria.preferences,
+        preferences=applied["preferences"],  # the wishes left once firm ones became limits (D79)
         confirmed_by_user=True,
     )
     result = search(adapter(), full, sources=sources, limit=min(limit, MAX_LIMIT))
@@ -160,7 +163,7 @@ def _criteria(criteria: SearchCriteria) -> Criteria:
     applied = search_card(_raw(criteria))
     limits = {k: v for k, v in applied["hard_limits"].items() if v not in (None, [])}
     return Criteria(user_id="mcp", intent=criteria.intent, areas=criteria.areas, hard_limits=HardLimits(**limits),
-                    preferences=criteria.preferences, confirmed_by_user=True)
+                    preferences=applied["preferences"], confirmed_by_user=True)
 
 
 @mcp.tool(
@@ -210,7 +213,7 @@ def swipe_patterns(criteria: SearchCriteria, user_id: str = "me", declined: list
     return {"patterns": found[:3], "checkin_every": patterns.CHECKIN_EVERY}
 
 
-@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v8)")
+@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v10)")
 def criteria_interview() -> str:
     text = interview.system_prompt(interview.PROMPT_VERSION, date.today().isoformat())
     text = text.split("## Output fields")[0].rstrip()

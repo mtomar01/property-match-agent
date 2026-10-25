@@ -72,6 +72,21 @@ CASES: list[tuple[str, str, dict]] = [
      {"intent": "buy", "hard_limits": {"max_price_eur": 300000, "max_floor_without_lift": 1}}),
     ("ss23", "No homes that need work; an unstated condition fails closed (D73)",
      {"intent": "buy", "hard_limits": {"max_price_eur": 300000, "exclude_conditions": ["needs_work", "unfinished"]}}),
+    ("ss24", "Parking and a lift are musts; an unstated parking fails closed (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000, "must_have": ["parking", "lift"]}}),
+    ("ss25", "At least 2 bathrooms (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000, "min_bathrooms": 2}}),
+    ("ss26", "Renovated or built from 2021; a home that says neither fails closed (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000, "min_renovated_year": 2021}}),
+    ("ss27", "Floor 2 to 4; a top floor with no number fails closed (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000, "min_floor_level": 2, "max_floor_level": 4}}),
+    ("ss28", "The metro within 10 minutes on foot, taken as a limit; an unstated walk fails closed (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000, "max_metro_walk_min": 10}}),
+    ("ss29", "Firm wishes become limits in code; an 'ideally' wish only ranks (D79)",
+     {"intent": "buy", "hard_limits": {"max_price_eur": 350000},
+      "preferences": [{"feature": "parking", "equals": True, "weight": 0.7, "firm": True},
+                      {"feature": "renovated_year", "min": 2021, "weight": 0.8, "firm": True},
+                      {"feature": "balcony", "equals": True, "weight": 0.6, "firm": False}]}),
 ]
 
 
@@ -80,7 +95,7 @@ def build() -> Path:
     rows = []
     for case_id, description, criteria in CASES:
         # The limits the search runs on: the criteria as given, plus Mike's rules in code (a lowest price, D53, D59).
-        effective = search_card(criteria)
+        effective = {k: v for k, v in search_card(criteria).items() if k != "from_wishes"}
         expected = [
             l.listing_id for l in adapter.listings()
             if not breaks(l.summary(), effective)

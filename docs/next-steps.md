@@ -1,22 +1,24 @@
 # Next steps
 
-Updated 24 October 2026, after the v3 build (D72 to D78).
+Updated 25 October 2026, after D79 to D81: firm wishes as hard limits, the interview eval on the 23 October file, prompt v10.
 
 ## Where we are
 
 - **v3 built:** waiting check-ins survive a reload (D72); condition, a price per m² limit and a stairs limit (D73); market lines and area stats (D74); the check-in ladder and a fresh start on New search (D75); the learned ranking (D76); one card per home for duplicates (D78). Prompt v8's eval is in (D77) and prompt v9 is written but not run.
 - **Data:** your product dataset is the 1,000 listings of 23 October (five areas, 200 each), private and on your Mac. The evals stay on the frozen 20 October snapshot (484 listings), plus the 23 October file as a second frozen set for the learning eval.
 - **Tests:** the whole suite passes; the app builds and works at phone width.
-- **Spent:** about $20.60 of the $100 in total ($3.56 on the v8 run).
+- **Since then (25 October):** the move-in-ready crash fixed; what a user says outright about parking, lift, balcony, storage, bathrooms, building or renovation year and floor is a hard limit (D79); the interview eval runs on the frozen 23 October file (D80); the app runs prompt v10 (D81).
+- **Spent:** about $29.20 of the $100 in total ($8.56 on D80 and D81).
 
 ## Next steps
 
-1. **Prompt v9 eval run** (about $3.60, your go). Two sentences fix v8's one slip, a bare bedroom count that also became a maximum (D77). The app stays on v8 until v9 is measured.
-2. **On your Mac:** pull, rebuild the app, and rebuild the dataset page-only, so each listing gets its published date and the cards show time on the market (the 84 early Egaleo pages read from cards are refetched first, if not done yet). Then run the server on it. The prompt for Claude Code on your Mac is in the chat.
-3. **Check the two relabels** in the clean test (gb_1 and your mike_5, D77): both said "a lift if it's above the ground or 1st floor", which is the stairs limit. Say if you'd rather keep them as lift wishes.
-4. **Swipe:** about 100 swipes gives the baseline like rate (v2's finishing line); at about 200, `uv run python -m evals.harness.learning_eval --real me` measures the learned ranking on your own taste, the spec's real test.
-5. **Label 60 duplicate pairs, you and GB** (D78): `uv run python -m evals.harness.build_duplicate_labels`, then `--links-only` for GB. Targets 0.95 precision, 0.85 recall.
-6. **Photo hashes for duplicates** (your call, a live-site step): reworded copies need them.
+1. **Prompt v11 eval run** (about $4.50, your go): it fixes v10's one regression, a lift wanted above the 1st floor read as a wish instead of the stairs limit (D81).
+2. **One label call:** clean test mike_4, "I like high floors and big balconies": musts or wishes? (D81)
+3. **On your Mac:** pull, rebuild the app, and rebuild the dataset page-only, so each listing gets its published date and the cards show time on the market (the 84 early Egaleo pages read from cards are refetched first, if not done yet). Then run the server on it. The prompt for Claude Code on your Mac is in the chat.
+4. **Check the two relabels** in the clean test (gb_1 and your mike_5, D77): both said "a lift if it's above the ground or 1st floor", which is the stairs limit. Say if you'd rather keep them as lift wishes.
+5. **Swipe:** about 100 swipes gives the baseline like rate (v2's finishing line); at about 200, `uv run python -m evals.harness.learning_eval --real me` measures the learned ranking on your own taste, the spec's real test.
+6. **Label 60 duplicate pairs, you and GB** (D78): `uv run python -m evals.harness.build_duplicate_labels`, then `--links-only` for GB. Targets 0.95 precision, 0.85 recall.
+7. **Photo hashes for duplicates** (your call, a live-site step): reworded copies need them.
 
 ## Interview eval (22 October, D46, D47)
 

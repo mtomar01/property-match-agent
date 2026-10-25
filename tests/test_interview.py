@@ -84,6 +84,24 @@ def test_check_supply_counts_in_code_and_says_what_each_limit_costs():
     assert "note" in interview.check_supply({"intent": "rent", "areas": ["Egaleo"], "hard_limits": {}}, [])
 
 
+def test_check_supply_counts_firm_wishes_as_limits_and_offers_the_rest():
+    listings = SnapshotAdapter().listings()
+    wish = lambda feature, firm, **b: {"feature": feature, "min": None, "max": None, "equals": None, "weight": 0.8, "firm": firm, **b}  # noqa: E731
+    args = {"intent": "buy", "areas": [], "hard_limits": {"max_price_eur": 300000}, "budget_around": False, "ideally": [],
+            "preferences": [wish("parking", True, equals=True), wish("balcony", False, equals=True),
+                            wish("move_in_ready", True, equals=True), wish("metro_walk_min", True, max=10)]}
+    result = interview.check_supply(args, listings)
+    plain = interview.check_supply({**args, "preferences": []}, listings)
+    assert result["from_wishes"] == ["parking"] and "must_have:parking" in result["if_dropped"]
+    assert result["matches"] < plain["matches"] and result["hidden_unknown"].get("parking", 0) > 0  # unstated parking left out
+    offers = result["if_made_limit"]
+    assert set(offers) == {"move_in_ready", "metro_walk_min"}
+    assert offers["move_in_ready"]["limit"] == {"exclude_conditions": ["needs_work", "unfinished"]}
+    assert offers["metro_walk_min"]["limit"] == {"max_metro_walk_min": 10} and offers["metro_walk_min"]["matches"] <= result["matches"]
+    thin = interview.check_supply({**args, "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 150000, "min_bedrooms": 3}}, listings)
+    assert thin["matches"] < interview.THIN and "drop_must:parking" in thin["if_eased"]
+
+
 def test_a_reply_can_check_supply_first_and_is_cached(tmp_path):
     final = answer("Δεν υπάρχει τίποτα με όλα αυτά. Χαλαρώνουμε κάτι;", criteria=card(max_price_eur=100000))
     client = Scripted([{"tool": {"intent": "buy", "areas": [], "hard_limits": {"max_price_eur": 100000}}}, final])
@@ -349,7 +367,8 @@ def test_answering_the_purpose_question_counts_as_choosing_investor_mode():
 
 def test_the_prompt_fills_in_the_renovated_year():
     text = interview.system_prompt(today="2026-10-22")
-    assert "renovated_year with min 2016" in text and "rent" in text
+    assert "renovated_year with min 2021, the last five years" in text and "rent" in text  # five years since D79
+    assert "renovated_year with min 2016" in interview.system_prompt("interview_v8", "2026-10-22")  # older prompts as they ran
 
 
 def test_wide_means_the_cards_own_check_not_a_probe():
@@ -394,7 +413,7 @@ def test_v6_knows_athens_and_lets_the_users_year_win():
 
 def test_every_hard_limit_has_a_loosening_rule():
     for name in interview.HARD_FIELDS:
-        sample = ["ground"] if name in ("exclude_floors", "property_types", "exclude_conditions") else 2
+        sample = ["ground"] if name in ("exclude_floors", "property_types", "exclude_conditions", "must_have") else 2
         ev._looser(name, sample, sample)  # raises for a limit with no rule
     assert ev._looser("max_bedrooms", 2, 3) and not ev._looser("max_bedrooms", 3, 2)
 

@@ -28,24 +28,25 @@ from typing import get_args
 from agent import llm
 from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
-from core.card_rules import IDEALLY, search_card  # Mike's price, size and bedroom rules, in code (D53, D56)
+from core.card_rules import IDEALLY, harden, search_card  # Mike's rules, in code (D53, D56, D79)
 from core import greek
 from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v8"
+PROMPT_VERSION = "interview_v10"  # D79 to D81; v11 is written and waits for its run
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
 MAX_REPAIRS = 1  # a card that fails the checks goes back to the model once, with the reason (D47)
 NEW_BUILD_YEARS = 5  # "new build" means built in the last five years
-RENOVATED_YEARS = 10  # "renovated" with no year means renovated in the last ten years (Mike, D54)
+RENOVATED_YEARS = 5  # "renovated" with no year means renovated, or built, in the last five years (Mike, D79)
+LEGACY_RENOVATED_YEARS = 10  # what prompts before v10 said (D54), kept so they still render as they ran
 
 TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes_costs", "areas", "which_covered_area",
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
-          "priorities", "narrowing", "ease_limit", "purpose", "suggest_change", "other")
+          "priorities", "narrowing", "ease_limit", "purpose", "suggest_change", "bathrooms", "make_limit", "other")
 UNSUPPORTED = ("rent",)  # rentals come later (Mike, D54)
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
@@ -55,7 +56,14 @@ WIDER_TYPES = {"apartment": ("maisonette", "loft")}  # types to offer when an ap
 ADVICE = ("mortgage", "investment", "legal")
 FLOORS = SPECIAL_FLOORS + ("1", "2", "3")
 HARD_FIELDS = ("max_price_eur", "min_price_eur", "min_size_m2", "max_size_m2", "min_bedrooms", "max_bedrooms", "property_types",
-               "exclude_floors", "min_year_built", "max_price_per_m2", "max_floor_without_lift", "exclude_conditions")
+               "exclude_floors", "min_year_built", "max_price_per_m2", "max_floor_without_lift", "exclude_conditions",
+               "must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level", "max_metro_walk_min")
+LIST_FIELDS = ("property_types", "exclude_floors", "exclude_conditions", "must_have")
+FROM_WISHES = ("must_have", "min_bathrooms", "min_renovated_year", "min_floor_level", "max_floor_level")  # code writes these (D79)
+MODEL_FIELDS = tuple(f for f in HARD_FIELDS if f not in FROM_WISHES)  # the hard limits the model writes itself
+METRO_STEP = 5  # easing a metro limit: five more minutes on foot
+# A firm wish that stays a wish (D79) and the hard limit it would become if the user takes the offer
+OFFERS = {"move_in_ready": "exclude_conditions", "metro_walk_min": "max_metro_walk_min"}
 
 
 def _nullable(kind: str) -> dict:
@@ -64,7 +72,7 @@ def _nullable(kind: str) -> dict:
 
 def _hard_limits_schema() -> dict:
     return {
-        "type": "object", "additionalProperties": False, "required": list(HARD_FIELDS),
+        "type": "object", "additionalProperties": False, "required": list(MODEL_FIELDS),
         "properties": {
             "max_price_eur": _nullable("integer"), "min_price_eur": _nullable("integer"),
             "min_size_m2": _nullable("number"), "max_size_m2": _nullable("number"),
@@ -75,7 +83,20 @@ def _hard_limits_schema() -> dict:
             "max_price_per_m2": _nullable("integer"),  # D73
             "max_floor_without_lift": _nullable("integer"),  # D73
             "exclude_conditions": {"type": "array", "items": {"type": "string", "enum": list(get_args(Condition))}},
+            # D79: must_have, min_bathrooms, min_renovated_year and the floor levels come from firm wishes, worked out by
+            # code (core/card_rules.py), so the model never writes them. Only a metro limit the user accepts is its own.
+            "max_metro_walk_min": _nullable("integer"),
         },
+    }
+
+
+def _preference_schema() -> dict:
+    bound = {"anyOf": [{"type": "number"}, {"type": "string"}, {"type": "null"}]}
+    return {
+        "type": "object", "additionalProperties": False, "required": ["feature", "min", "max", "equals", "weight", "firm"],
+        "properties": {"feature": {"type": "string", "enum": list(get_args(PreferenceFeature))},
+                       "min": bound, "max": bound, "equals": {"enum": [True, False, None]}, "weight": {"type": "number"},
+                       "firm": {"type": "boolean"}},  # said outright, not "ideally": code may make it a limit (D79)
     }
 
 
@@ -86,22 +107,16 @@ def _criteria_core() -> dict:
         "hard_limits": _hard_limits_schema(),
         "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
         "ideally": {"type": "array", "items": {"type": "string", "enum": list(IDEALLY)}},  # code adds the margins (D56)
+        "preferences": {"type": "array", "items": _preference_schema()},  # firm ones can be limits, so supply needs them (D79)
     }
 
 
 def schema() -> dict:
     """The reply format. Reasoning first, then the reply, then the card (the model writes in this order)."""
-    bound = {"anyOf": [{"type": "number"}, {"type": "string"}, {"type": "null"}]}
-    preference = {
-        "type": "object", "additionalProperties": False, "required": ["feature", "min", "max", "equals", "weight"],
-        "properties": {"feature": {"type": "string", "enum": list(get_args(PreferenceFeature))},
-                       "min": bound, "max": bound, "equals": {"enum": [True, False, None]}, "weight": {"type": "number"}},
-    }
     criteria = {
         "type": "object", "additionalProperties": False,
         "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "open_questions"],
-        "properties": {**_criteria_core(), "preferences": {"type": "array", "items": preference},
-                       "open_questions": {"type": "array", "items": {"type": "string"}}},
+        "properties": {**_criteria_core(), "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
     properties = {
         "reasoning": {"type": "string"},
@@ -127,7 +142,7 @@ TOOL = {
                     "limit were dropped. Code does the counting. Use it before showing a card whose asks may be hard "
                     "to meet together."),
     "input_schema": {"type": "object", "additionalProperties": False,
-                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally"],
+                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences"],
                      "properties": _criteria_core()},
 }
 
@@ -161,10 +176,15 @@ def system_prompt(version: str = PROMPT_VERSION, today: str | None = None) -> st
                 .replace("{{areas}}", areas_text())
                 .replace("{{areas_note}}", areas_note())
                 .replace("{{new_build_from}}", str(day.year - NEW_BUILD_YEARS))
-                .replace("{{renovated_from}}", str(day.year - RENOVATED_YEARS)))
+                .replace("{{renovated_from}}", str(day.year - (RENOVATED_YEARS if _number(version) >= 10 else LEGACY_RENOVATED_YEARS))))
     if "{{" in text:
         raise ValueError("a placeholder in the prompt wasn't filled")
     return text
+
+
+def _number(version: str) -> int:
+    digits = "".join(c for c in version.rsplit("_v", 1)[-1] if c.isdigit())
+    return int(digits) if digits else 0
 
 
 def request(messages: list[dict], today: str, model: str = MODEL, version: str = PROMPT_VERSION) -> dict:
@@ -194,16 +214,26 @@ def card(raw: dict) -> Criteria:
 def check_supply(args: dict, listings: list) -> dict:
     """What code tells the model about supply. Counts and medians only, no listings."""
     try:
-        criteria = card({**args, "preferences": [], "open_questions": []})
+        criteria = card({**args, "preferences": args.get("preferences") or [], "open_questions": []})
     except Exception as err:  # noqa: BLE001 - the model gets the reason back
         return {"error": f"invalid criteria: {err}"}
-    matches = apply_hard_limits(listings, criteria).matches
+    outcome = apply_hard_limits(listings, criteria)
+    matches = outcome.matches
+
+    def without(update: dict) -> int:
+        looser = criteria.model_copy(update={"hard_limits": criteria.hard_limits.model_copy(update=update)})
+        return len(apply_hard_limits(listings, looser).matches)
+
     if_dropped = {}
     for name in HARD_FIELDS:
-        if not _blank(getattr(criteria.hard_limits, name)):
-            looser = criteria.model_copy(update={"hard_limits": criteria.hard_limits.model_copy(
-                update={name: [] if name in ("property_types", "exclude_floors") else None})})
-            if_dropped[name] = len(apply_hard_limits(listings, looser).matches)
+        value = getattr(criteria.hard_limits, name)
+        if _blank(value):
+            continue
+        if name == "must_have":  # one count per must-have: "without parking, 41"
+            for feature in value:
+                if_dropped[f"must_have:{feature}"] = without({"must_have": [f for f in value if f != feature]})
+        else:
+            if_dropped[name] = without({name: [] if name in LIST_FIELDS else None})
     kind = INTENT_TO_LISTING_TYPE[criteria.intent]
     in_areas = [l for l in listings if l.listing_type == kind and (not criteria.areas or l.area in criteria.areas)]
     prices = [l.price_eur for l in in_areas if l.price_eur]
@@ -212,10 +242,16 @@ def check_supply(args: dict, listings: list) -> dict:
     result = {
         "search_limits": {"min_price_eur": criteria.hard_limits.min_price_eur, "max_price_eur": criteria.hard_limits.max_price_eur},
         "matches": len(matches), "if_dropped": if_dropped, "listings_in_areas": len(in_areas),
+        # D79: homes left out only because the listing doesn't say, per field, so the assistant can tell the user
+        "hidden_unknown": dict(outcome.excluded_unknown),
+        "from_wishes": harden(args)["from_wishes"],  # firm wishes code made hard limits (D79)
         "median_price_eur": round(statistics.median(prices)) if prices else None,
         "median_price_per_m2": round(statistics.median(per_m2)) if per_m2 else None,
         "median_size_m2": round(statistics.median(sizes)) if sizes else None,
     }
+    offers = if_made_limit(criteria, listings)
+    if offers:
+        result["if_made_limit"] = offers
     if len(matches) > WIDE:
         result["breakdown"] = breakdown(matches)
     of_kind = sum(1 for l in listings if l.listing_type == kind)
@@ -227,6 +263,31 @@ def check_supply(args: dict, listings: list) -> dict:
     if not of_kind:
         result["note"] += " Easing a limit won't help."
     return result
+
+
+def if_made_limit(criteria: Criteria, listings: list) -> dict:
+    """For a firm wish that stays a wish (move in ready, metro minutes): what making it a hard limit would leave (D79).
+
+    Code counts the homes that would pass and how many of those dropped only because the listing doesn't say,
+    so the assistant can offer the limit with the cost in plain numbers.
+    """
+    out = {}
+    for preference in criteria.preferences:
+        if not preference.firm or preference.feature not in OFFERS:
+            continue
+        name = OFFERS[preference.feature]
+        if name == "exclude_conditions" and preference.equals is True:
+            value = sorted({*criteria.hard_limits.exclude_conditions, "needs_work", "unfinished"})
+        elif name == "max_metro_walk_min" and isinstance(preference.max, (int, float)):
+            value = int(preference.max)
+        else:
+            continue
+        stricter = criteria.model_copy(update={"hard_limits": criteria.hard_limits.model_copy(update={name: value})})
+        outcome = apply_hard_limits(listings, stricter)
+        field = "condition" if name == "exclude_conditions" else "metro_walk_min"
+        out[preference.feature] = {"limit": {name: value}, "matches": len(outcome.matches),
+                                   "hidden_unknown": outcome.excluded_unknown.get(field, 0)}
+    return out
 
 
 def eased(criteria: Criteria, listings: list) -> dict:
@@ -270,12 +331,24 @@ def eased(criteria: Criteria, listings: list) -> dict:
         numbers["max_price_per_m2"] = max(limits.max_price_per_m2 + 50, round(limits.max_price_per_m2 * (1 + EASE) / 50) * 50)
     if limits.max_floor_without_lift is not None:
         numbers["max_floor_without_lift"] = limits.max_floor_without_lift + 1
+    if limits.min_bathrooms:
+        numbers["min_bathrooms"] = limits.min_bathrooms - 1
+    if limits.min_renovated_year:
+        numbers["min_renovated_year"] = limits.min_renovated_year - YEAR_STEP
+    if limits.min_floor_level is not None and limits.min_floor_level > 0:
+        numbers["min_floor_level"] = max(0, limits.min_floor_level - 1)
+    if limits.max_floor_level is not None:
+        numbers["max_floor_level"] = limits.max_floor_level + 1
+    if limits.max_metro_walk_min:
+        numbers["max_metro_walk_min"] = limits.max_metro_walk_min + METRO_STEP
     for name, value in numbers.items():
         out[name] = option({name: value})
     if len(numbers) > 1:
         out["together"] = option(dict(numbers), to="every number one step wider")
     if limits.exclude_conditions:
         out["drop_conditions"] = option({"exclude_conditions": []}, to="no condition limit")
+    for feature in limits.must_have:  # D79: a must-have can't be "a little" looser, only dropped (it stays a wish)
+        out[f"drop_must:{feature}"] = option({"must_have": [f for f in limits.must_have if f != feature]}, to=f"{feature} not a must")
     for kind, wider in WIDER_TYPES.items():
         if kind in limits.property_types:
             for extra in (t for t in wider if t not in limits.property_types):

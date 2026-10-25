@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe, undoSwipe, answerCheckin } from "./api";
+import { Card, Checkin, Deck as DeckData, DeckCard, Decision, HardLimits, Message, Preference, Summary, SwipeStats, getDeck, getShortlist, getState, resetSearch, sendChat, sendSwipe, undoSwipe, answerCheckin } from "./api";
 import { Bar } from "./Bar";
 import { Chat } from "./Chat";
 import { Deck } from "./Deck";
@@ -11,6 +11,7 @@ export function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [card, setCard] = useState<Card | null>(null);
   const [searchedAs, setSearchedAs] = useState<Partial<HardLimits> | null>(null);
+  const [wishes, setWishes] = useState<Preference[]>([]);
   const [ready, setReady] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
   const [deck, setDeck] = useState<DeckData | null>(null);
@@ -48,6 +49,7 @@ export function App() {
       setMessages(state.messages);
       setCard(state.card);
       setSearchedAs(state.searched_as);
+      setWishes(state.wishes ?? []);
       setStats(state.swipes);
       setData(state.data);
       setAreas(state.areas);
@@ -73,6 +75,7 @@ export function App() {
       setMessages((m) => [...m, { role: "assistant", text: reply.reply }]);
       setCard(reply.card);
       setSearchedAs(reply.searched_as);
+      setWishes(reply.wishes ?? []);
       setStats(reply.swipes);
       setUnsupported(reply.unsupported.includes("rent") || reply.card.intent === "rent");
       setCheckin(null);
@@ -154,12 +157,13 @@ export function App() {
   }, [ready, deck, queue.length, busy, checkin, loadDeck]);
 
   const startOver = async () => {
-    if (!window.confirm("Start a new search? Your swipes and shortlist stay.")) return;
+    if (!window.confirm("Start a new search? Your swipes so far are archived, and the shortlist and counts start again from zero.")) return;
     try {
       const state = await resetSearch();
       setMessages(state.messages);
       setCard(null);
       setSearchedAs(null);
+      setWishes([]);
       setReady(false);
       setDeck(null);
       setQueue([]);
@@ -200,7 +204,7 @@ export function App() {
         </main>
       ) : (
         <main className="layout deck-layout">
-          {card && searchedAs && <Bar card={card} searched={searchedAs} />}
+          {card && searchedAs && <Bar card={card} searched={searchedAs} wishes={wishes} />}
           <nav className="tabs" aria-label="Views">
             <button type="button" className={`tab ${view === "deck" ? "on" : ""}`} onClick={() => setView("deck")}>Homes</button>
             <button type="button" className={`tab ${view === "shortlist" ? "on" : ""}`} onClick={() => setView("shortlist")}>

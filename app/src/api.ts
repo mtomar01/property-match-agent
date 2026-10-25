@@ -15,6 +15,13 @@ export interface HardLimits {
   max_price_per_m2: number | null;
   max_floor_without_lift: number | null;
   exclude_conditions: string[];
+  // D79: firm wishes on fields listings reliably state, made hard limits by code
+  must_have?: string[];
+  min_bathrooms?: number | null;
+  min_renovated_year?: number | null;
+  min_floor_level?: number | null;
+  max_floor_level?: number | null;
+  max_metro_walk_min?: number | null;
 }
 
 export interface Preference {
@@ -22,6 +29,7 @@ export interface Preference {
   min: number | string | null;
   max: number | string | null;
   equals: boolean | null;
+  firm?: boolean;  // said outright, not "ideally" (D79)
   weight: number;
 }
 
@@ -59,6 +67,7 @@ export interface State {
   asking_about: string[];
   unsupported: string[];
   searched_as: Partial<HardLimits> | null;
+  wishes: Preference[];  // the wishes left once firm ones became limits (D79)
   swipes: SwipeStats;
   data: string;
   checkin_every: number;
@@ -73,6 +82,7 @@ export interface ChatReply {
   unsupported: string[];
   card: Card;
   searched_as: Partial<HardLimits>;
+  wishes: Preference[];
   deck_ready: boolean;
   swipes: SwipeStats;
 }

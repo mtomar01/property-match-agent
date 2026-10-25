@@ -38,16 +38,17 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
-from adapters.snapshot import SnapshotAdapter
+from adapters.snapshot import SnapshotAdapter, data_areas
 from agent import interview, llm
-from core.models import covered_areas
+from core.card_rules import harden
+from core.models import covered_areas, set_covered_areas
 from evals.harness.build_label_tool import ROOT
 
 CHATS = ROOT / "evals" / "datasets" / "interview_chats.jsonl"
 PRIVATE = ROOT / "data" / "private" / "evals" / "interview"
 CACHE = ROOT / "data" / "private" / "evals" / "model_cache"
 RESULTS = ROOT / "evals" / "results"
-SNAPSHOT = ROOT / "data" / "private" / "snapshot.jsonl"
+SNAPSHOT = ROOT / "data" / "private" / "snapshot_2026-10-23.jsonl"  # frozen, read-only: 1,000 listings in five areas (D80)
 TODAY = "2026-10-22"  # fixed, so the prompt and the cache keys don't change from day to day
 SIM_MODEL = "claude-haiku-5-5"
 EXTRA_ANSWERS = 2
@@ -57,11 +58,16 @@ TARGETS = {"field_accuracy": 0.95, "invented_hard_limits": 0, "unasked_loosening
 # ends here, and the user's last word is logged as no objection, so the scores keep their meaning.
 CONFIRM = {"en": "Yes, that's right. Go ahead.", "el": "Ναι, σωστά. Προχώρα."}
 COUNTERPART = {"max_price_eur": "price_eur", "min_price_eur": "price_eur", "min_size_m2": "size_m2",
-               "max_size_m2": "size_m2", "min_bedrooms": "bedrooms", "exclude_floors": "floor_level"}
+               "max_size_m2": "size_m2", "min_bedrooms": "bedrooms", "exclude_floors": "floor_level",
+               "min_bathrooms": "bathrooms", "min_year_built": "year_built", "min_renovated_year": "renovated_year",
+               "min_floor_level": "floor_level", "max_floor_level": "floor_level", "max_metro_walk_min": "metro_walk_min",
+               "exclude_conditions": "move_in_ready"}
 PROFESSIONAL = re.compile(r"bank|broker|advis|adviser|advisor|professional|accountant|lawyer|τράπεζ|σύμβουλ|"
                           r"επαγγελματ|λογιστ|δικηγόρ|μεσίτ", re.I)
 AREA_ALIASES = {"Kypseli": ("kypseli", "κυψέλη", "κυψελη"), "Κυψέλη": ("kypseli", "κυψέλη", "κυψελη"),
-                "Pangrati": ("pangrati", "pagrati", "pagkrati", "παγκράτι", "παγκρατι")}
+                "Pangrati": ("pangrati", "pagrati", "pagkrati", "παγκράτι", "παγκρατι"),
+                "Νέα Σμύρνη": ("νέα σμύρνη", "νεα σμυρνη", "nea smyrni"), "Nea Smyrni": ("nea smyrni", "νέα σμύρνη", "νεα σμυρνη"),
+                "Koukaki": ("koukaki", "κουκάκι", "κουκακι")}
 
 SIM_SYSTEM = """You play a person looking for a home, in a test of a property search assistant.
 Answer the assistant's latest message in one or two short sentences, in the language given.
@@ -146,9 +152,10 @@ def simulate(chat: dict, client, listings: list, model: str = interview.MODEL, v
             lang = language(text)
         elif last and last.get("output") and last["output"]["action"] == "confirm":
             text, source, confirmed = CONFIRM[lang], "confirm", True
-        elif extra < EXTRA_ANSWERS and last and last.get("output") and "ease_limit" in (last["output"]["asking_about"] or []):
+        elif extra < EXTRA_ANSWERS and last and last.get("output") and {"ease_limit", "make_limit"} & set(last["output"]["asking_about"] or []):
             # No chat's facts say the user would loosen a limit, so a suggestion to ease one gets a fixed
-            # "no preference", never a model's yes (D50). The rule says that keeps the card as it was.
+            # "no preference", never a model's yes (D50). The rule says that keeps the card as it was. An offer to make a
+            # wish a must gets the same answer (D81): whether this user would take it is nowhere in the facts.
             text, source, extra = NO_PREFERENCE[lang], "fixed, easing", extra + 1
         elif extra < EXTRA_ANSWERS and last and last.get("output"):
             text, response = simulated_answer(chat, last["output"]["reply"], lang, sim_client, sim_cache,
@@ -260,7 +267,8 @@ def preference_outcomes(expected: dict, predicted: dict) -> list[dict]:
         elif same_feature:
             used.update(same_feature)
             row.update(result="wrong_bound", predicted=[_bound(preds[i]) for i in same_feature])
-        elif any(COUNTERPART.get(n) == e["feature"] and not _blank(pred_hard.get(n)) and _blank(exp_hard.get(n)) for n in COUNTERPART):
+        elif any(COUNTERPART.get(n) == e["feature"] and not _blank(pred_hard.get(n)) and _blank(exp_hard.get(n)) for n in COUNTERPART) \
+                or (e["feature"] in (pred_hard.get("must_have") or []) and e["feature"] not in (exp_hard.get("must_have") or [])):
             row["result"] = "split"  # wanted as a preference, made a hard limit
         else:
             row["result"] = "missed"
@@ -269,6 +277,7 @@ def preference_outcomes(expected: dict, predicted: dict) -> list[dict]:
         if i in used:
             continue
         hard_twin = [n for n, f in COUNTERPART.items() if f == p["feature"] and not _blank(exp_hard.get(n)) and _blank(pred_hard.get(n))]
+        hard_twin += ["must_have"] if p["feature"] in (exp_hard.get("must_have") or []) and p["feature"] not in (pred_hard.get("must_have") or []) else []
         out.append({"feature": p["feature"], "predicted": list(_bound(p)), "result": "split" if hard_twin else "extra"})
     return out
 
@@ -334,7 +343,7 @@ def behaviours(chat: dict, transcript: dict) -> dict[str, bool]:
     log = transcript["log"]
     replies = [t for t in log if t["role"] == "assistant" and t.get("output")]
     asked = set().union(*(_asked(t) for t in replies)) if replies else set()
-    final = transcript["final"] or {}
+    final = harden(transcript["final"] or {})  # as the search runs it (D79)
     if "which_covered_area" in asked:  # "which of our three areas?" asks for the areas either way (D57)
         asked = asked | {"areas"}
     if "purpose" in asked:  # choosing "investment" in answer to the purpose question is choosing investor mode (D54)
@@ -399,12 +408,15 @@ def _looser(name: str, before, after) -> bool:
         return True
     if name in ("max_price_eur", "max_size_m2", "max_bedrooms", "max_price_per_m2", "max_floor_without_lift"):
         return after > before
-    if name in ("min_price_eur", "min_size_m2", "min_bedrooms", "min_year_built"):
+    if name in ("min_price_eur", "min_size_m2", "min_bedrooms", "min_year_built", "min_bathrooms", "min_renovated_year",
+                "min_floor_level"):
         return after < before
+    if name in ("max_floor_level", "max_metro_walk_min"):
+        return after > before
     if name == "property_types":
         return bool(set(after) - set(before))
-    if name in ("exclude_floors", "exclude_conditions"):
-        return bool(set(before) - set(after))  # a floor or a condition no longer ruled out
+    if name in ("exclude_floors", "exclude_conditions", "must_have"):
+        return bool(set(before) - set(after))  # a floor or a condition no longer ruled out, a must-have dropped (D79)
     raise ValueError(f"no loosening rule for {name}")  # a new limit must say what looser means
 
 
@@ -422,7 +434,7 @@ def unasked_loosenings(log: list[dict]) -> list[str]:
             continue
         if not entry.get("output"):
             continue
-        current = entry["output"]["criteria"]
+        current = harden(entry["output"]["criteria"])  # a firm wish code made a hard limit counts as one (D79)
         if previous is not None and last_user and last_user["source"] != "script":
             for name in ("areas", "budget_around", "ideally", *interview.HARD_FIELDS):
                 top = name in ("areas", "budget_around", "ideally")
@@ -466,7 +478,8 @@ def card_matches(replies: list[dict]) -> int:
 
 
 def score_chat(chat: dict, transcript: dict) -> dict:
-    predicted = transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []}
+    # Scored as the search runs it: firm wishes on reliably stated fields are hard limits (D79), the margins aren't applied
+    predicted = harden(transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []})
     expected = chat["expected_criteria"]
     unsupported = expected.get("intent") == "rent"  # no rental search yet (D54): behaviours only, no card to score
     replies = [t for t in transcript["log"] if t["role"] == "assistant" and t.get("output")]
@@ -561,6 +574,7 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
         workers: int = 4, chats_path: Path = CHATS, set_name: str | None = None) -> dict:
     chats = [c for c in load_chats(chats_path) if not only or c["chat_id"] in only][:limit]
     listings = listings if listings is not None else SnapshotAdapter(SNAPSHOT).listings()
+    set_covered_areas(data_areas(listings))  # the prompt and the scoring cover what this dataset holds (D69, D80)
     client = client or llm.client()
     def one(chat):
         try:
@@ -590,13 +604,14 @@ def run(only: list[str] | None = None, limit: int | None = None, model: str = in
             "eval": "interview", "name": name, "ran_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "model": model, "prompt": version, "simulated_user": SIM_MODEL, "targets": TARGETS,
             "summary": summary, "chats": scores,
-            "data": "40 scripted chats (synthetic); supply counts from the private snapshot, totals only",
+            "data": f"{len(chats)} scripted chats; supply counts from the frozen {SNAPSHOT.name}, totals only",
         }, ensure_ascii=False, indent=1), encoding="utf-8")
     return {"summary": summary, "scores": scores, "transcripts": transcripts}
 
 
 def rescore(name: str, chats_path: Path = CHATS) -> dict:
     """Score saved transcripts against the current labels and rules. No calls."""
+    set_covered_areas(data_areas(SnapshotAdapter(SNAPSHOT).listings()))  # "every area" means this dataset's areas (D80)
     chats = {c["chat_id"]: c for c in load_chats(chats_path)}
     transcripts = [json.loads(line) for line in (PRIVATE / f"transcripts-{name}.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     scores = [score_chat(chats[t["chat_id"]], t) for t in transcripts]

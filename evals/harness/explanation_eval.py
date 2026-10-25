@@ -169,7 +169,7 @@ def run(snapshot: str | None = None, write: bool = True) -> dict:
     for entry in sets:
         if cards >= CARDS:
             break
-        raw = {**entry["effective_criteria"], "preferences": PREFERENCES}
+        raw = {**{k: v for k, v in entry["effective_criteria"].items() if k in Criteria.model_fields}, "preferences": PREFERENCES}
         criteria = Criteria(user_id="eval", **raw)
         built = deck.build(listings, criteria, set(), limit=6, today=TODAY)
         for card in built["cards"]:

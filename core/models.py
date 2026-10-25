@@ -28,6 +28,7 @@ PropertyType = Literal[
     "apartment", "studio", "maisonette", "detached_house", "loft", "building", "apartment_complex"
 ]
 Condition = Literal["needs_work", "unfinished", "new_build", "renovated", "good"]
+MustHave = Literal["parking", "lift", "balcony", "storage"]  # D79: yes/no features listings reliably state
 EnergyClass = Literal["A+", "A", "B+", "B", "C", "D", "E", "F", "G", "pending", "exempt"]
 ENERGY_LETTERS = ("A+", "A", "B+", "B", "C", "D", "E", "F", "G")
 HeatingType = Literal["independent", "central", "none"]
@@ -224,6 +225,11 @@ class Listing(_Strict):
                                         if p.price_eur != self.price_eur), None),  # the shortlist shows price changes (spec)
             "lift": self.lift,  # the no-stairs limit is checked on these two (D73)
             "condition": self.condition,
+            "parking": self.parking,  # the hard limits a user's outright wishes become are checked on these (D79)
+            "balcony": self.balcony,
+            "storage": self.storage,
+            "bathrooms": self.bathrooms,
+            "metro_walk_min": self.metro_walk_min,
             "synthetic": self.synthetic,
         }
 
@@ -248,6 +254,13 @@ class HardLimits(_Strict):
     max_price_per_m2: int | None = Field(default=None, gt=0)  # D73: "up to 2,000 per m²"
     max_floor_without_lift: int | None = Field(default=None, ge=0, le=30)  # D73: 0 is "a ground floor or a lift"
     exclude_conditions: list[Condition] = Field(default_factory=list)  # D73: a must, e.g. no homes that need work
+    # D79: what a user says outright becomes a hard limit for fields the listings reliably state
+    must_have: list[MustHave] = Field(default_factory=list)  # "with parking", "με ασανσέρ"
+    min_bathrooms: int | None = Field(default=None, ge=0)
+    min_renovated_year: int | None = Field(default=None, ge=1900, le=2035)  # renovated, or built, in that year or later
+    min_floor_level: float | None = Field(default=None, ge=-1, le=40)  # storeys up: ground 0, raised ground 0.25
+    max_floor_level: float | None = Field(default=None, ge=-1, le=40)
+    max_metro_walk_min: int | None = Field(default=None, gt=0, le=120)  # only when the user takes the offer: few listings say
 
     @field_validator("exclude_floors")
     @classmethod
@@ -268,6 +281,10 @@ class HardLimits(_Strict):
             raise ValueError("min_size_m2 is above max_size_m2")
         if self.min_bedrooms is not None and self.max_bedrooms is not None and self.min_bedrooms > self.max_bedrooms:
             raise ValueError("min_bedrooms is above max_bedrooms")
+        if self.min_floor_level is not None and self.max_floor_level is not None and self.min_floor_level > self.max_floor_level:
+            raise ValueError("min_floor_level is above max_floor_level")
+        if len(set(self.must_have)) != len(self.must_have):
+            raise ValueError("a must-have appears twice")
         return self
 
 
@@ -297,6 +314,9 @@ class Preference(_Strict):
     max: float | str | None = None
     equals: bool | None = None
     weight: float = Field(ge=0.0, le=1.0)
+    # D79: said outright, not "ideally". Code turns a firm wish into a hard limit where the listings reliably state
+    # the field (core/card_rules.py); otherwise it stays a wish, and the assistant can offer it as a limit.
+    firm: bool = False
 
     @model_validator(mode="after")
     def _has_target(self) -> "Preference":

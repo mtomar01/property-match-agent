@@ -116,7 +116,7 @@ class App:
         last = self.state["last"] or {}
         return {"messages": shown, "card": self.state["card"], "action": last.get("action"),
                 "asking_about": last.get("asking_about", []), "unsupported": last.get("unsupported", []),
-                "searched_as": search_card(self.state["card"])["hard_limits"] if self.state["card"] else None,
+                **self._searched(self.state["card"]),
                 "swipes": self.swipes.stats(), "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
                 "areas": list(self.areas), "checkin": self._waiting()}
 
@@ -129,6 +129,14 @@ class App:
                 "suggestion": {"key": pending["key"], "kind": pending.get("kind"), "feature": pending.get("feature")},
                 "ladder": pending.get("ladder", "pattern"), "options": pending.get("options"),
                 "yes_message": pending.get("yes_message")}
+
+    @staticmethod
+    def _searched(card: dict | None) -> dict:
+        """What the deck searches: the hard limits after code's rules, and the wishes left once firm ones became limits (D79)."""
+        if not card:
+            return {"searched_as": None, "wishes": []}
+        applied = search_card(card)
+        return {"searched_as": applied["hard_limits"], "wishes": applied["preferences"]}
 
     def data_label(self) -> str:
         return "synthetic listings" if self.adapter.is_synthetic else "private personal-use snapshot"
@@ -157,7 +165,7 @@ class App:
                 "unsupported": answer.get("unsupported", []), "repairs": out["repairs"]}
         self.state.update(history=history, card=card, last=last)
         supply = out["tool_calls"][-1]["result"] if out["tool_calls"] else None
-        return {**last, "card": card, "searched_as": search_card(card)["hard_limits"], "supply": supply,
+        return {**last, "card": card, **self._searched(card), "supply": supply,
                 "deck_ready": answer["action"] == "confirm" and card.get("intent") != "rent"}
 
     def chat(self, text: str) -> dict:
@@ -202,7 +210,7 @@ class App:
                            skipped_ids=self.swipes.skipped_ids(), learner=self.learner(criteria), duplicates=self.duplicates)
         if built["total_matches"] < interview.THIN:  # thin: code's ways to widen, for the user to ask the assistant (D63)
             built["if_eased"] = interview.eased(criteria, self.adapter.listings())
-        return {**built, "searched_as": search_card(self.state["card"])["hard_limits"], "swipes": self.swipes.stats(),
+        return {**built, **self._searched(self.state["card"]), "swipes": self.swipes.stats(),
                 "data": self.data_label(), "checkin_every": patterns.CHECKIN_EVERY,
                 "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(everything)}
 
@@ -300,7 +308,7 @@ class App:
         self.state["checkin_at"] = count
         card = self.state["card"]
         return {"reply": question["reply"], "action": "ask", "asking_about": ["suggest_change"], "unsupported": [],
-                "card": card, "searched_as": search_card(card)["hard_limits"], "deck_ready": False,
+                "card": card, **self._searched(card), "deck_ready": False,
                 "ladder": question["ladder"], "options": question["options"], "yes_message": question.get("yes_message"),
                 "suggestion": {"key": question["key"], "kind": question["kind"], "feature": question["feature"]}}
 

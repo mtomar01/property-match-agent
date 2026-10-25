@@ -117,6 +117,46 @@ def check(listing: Listing, criteria: Criteria) -> tuple[str, str] | None:
         if listing.condition in limits.exclude_conditions:
             return ("excluded_condition", "condition")
 
+    # D79: the hard limits a user's outright wishes become.
+    for feature in limits.must_have:
+        has = (None if listing.parking is None else listing.parking != "none") if feature == "parking" else getattr(listing, feature)
+        if has is None:
+            return ("unknown", feature)
+        if not has:
+            return (f"no_{feature}", feature)
+
+    if limits.min_bathrooms is not None:
+        if listing.bathrooms is None:
+            return ("unknown", "bathrooms")
+        if listing.bathrooms < limits.min_bathrooms:
+            return ("too_few_bathrooms", "bathrooms")
+
+    if limits.min_renovated_year is not None:
+        # "Renovated since 2021" is met by a renovation or a build in 2021 or later. A home that says neither can't be
+        # promised to be recently renovated: it fails closed, counted as unknown so the assistant can say how many (D79).
+        since = limits.min_renovated_year
+        if not ((listing.renovated_year or 0) >= since or (listing.year_built or 0) >= since):
+            if listing.renovated_year is not None:
+                return ("renovated_earlier", "renovated_year")
+            if listing.condition in ("needs_work", "unfinished"):
+                return ("needs_work", "condition")
+            return ("unknown", "renovated_year")
+
+    if limits.min_floor_level is not None or limits.max_floor_level is not None:
+        level = greek.floor_level(listing.floor.floor_class)  # a ρετιρέ with no number has no known storey (D51)
+        if level is None:
+            return ("unknown", "floor")
+        if limits.min_floor_level is not None and level < limits.min_floor_level:
+            return ("floor_too_low", "floor")
+        if limits.max_floor_level is not None and level > limits.max_floor_level:
+            return ("floor_too_high", "floor")
+
+    if limits.max_metro_walk_min is not None:
+        if listing.metro_walk_min is None:
+            return ("unknown", "metro_walk_min")
+        if listing.metro_walk_min > limits.max_metro_walk_min:
+            return ("far_from_metro", "metro_walk_min")
+
     return None
 
 

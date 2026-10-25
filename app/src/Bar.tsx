@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Card, HardLimits } from "./api";
+import { Card, HardLimits, Preference } from "./api";
 import { barText, preferenceText, weightWord } from "./labels";
 
 // The card lives on as one line above the deck: every hard limit, always visible (D61). Details fold out, read only.
-export function Bar({ card, searched }: { card: Card; searched: Partial<HardLimits> }) {
+export function Bar({ card, searched, wishes }: { card: Card; searched: Partial<HardLimits>; wishes: Preference[] }) {
   const [open, setOpen] = useState(false);
-  const limits = barText(card, searched);
-  const wishes = card.preferences;
+  const limits = barText(card, searched);  // firm wishes code made limits show here, not in the wishes (D79)
   return (
     <section className="bar" aria-label="What the deck searches">
       <div className="bar-line">

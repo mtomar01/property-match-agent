@@ -33,7 +33,7 @@ uv run python -m learning.swipes me               # your like rate so far, count
 uv run python -m evals.harness.learning_eval --real me   # once you have about 200 swipes: learned against rules
 ```
 
-How it flows (D61, D66, D74 to D78): you chat until the assistant has what it needs, then the homes come up one at a time with the hard limits on a bar above them. Each card says why it fits and two market facts counted by code: its price per m² against similar homes, and how long it has been on the market. A home listed more than once shows once, at its cheapest, with the other listings as links. Right to like, left to reject with a quick reason or your own words; in the middle, back and skip; and "Can't judge" when a listing's photos or details don't let you decide, which never counts against the home (D71). From 3 likes and 3 rejects the order blends in what your swipes teach, all of it from 30, and the line under the deck says how much and what it leans towards. Every fifth card comes from outside the ranking's top, so it keeps learning. Every 10 likes or rejects there's one question: a pattern code found, put by the assistant with the counts; else a reason you tapped; else "How are these homes so far?" Nothing changes until you say yes. Any change goes through the chat, New search starts the swipes from zero, and the shortlist of liked homes downloads as a CSV that opens in Google Sheets.
+How it flows (D61, D66, D74 to D79): you chat until the assistant has what it needs, then the homes come up one at a time with the hard limits on a bar above them. What you say outright about parking, a lift, a balcony, storage, bathrooms, the building or renovation year or the floor becomes a hard limit; "ideally" keeps it a wish, and so do "ready to move in" and metro minutes, which the assistant offers as a must with code's count of what that would leave. Under 5 homes, it offers the smallest widening and changes nothing without your yes. Each card says why it fits and two market facts counted by code: its price per m² against similar homes, and how long it has been on the market. A home listed more than once shows once, at its cheapest, with the other listings as links. Right to like, left to reject with a quick reason or your own words; in the middle, back and skip; and "Can't judge" when a listing's photos or details don't let you decide, which never counts against the home (D71). From 3 likes and 3 rejects the order blends in what your swipes teach, all of it from 30, and the line under the deck says how much and what it leans towards. Every fifth card comes from outside the ranking's top, so it keeps learning. Every 10 likes or rejects there's one question: a pattern code found, put by the assistant with the counts; else a reason you tapped; else "How are these homes so far?" Nothing changes until you say yes. Any change goes through the chat, New search starts the swipes from zero, and the shortlist of liked homes downloads as a CSV that opens in Google Sheets.
 
 Each chat message is one or two Sonnet 5.5 calls, about 3 to 4 cents, and so is a pattern check-in. The deck, the reasons and market facts, the learned ranking, the duplicate finder, the swipe log, the pattern finding and the other check-in questions are code and cost nothing. Swipes and the chat are saved in `data/private/`, which git ignores. Photos load from the portal only while a card is on screen and are never stored; the public synthetic listings show a placeholder.
 
@@ -57,6 +57,7 @@ Duplicates (D78): `uv run python -m evals.harness.build_duplicate_labels` writes
 | Version | Eval | Cases | Hard limit breaks | Recall@20 | Precision@10 |
 |---|---|---|---|---|---|
 | v0.1 | Search safety (synthetic) | 20 | **0** | 1.00 | 1.00 |
+| v3 | Search safety, with condition, price per m², stairs and the D79 limits | 29 | **0** | 1.00 | 1.00 |
 
 | Version | Eval | Listings | Table fields | Text-only fields | Invented values |
 |---|---|---|---|---|---|
@@ -105,11 +106,15 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v3 | Interview, prompt v8, the 8 new chats for condition, price per m² and stairs | 8 | 100% | 0 | 3 of 3 | 100% |
 | v3 | Interview clean test, prompt v8, as labelled | 10 | 90.2% | 3 | 11 of 13 | 97.1% |
 | v3 | **Interview clean test, prompt v8**, two lift wishes relabelled to the stairs limit (D77) | 10 | **95.1%** | 1 | 11 of 11 | 97.1% |
+| v3 | Interview, prompt v8, moved to the frozen 23 October file, old labels (D80) | 40 / 10 / 8 | 100% / 97.5% / 97.5% | 0 | 16 of 16 / 11 of 11 / 3 of 3 | 100% / 100% / 92.3% |
+| v3 | **Interview, prompt v10**: firm wishes become hard limits where listings say them (D79, D81), 23 October file | 40 | **100%** | **0** | 9 of 10 | **100%** |
+| v3 | Interview, prompt v10, the 8 chats for condition, price per m² and stairs | 8 | 97.5% | 0 | 3 of 3 | 92.9% |
+| v3 | Interview clean test, prompt v10 | 10 | 89.6% | 0 | 3 of 3, 2 split | 97.1% |
 
 | Version | Eval | Size | Result | Target |
 |---|---|---|---|---|
 | v2 | Explanations: every "why this one" reason checked against the listing's fields (D64) | 50 cards, 100 reasons | **100%** backed | 98% |
-| v3 | Explanations, with the market lines recomputed independently (D74) | 50 cards, 194 reasons and market lines | **100%** backed | 98% |
+| v3 | Explanations, with the market lines recomputed independently, and move-in-ready and €/m² wishes (D74, D79) | 50 cards, 192 reasons and market lines | **100%** backed | 98% |
 | v3 | Learning: 8 simulated buyers, learn from the first swipes, rank the homes waiting after 160 (D76) | 5 runs each, frozen 20 October snapshot | AUC 0.634 rules, **0.742** learned; precision at 10 +0.110 | AUC lift 0.05, precision at 10 no lower |
 | v3 | Learning, the same on the 23 October dataset | 5 runs each | AUC 0.650 rules, **0.756** learned; precision at 10 +0.170 | same |
 | v3 | Duplicates, synthetic copies (development check) (D78) | 12 known groups | with photo hashes precision **1.0**, recall **1.0**; without, 1.0 and 0.67 | 0.95 and 0.85 |
@@ -120,7 +125,7 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
-Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). Prompt v9 fixes the v8 slip (a bare bedroom count also became a maximum) and waits for its run; the app uses v8 until then.
+Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). The app runs prompt v10 (D81). Its clean-test misses include one regression from its own new example (a lift wanted above the 1st floor read as a wish, not the stairs limit); prompt v11 fixes it and waits for its run.
 
 ## Docs
 

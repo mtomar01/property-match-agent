@@ -88,6 +88,9 @@ export function floorText(floor: string | null): string {
 const euro = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 export const money = (value: number | null | undefined) => (value == null ? "–" : euro.format(value));
 
+const MUST_WORDS: Record<string, string> = { parking: "parking", lift: "a lift", balcony: "a balcony", storage: "a storage room" };
+const floorWord = (level: number) => (level <= 0 ? "ground" : level < 1 ? "mezzanine" : `${level}`);
+
 // The one-line bar above the deck: every hard limit, always visible (D61).
 export function barText(card: Card, searched: Partial<HardLimits>): string[] {
   const parts: string[] = [];
@@ -109,6 +112,14 @@ export function barText(card: Card, searched: Partial<HardLimits>): string[] {
     parts.push(searched.max_floor_without_lift === 0 ? "ground floor or a lift" : `lift above floor ${searched.max_floor_without_lift}`);
   }
   if (searched.exclude_conditions?.length) parts.push(`no ${searched.exclude_conditions.map((c) => c.replace("_", " ")).join(" or ")}`);
+  for (const f of searched.must_have ?? []) parts.push(`with ${MUST_WORDS[f] ?? f}`);
+  if (searched.min_bathrooms != null) parts.push(`${searched.min_bathrooms}+ bathrooms`);
+  if (searched.min_renovated_year != null) parts.push(`renovated or built from ${searched.min_renovated_year}`);
+  const fl = searched.min_floor_level, fh = searched.max_floor_level;
+  if (fl != null && fh != null) parts.push(`floor ${floorWord(fl)} to ${floorWord(fh)}`);
+  else if (fl != null) parts.push(`floor ${floorWord(fl)} or higher`);
+  else if (fh != null) parts.push(`floor ${floorWord(fh)} or lower`);
+  if (searched.max_metro_walk_min != null) parts.push(`metro within ${searched.max_metro_walk_min} min on foot`);
   if (card.intent === "invest") parts.push("investor mode");
   return parts;
 }
@@ -130,6 +141,16 @@ export function wideningText(patch: Record<string, number | string[]>, searched:
   if ("max_price_per_m2" in patch) parts.push(`up to ${money(patch.max_price_per_m2 as number)}/m²`);
   if ("max_floor_without_lift" in patch) parts.push(`stairs up to floor ${patch.max_floor_without_lift}`);
   if ("exclude_conditions" in patch) parts.push("any condition");
+  if ("must_have" in patch) {
+    const had = (searched.must_have as string[] | undefined) ?? [];
+    const dropped = had.filter((f) => !(patch.must_have as string[]).includes(f));
+    parts.push(`${dropped.map((f) => MUST_WORDS[f] ?? f).join(", ")} as a wish, not a must`);
+  }
+  if ("min_bathrooms" in patch) parts.push(`${patch.min_bathrooms}+ bathrooms`);
+  if ("min_renovated_year" in patch) parts.push(`renovated or built from ${patch.min_renovated_year}`);
+  if ("min_floor_level" in patch) parts.push(`floor ${floorWord(patch.min_floor_level as number)} or higher`);
+  if ("max_floor_level" in patch) parts.push(`floor ${floorWord(patch.max_floor_level as number)} or lower`);
+  if ("max_metro_walk_min" in patch) parts.push(`metro within ${patch.max_metro_walk_min} min`);
   if ("property_types" in patch) {
     const had = (searched.property_types as string[] | undefined) ?? [];
     const added = (patch.property_types as string[]).filter((t) => !had.includes(t));
@@ -149,11 +170,14 @@ export function wideningMessage(patch: Record<string, number | string[]>): strin
     max_price_eur: "top price", min_price_eur: "lowest price", min_size_m2: "minimum size", max_size_m2: "maximum size",
     min_bedrooms: "minimum bedrooms", max_bedrooms: "maximum bedrooms", min_year_built: "earliest year built",
     max_price_per_m2: "top price per m²", max_floor_without_lift: "floors of stairs without a lift",
+    min_bathrooms: "minimum bathrooms", min_renovated_year: "renovated or built from", min_floor_level: "lowest floor",
+    max_floor_level: "highest floor", max_metro_walk_min: "minutes to the metro",
   };
   const parts = Object.entries(patch).map(([name, value]) =>
     name === "property_types" ? `types ${(value as string[]).map((t) => TYPES[t] ?? t).join(", ")}`
       : name === "areas" ? `areas ${(value as string[]).join(", ")}`
       : name === "exclude_conditions" ? "drop the condition limit"
+      : name === "must_have" ? `keep ${(value as string[]).length ? (value as string[]).join(", ") : "nothing"} as a must and make the rest wishes`
       : `${words[name] ?? name} ${value}`);
   return `Yes, widen it: ${parts.join(", ")}.`;
 }

@@ -117,3 +117,52 @@ def test_condition_limit_and_the_move_in_ready_wish():
     assert score(listing(4, condition="new_build"), wish) == 1.0
     assert score(listing(5, condition="needs_work"), wish) == 0.0
     assert score(listing(6, condition=None), wish) == 0.5  # unknown: neither rewarded nor punished
+
+
+# -- D79: what a user says outright becomes a hard limit for fields listings reliably state --------
+
+
+def test_must_haves_fail_closed_on_an_unstated_value():
+    c = criteria(max_price_eur=200000, must_have=["parking", "lift"])
+    assert check(listing(1, parking="space", lift=True), c) is None
+    assert check(listing(2, parking="none", lift=True), c) == ("no_parking", "parking")
+    assert check(listing(3, parking=None, lift=True), c) == ("unknown", "parking")
+    assert check(listing(4, parking="garage", lift=False), c) == ("no_lift", "lift")
+
+
+def test_bathrooms_floor_levels_and_metro():
+    assert check(listing(1, bathrooms=1), criteria(min_bathrooms=2)) == ("too_few_bathrooms", "bathrooms")
+    assert check(listing(2, bathrooms=None), criteria(min_bathrooms=2)) == ("unknown", "bathrooms")
+    band = criteria(min_floor_level=2, max_floor_level=4)
+    assert check(listing(3), band) is None  # the 2nd floor
+    assert check(listing(4, floor={"raw": "1ος", "class": "1"}), band) == ("floor_too_low", "floor")
+    assert check(listing(5, floor={"raw": "6ος", "class": "6"}), band) == ("floor_too_high", "floor")
+    assert check(listing(6, floor={"raw": "ρετιρέ", "class": "top"}), band) == ("unknown", "floor")  # no number (D51)
+    assert check(listing(7, metro_walk_min=12), criteria(max_metro_walk_min=10)) == ("far_from_metro", "metro_walk_min")
+    assert check(listing(8), criteria(max_metro_walk_min=10)) == ("unknown", "metro_walk_min")
+
+
+def test_renovated_since_is_a_renovation_or_a_build_from_that_year():
+    since = criteria(min_renovated_year=2021)
+    assert check(listing(1, renovated_year=2022), since) is None
+    assert check(listing(2, year_built=2024), since) is None  # a new build counts
+    assert check(listing(3, renovated_year=2017), since) == ("renovated_earlier", "renovated_year")
+    assert check(listing(4, condition="needs_work"), since) == ("needs_work", "condition")
+    assert check(listing(5, condition="renovated"), since) == ("unknown", "renovated_year")  # renovated, but when?
+
+
+def test_firm_wishes_become_limits_and_soft_ones_stay_wishes():
+    from core.card_rules import search_card
+    raw = {"intent": "buy", "hard_limits": {"max_price_eur": 200000, "min_year_built": 2010},
+           "preferences": [{"feature": "parking", "equals": True, "weight": 0.6, "firm": True},
+                           {"feature": "balcony", "equals": True, "weight": 0.6, "firm": False},
+                           {"feature": "year_built", "min": 2000, "weight": 0.7, "firm": True},
+                           {"feature": "floor_level", "min": 2, "max": 4, "weight": 0.6, "firm": True},
+                           {"feature": "lift", "equals": False, "weight": 0.5, "firm": True},
+                           {"feature": "metro_walk_min", "max": 10, "weight": 0.8, "firm": True}]}
+    applied = search_card(raw)
+    limits = applied["hard_limits"]
+    assert limits["must_have"] == ["parking"] and limits["min_floor_level"] == 2 and limits["max_floor_level"] == 4
+    assert limits["min_year_built"] == 2010  # a looser firm wish never loosens a stricter limit
+    assert [p["feature"] for p in applied["preferences"]] == ["balcony", "lift", "metro_walk_min"]
+    assert applied["from_wishes"] == ["parking", "year_built", "floor_level"]

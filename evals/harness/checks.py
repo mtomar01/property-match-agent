@@ -97,4 +97,29 @@ def breaks(result: dict, criteria: dict) -> list[str]:
     if banned and (result.get("condition") is None or result.get("condition") in banned):
         found.append(f"condition {result.get('condition')} is excluded or unknown")
 
+    for feature in limits.get("must_have") or []:
+        value = result.get(feature)
+        present = value not in (None, "none", False) if feature == "parking" else value is True
+        if not present:
+            found.append(f"{feature} is {value!r}, and it's a must")
+
+    baths = result.get("bathrooms")
+    if limits.get("min_bathrooms") is not None and (baths is None or baths < limits["min_bathrooms"]):
+        found.append(f"bathrooms {baths} breaks min {limits['min_bathrooms']}")
+
+    since = limits.get("min_renovated_year")
+    if since is not None and not ((result.get("renovated_year") or 0) >= since or (result.get("year_built") or 0) >= since):
+        found.append(f"renovated {result.get('renovated_year')}, built {result.get('year_built')}: neither from {since}")
+
+    low, high = limits.get("min_floor_level"), limits.get("max_floor_level")
+    if low is not None or high is not None:
+        floor = result.get("floor")
+        storey = int(floor) if str(floor or "").isdigit() else _STOREY.get(floor)
+        if storey is None or (low is not None and storey < low) or (high is not None and storey > high):
+            found.append(f"floor {floor} is outside {low} to {high} or unknown")
+
+    walk = result.get("metro_walk_min")
+    if limits.get("max_metro_walk_min") is not None and (walk is None or walk > limits["max_metro_walk_min"]):
+        found.append(f"metro {walk} min breaks max {limits['max_metro_walk_min']}")
+
     return found

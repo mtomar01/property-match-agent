@@ -82,42 +82,50 @@ GROUND_FLOORS = ["basement", "semi_basement", "ground", "raised_ground"]
 # The cards rewritten to the rules Mike settled on 22 October (D53, D54). Each entry replaces those parts of a
 # card and says why; everything else stays as written. The cards as written are kept beside them.
 FIXES = {
-    "clean_gb_1": ({"hard_limits": {"max_price_eur": 200000, "min_bedrooms": 2, "max_floor_without_lift": 0}, "budget_around": True,
-                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True)],
+    "clean_gb_1": ({"hard_limits": {"max_price_eur": 200000, "min_bedrooms": 2, "max_floor_without_lift": 0,
+                                    "min_bathrooms": 2, "must_have": ["parking"]}, "budget_around": True,
+                    "preferences": [],
                     "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
                    "around 200 is ±10% in code; 70-120 m² wasn't said; bathrooms and parking were; no ceiling or year question; "
-                   "'αν είναι σε όροφο, να έχει ασανσέρ' is the stairs limit at 0 since D73 (D77)"),
+                   "'αν είναι σε όροφο, να έχει ασανσέρ' is the stairs limit at 0 since D73 (D77); two bathrooms and parking said "
+                   "outright are limits since D79"),
     "clean_gb_3": ({"user_facts": {"purpose": "Επένδυση, για να το νοικιάσω"},
                     "hard_limits": {"max_price_eur": 180000, "property_types": APT, "max_price_per_m2": 2000},
                     "must_ask": ["intent", "budget", "areas", "confirm_investor_mode", "purpose"]},
                    "an investment the chat doesn't say, so the purpose question finds it; lowest price from code; no costs or year question; "
                    "'up to 2000 per m²' is a hard limit since D73"),
-    "clean_gb_5": ({"hard_limits": {"max_price_eur": 250000, "min_bedrooms": 3},
-                    "preferences": [pref("bathrooms", 0.6, min=2), pref("parking", 0.6, equals=True)],
+    "clean_gb_5": ({"hard_limits": {"max_price_eur": 250000, "min_bedrooms": 3, "min_bathrooms": 2, "must_have": ["parking"]},
+                    "preferences": [],
                     "must_ask": ["intent", "budget", "areas", "bedrooms", "purpose"]},
-                   "grader slip: 3 δωμάτια, 2 bathrooms and parking were said; lowest price from code; no ceiling or costs question"),
-    "clean_mike_2": ({"hard_limits": {"max_price_eur": 150000, "max_bedrooms": 1, "exclude_floors": GROUND_FLOORS},
-                      "budget_around": True, "preferences": [pref("renovated_year", 0.9, min=2016)]},
+                   "grader slip: 3 δωμάτια, 2 bathrooms and parking were said, outright, so limits since D79; lowest price from code; "
+                   "no ceiling or costs question"),
+    "clean_mike_2": ({"hard_limits": {"max_price_eur": 150000, "max_bedrooms": 1, "exclude_floors": GROUND_FLOORS,
+                                      "min_renovated_year": 2021},
+                      "budget_around": True, "preferences": []},
                      "around 150k is ±10% in code; 20-50 m² wasn't said; 'one bedroom but studios are fine' is up to 1 bedroom "
-                     "(Mike, D58); renovated means the last 10 years"),
+                     "(Mike, D58); 'renovated' said outright is renovated or built in the last 5 years, a limit (Mike, D79)"),
     "clean_mike_3": ({"areas": [], "hard_limits": {"max_price_eur": 200000, "min_size_m2": 30, "max_size_m2": 50, "min_bedrooms": 1,
-                                                    "property_types": APT},
-                      "budget_around": True, "ideally": ["bedrooms", "size"],
-                      "preferences": [pref("renovated_year", 0.7, min=2016)]},
-                     "1 bedroom was said; διαμέρισμα is apartment only; renovated means the last 10 years; "
+                                                    "property_types": APT, "min_renovated_year": 2021},
+                      "budget_around": True, "ideally": ["bedrooms", "size"], "preferences": []},
+                     "1 bedroom was said; διαμέρισμα is apartment only; 'tha ithela na einai anakainismeno' is renovated in the "
+                     "last 5 years, said outright, so a limit (D79); "
                      "'idanika' keeps size and bedrooms as limits with code's margins, and makes the price 'around' (D56)"),
     "clean_mike_4": ({"user_facts": {"budget": "A loan of up to 350k plus about 50k of my own, so up to 400k"},
-                      "hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT},
-                      "preferences": [pref("balcony", 0.9, equals=True), pref("floor_level", 0.7, min=4)],
+                      "hard_limits": {"max_price_eur": MIKE_4_TOP, "min_size_m2": 40, "min_bedrooms": 2, "property_types": APT,
+                                      "must_have": ["balcony"], "min_floor_level": 4},
+                      "preferences": [],
                       "must_ask": ["budget_ceiling", "purpose"]},
                      "400k only by asking whether savings come on top of the loan (the fact lets the simulated user answer); "
-                     "apartment only; 100 m² wasn't said; lowest price from code; high floors start at 4 (Mike, D58)"),
+                     "apartment only; 100 m² wasn't said; lowest price from code; high floors start at 4 (Mike, D58); 'I like high "
+                     "floors and big balconies' is said outright, with no 'ideally', so both are limits since D79"),
     "clean_mike_5": ({"hard_limits": {"max_price_eur": 250000, "max_floor_without_lift": 1},
                       "preferences": [pref("balcony", 0.9, equals=True),
-                                      pref("metro_walk_min", 0.6, max=10), pref("renovated_year", 0.7, min=2016)],
+                                      pref("metro_walk_min", 0.6, max=10), pref("renovated_year", 0.7, min=2021)],
                       "must_ask": ["areas", "metro_minutes", "confirm_investor_mode"]},
                      "σπίτι names no type; ideally renovated was said; an investment said unprompted is confirmed first (spec); no costs question; "
-                     "'πάνω από 1ο όροφο βεβαιώσου ότι έχει ασανσέρ' is the stairs limit at 1 since D73 (D77)"),
+                     "'πάνω από 1ο όροφο βεβαιώσου ότι έχει ασανσέρ' is the stairs limit at 1 since D73 (D77); 'ιδανικά ανακαινισμένο' "
+                     "stays a wish (last 5 years since D79); the balcony is wanted only above the 1st floor, a condition no limit "
+                     "can express, so it stays a strong wish"),
 }
 
 

@@ -69,31 +69,30 @@ chat("el_05", "el", "Δουλεύει στο Σύνταγμα, χωρίς αυτ
      ["Αιγάλεω ή Περιστέρι, μέχρι 180.000, κοντά στο μετρό.", "Το πολύ 10 λεπτά με τα πόδια."],
      {"budget": "180.000 €", "metro": "Μέχρι 10 λεπτά περπάτημα"},
      crit("buy", ["Egaleo", "Peristeri"], {"max_price_eur": 180000}, [pref("metro_walk_min", 0.9, max=10)]),
-     must_ask=["metro_minutes"], must_say=["reply_in:el"],
-     notes="'Κοντά στο μετρό' needs minutes; the spec default is 10.")
+     must_ask=["metro_minutes", "make_limit"], must_say=["reply_in:el"],
+     notes="'Κοντά στο μετρό' needs minutes; the spec default is 10. A firm metro wish stays a wish, offered as a must with counts (D79).")
 
-chat("el_06", "el", "Μένει στην Κυψέλη, θέλει να μείνει κοντά", ["unsupported_area"],
-     ["Ψάχνω διαμέρισμα στην Κυψέλη ή στο Αιγάλεω, μέχρι 170.000.", "Εντάξει, ας δούμε το Αιγάλεω."],
-     {"budget": "170.000 €", "areas": "Κυψέλη ή Αιγάλεω; αν η Κυψέλη δεν καλύπτεται, μόνο Αιγάλεω"},
+chat("el_06", "el", "Μένει στη Νέα Σμύρνη, θέλει να μείνει κοντά", ["unsupported_area"],
+     ["Ψάχνω διαμέρισμα στη Νέα Σμύρνη ή στο Αιγάλεω, μέχρι 170.000.", "Εντάξει, ας δούμε το Αιγάλεω."],
+     {"budget": "170.000 €", "areas": "Νέα Σμύρνη ή Αιγάλεω; αν η Νέα Σμύρνη δεν καλύπτεται, μόνο Αιγάλεω"},
      crit("buy", ["Egaleo"], {"max_price_eur": 170000, "property_types": ["apartment"]}),
-     must_say=["area_not_covered:Κυψέλη", "reply_in:el"],
-     notes="Kypseli isn't covered yet. Say so plainly and carry on with Egaleo; never silently drop it.")
+     must_say=["area_not_covered:Νέα Σμύρνη", "reply_in:el"],
+     notes="Nea Smyrni isn't covered. Say so plainly and carry on with Egaleo; never silently drop it. "
+           "(Kypseli until D80, when the eval moved to the 23 October dataset, which covers it.)")
 
 chat("el_07", "el", "Αγοραστής με αλλεργία στην υγρασία", ["floor_exclusion"],
-     ["Μέχρι 130.000, τουλάχιστον 60 τετραγωνικά, οπουδήποτε από τις τρεις περιοχές. Υπόγειο ή ημιυπόγειο σε καμία περίπτωση."],
+     ["Μέχρι 130.000, τουλάχιστον 60 τετραγωνικά, οπουδήποτε από τις περιοχές σας. Υπόγειο ή ημιυπόγειο σε καμία περίπτωση."],
      {"budget": "130.000 €", "size": "60 τ.μ. και πάνω"},
      crit("buy", [], {"max_price_eur": 130000, "min_size_m2": 60, "exclude_floors": ["basement", "semi_basement"]}),
      must_say=["reply_in:el"],
-     notes="'Οποιαδήποτε από τις τρεις' means no area limit.")
+     notes="'Οπουδήποτε από τις περιοχές σας' means no area limit.")
 
 chat("el_08", "el", "Ζευγάρι, διαφορετικές προτεραιότητες", ["partner_wishes"],
      ["Εγώ θέλω οπωσδήποτε μπαλκόνι, η γυναίκα μου θέλει θέση πάρκινγκ. Χαϊδάρι, μέχρι 220.000, δύο υπνοδωμάτια.", "Το πάρκινγκ είναι πολύ σημαντικό για εκείνη, το μπαλκόνι για μένα."],
      {"budget": "220.000 €", "partner": "Εκείνη θέλει πάρκινγκ, εγώ μπαλκόνι, και τα δύο σημαντικά"},
-     crit("buy", ["Chaidari"], {"max_price_eur": 220000, "min_bedrooms": 2},
-          [pref("balcony", 0.9, equals=True), pref("parking", 0.9, equals=True)],
-          ["Are a balcony and parking deal breakers, or strong preferences?"]),
+     crit("buy", ["Chaidari"], {"max_price_eur": 220000, "min_bedrooms": 2, "must_have": ["balcony", "parking"]}),
      must_say=["reply_in:el"], must_not_invent=["min_size_m2"],
-     notes="Capture both partners' wishes. Neither has a hard-limit field, so they are strong preferences plus an open question.")
+     notes="Capture both partners' wishes. Both are said outright ('οπωσδήποτε', 'πολύ σημαντικό'), so both are musts since D79.")
 
 chat("el_09", "el", "Αγοραστής που μιλάει καθομιλουμένη", ["budget_slang"],
      ["Έχω ένα 180άρι, θέλω κάτι με δύο δωμάτια στο Περιστέρι.", "Δύο υπνοδωμάτια εννοώ."],
@@ -111,8 +110,8 @@ chat("el_10", "el", "Ελληνοαυστραλός, αλλάζει γλώσσα
 
 chat("el_11", "el", "Αγοραστής με αντικρουόμενες απαιτήσεις", ["conflicting_asks"],
      ["Θέλω μεγάλο σπίτι, πάνω από 120 τετραγωνικά, νεόδμητο, κάτω από 150 χιλιάδες, στο Περιστέρι."],
-     {"budget": "150.000 €", "size": "120+", "age": "Νεόδμητο αν γίνεται"},
-     crit("buy", ["Peristeri"], {"max_price_eur": 150000, "min_size_m2": 120}, [pref("year_built", 0.6, min=2021)]),
+     {"budget": "150.000 €", "size": "120+", "age": "Νεόδμητο"},
+     crit("buy", ["Peristeri"], {"max_price_eur": 150000, "min_size_m2": 120, "min_year_built": 2021}),
      must_say=["tradeoff_with_numbers", "reply_in:el"],
      notes="New builds in Peristeri run well above 2,500 €/m², so 120 m² under 150k is unlikely. Show the trade-off with numbers instead of returning nothing.")
 
@@ -153,9 +152,9 @@ chat("el_16", "el", "Ξέρει ακριβώς τι θέλει", ["size_range"],
 chat("el_17", "el", "Δεν θέλει μαστορέματα", ["renovation"],
      ["Θέλω κάτι ανακαινισμένο μετά το 2015, δεν θέλω να κάνω μαστορέματα. Περιστέρι ή Χαϊδάρι, μέχρι 200.000."],
      {"budget": "200.000 €", "renovation": "Ανακαίνιση μετά το 2015"},
-     crit("buy", ["Peristeri", "Chaidari"], {"max_price_eur": 200000}, [pref("renovated_year", 0.8, min=2015)]),
+     crit("buy", ["Peristeri", "Chaidari"], {"max_price_eur": 200000, "min_renovated_year": 2015}),
      must_say=["reply_in:el"],
-     notes="Renovation year is a preference. New builds also satisfy 'no works'; the agent can mention that.")
+     notes="A renovation year said outright is a limit since D79; a build from 2015 on passes too. No move_in_ready on top.")
 
 chat("el_18", "el", "Προσέχει την ενεργειακή κλάση", ["energy_class"],
      ["Θέλω τουλάχιστον Β ενεργειακή κλάση, δύο υπνοδωμάτια, μέχρι 230.000, στο Αιγάλεω."],
@@ -183,9 +182,10 @@ chat("el_20", "el", "Απλώς χαζεύει", ["vague_start"],
 chat("en_01", "en", "Spec demo user", ["spec_demo"],
      ["Find me a two bedroom flat in Egaleo under €200k with a balcony."],
      {},
-     crit("buy", ["Egaleo"], {"max_price_eur": 200000, "min_bedrooms": 2, "property_types": ["apartment", "maisonette"]}, [pref("balcony", 0.6, equals=True)]),
+     crit("buy", ["Egaleo"], {"max_price_eur": 200000, "min_bedrooms": 2, "property_types": ["apartment", "maisonette"],
+                              "must_have": ["balcony"]}),
      must_say=["reply_in:en"], must_not_invent=["min_size_m2", "exclude_floors"],
-     notes="The demo query from the spec. 'Under €200k' is read as up to 200,000; a balcony is a wish, not a limit.")
+     notes="The demo query from the spec. 'Under €200k' is read as up to 200,000; 'with a balcony' said outright is a must since D79.")
 
 chat("en_02", "en", "Expat couple, first purchase", ["ambiguous_budget"],
      ["We're looking at Peristeri, budget around 200.", "200k is the absolute maximum.", "Two bedrooms please."],
@@ -209,14 +209,15 @@ chat("en_05", "en", "Commuter without a car", ["vague_metro"],
      ["Egaleo, two bedrooms, under 210k, near the metro.", "15 minutes walk at most."],
      {"metro": "15 minutes max on foot"},
      crit("buy", ["Egaleo"], {"max_price_eur": 210000, "min_bedrooms": 2}, [pref("metro_walk_min", 0.9, max=15)]),
-     must_ask=["metro_minutes"], must_say=["reply_in:en"])
+     must_ask=["metro_minutes", "make_limit"], must_say=["reply_in:en"])
 
-chat("en_06", "en", "Wants central Athens", ["unsupported_area"],
-     ["Kypseli or Pangrati, one bedroom, under 150k.", "OK, which of yours is closest?", "Peristeri then."],
-     {"areas": "Kypseli or Pangrati; settles on Peristeri when told those aren't covered"},
+chat("en_06", "en", "Wants the southern suburbs", ["unsupported_area"],
+     ["Koukaki or Nea Smyrni, one bedroom, under 150k.", "OK, which of yours is closest?", "Peristeri then."],
+     {"areas": "Koukaki or Nea Smyrni; settles on Peristeri when told those aren't covered"},
      crit("buy", ["Peristeri"], {"max_price_eur": 150000, "min_bedrooms": 1}),
-     must_ask=["which_covered_area"], must_say=["area_not_covered:Kypseli", "area_not_covered:Pangrati", "reply_in:en"],
-     notes="Say clearly that neither area is covered. Don't silently swap in western suburbs.")
+     must_ask=["which_covered_area"], must_say=["area_not_covered:Koukaki", "area_not_covered:Nea Smyrni", "reply_in:en"],
+     notes="Say clearly that neither area is covered. Don't silently swap in another area. "
+           "(Kypseli and Pangrati until D80, when the eval moved to the 23 October dataset, which covers both.)")
 
 chat("en_07", "en", "Wants light, hates basements", ["floor_exclusion", "no_field"],
      ["No basements, no semi-basements and no ground floor. I want light. Egaleo or Peristeri, under 190k."],
@@ -243,7 +244,8 @@ chat("en_10", "en", "Big, cheap and central", ["conflicting_asks"],
      ["I want 4 bedrooms, over 130 square metres, under 160k, close to the metro, in Egaleo.", "10 minutes walk."],
      {"metro": "10 minutes"},
      crit("buy", ["Egaleo"], {"max_price_eur": 160000, "min_bedrooms": 4, "min_size_m2": 130}, [pref("metro_walk_min", 0.7, max=10)]),
-     must_ask=["metro_minutes"], must_say=["tradeoff_with_numbers", "reply_in:en"])
+     must_ask=["metro_minutes"], must_say=["tradeoff_with_numbers", "reply_in:en"],
+     notes="No home passes, so the trade-off comes first; offering the metro as a must would narrow an empty search (D81).")
 
 chat("en_11", "en", "Thinks in monthly payments", ["budget_as_payment"],
      ["My bank says I can afford 900 a month. What can I get in Peristeri?", "Let's say the flat itself up to 210k."],
@@ -267,10 +269,9 @@ chat("en_13", "en", "Parent buying for a student", ["implicit_area"],
 chat("en_14", "en", "Only wants new builds", ["no_field"],
      ["New build only, Peristeri, up to 300k, 2 bedrooms."],
      {},
-     crit("buy", ["Peristeri"], {"max_price_eur": 300000, "min_bedrooms": 2}, [pref("year_built", 1.0, min=2021)],
-          ["'New build only' can't be a hard filter yet; treat as a strong preference?"]),
+     crit("buy", ["Peristeri"], {"max_price_eur": 300000, "min_bedrooms": 2, "min_year_built": 2021}),
      must_say=["reply_in:en"], must_not_invent=["condition"],
-     notes="Schema gap: no hard 'condition' limit. Record as a strong preference and say so.")
+     notes="'New build only' said outright: built in the last five years is a limit since D79.")
 
 chat("en_15", "en", "Buy to let", ["investor_intent"],
      ["I want to buy something to rent out to students in Egaleo, max 110k.", "Yes, purely an investment."],
@@ -292,7 +293,7 @@ chat("en_17", "en", "Energy-conscious buyer", ["energy_class"],
      must_say=["reply_in:en"])
 
 chat("en_18", "en", "Wants a top floor", ["floor_preference"],
-     ["Under 150k anywhere in your three areas, at least 2 bedrooms, top floor ideally."],
+     ["Under 150k anywhere in your areas, at least 2 bedrooms, top floor ideally."],
      {},
      crit("buy", [], {"max_price_eur": 150000, "min_bedrooms": 2}, [pref("floor_level", 0.6, min=4)]),
      must_say=["reply_in:en"],
