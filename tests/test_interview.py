@@ -423,3 +423,12 @@ def test_new_limits_loosen_the_right_way():
     assert ev._looser("max_floor_without_lift", 0, 1) and not ev._looser("max_floor_without_lift", 1, 0)
     assert ev._looser("exclude_conditions", ["needs_work", "unfinished"], ["needs_work"])
     assert not ev._looser("exclude_conditions", ["needs_work"], ["needs_work", "unfinished"])
+
+
+def test_every_wish_quote_is_traced_to_the_users_words():
+    log = [{"role": "user", "text": "Θέλω οπωσδήποτε μπαλκόνι, και ιδανικά κοντά στο μετρό."}, {"role": "assistant", "output": None}]
+    final = {"preferences": [{"feature": "balcony", "said": "οπωσδηποτε μπαλκονι"},      # accents don't count
+                             {"feature": "metro_walk_min", "said": "ιδανικά στο μετρό κοντά"},  # reworded: close
+                             {"feature": "parking", "said": "με πάρκινγκ"}]}             # nowhere in the chat
+    out = ev.quotes({"log": log, "final": final})
+    assert (out["traced"], out["close"], out["total"], out["missing"]) == (1, 1, 3, ["parking"])

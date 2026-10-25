@@ -213,7 +213,7 @@ def swipe_patterns(criteria: SearchCriteria, user_id: str = "me", declined: list
     return {"patterns": found[:3], "checkin_every": patterns.CHECKIN_EVERY}
 
 
-@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v10)")
+@mcp.prompt(name="criteria_interview", description="Interview a buyer and fill in a criteria card (prompt interview_v11)")
 def criteria_interview() -> str:
     text = interview.system_prompt(interview.PROMPT_VERSION, date.today().isoformat())
     text = text.split("## Output fields")[0].rstrip()

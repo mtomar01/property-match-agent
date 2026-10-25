@@ -110,6 +110,10 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v3 | **Interview, prompt v10**: firm wishes become hard limits where listings say them (D79, D81), 23 October file | 40 | **100%** | **0** | 9 of 10 | **100%** |
 | v3 | Interview, prompt v10, the 8 chats for condition, price per m² and stairs | 8 | 97.5% | 0 | 3 of 3 | 92.9% |
 | v3 | Interview clean test, prompt v10 | 10 | 89.6% | 0 | 3 of 3, 2 split | 97.1% |
+| v3 | **Interview, prompt v11**: a fuller must or wish vocabulary, a hidden quote behind every wish (D82) | 40 | **100%** | **0** | 10 of 10 | 99.2% |
+| v3 | Interview clean test, prompt v11 | 10 | **95.8%** | 0 | 3 of 3, 2 split | 97.1% |
+| v3 | Interview, prompt v11, the 8 D73 chats | 8 | 97.5% | 0 | 3 of 3 | 96.4% |
+| v3 | **Interview stress set, prompt v11**: 30 chats written blind, held out, run once (D82) | 30 | **95.7%** | 1 | 25 of 27 | 94.6% |
 
 | Version | Eval | Size | Result | Target |
 |---|---|---|---|---|
@@ -118,14 +122,14 @@ Answer key quality: two labellers relabelled 20 of each other's listings (40 rea
 | v3 | Learning: 8 simulated buyers, learn from the first swipes, rank the homes waiting after 160 (D76) | 5 runs each, frozen 20 October snapshot | AUC 0.634 rules, **0.742** learned; precision at 10 +0.110 | AUC lift 0.05, precision at 10 no lower |
 | v3 | Learning, the same on the 23 October dataset | 5 runs each | AUC 0.650 rules, **0.756** learned; precision at 10 +0.170 | same |
 | v3 | Duplicates, synthetic copies (development check) (D78) | 12 known groups | with photo hashes precision **1.0**, recall **1.0**; without, 1.0 and 0.67 | 0.95 and 0.85 |
-| v3 | Duplicates, 60 labelled real pairs | 60 pairs | not labelled yet | 0.95 and 0.85 |
+| v3 | Duplicates, 60 labelled real pairs (53 scored, D83) | 60 pairs | precision **1.0**, recall 0.49 | 0.95 and 0.85 |
 | v3 | Learning on your real swipes | about 200 | not recorded yet | a clear lift over the rules |
 | v2 | Suggestions: the pattern a check-in offers from a swipe history, or silence (D66, D67) | 30 histories | precision **94.4%**, recall 94.4%, evidence counts all correct, 0 false alarms on random swipes | 80% precision, evidence always correct |
 | v2 | Baseline like rate, the share of cards swiped right before any learning | about 100 real swipes | not recorded yet | recorded |
 
 The interview set shaped prompts v2 to v4, so these are development scores (D47, D50). No limit was loosened without the user's yes in v4. On the clean test, 24 of the 35 field misses are limits the new cards add that the user never said, so the cards' rules are being settled before the score means much (D52).
 
-Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). The app runs prompt v10 (D81). Its clean-test misses include one regression from its own new example (a lift wanted above the 1st floor read as a wish, not the stairs limit); prompt v11 fixes it and waits for its run.
+Results files are in `evals/results/`. Mutation tests check that the search safety eval fails when the hard-limit filter is switched off, and that the explanation eval fails when a reason claims a balcony the listing doesn't have. The learning and synthetic duplicate scores are development scores: their buyers and copies are made up, and the learned model's features were adjusted after seeing results (D76). The app runs prompt v11 (D82). Every wish it writes carries the user's own words in a hidden field, and the eval found all 75 of them in what the users wrote.
 
 ## Docs
 

@@ -34,7 +34,7 @@ from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeatu
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v10"  # D79 to D81; v11 is written and waits for its run
+PROMPT_VERSION = "interview_v11"  # D82
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -93,10 +93,12 @@ def _hard_limits_schema() -> dict:
 def _preference_schema() -> dict:
     bound = {"anyOf": [{"type": "number"}, {"type": "string"}, {"type": "null"}]}
     return {
-        "type": "object", "additionalProperties": False, "required": ["feature", "min", "max", "equals", "weight", "firm"],
+        "type": "object", "additionalProperties": False,
+        "required": ["feature", "min", "max", "equals", "weight", "firm", "said"],
         "properties": {"feature": {"type": "string", "enum": list(get_args(PreferenceFeature))},
                        "min": bound, "max": bound, "equals": {"enum": [True, False, None]}, "weight": {"type": "number"},
-                       "firm": {"type": "boolean"}},  # said outright, not "ideally": code may make it a limit (D79)
+                       "firm": {"type": "boolean"},  # said outright, not "ideally": code may make it a limit (D79)
+                       "said": {"type": "string"}},  # the user's own words behind it, never shown (D82)
     }
 
 

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -477,6 +478,33 @@ def card_matches(replies: list[dict]) -> int:
     return last
 
 
+def _plain_words(text: str) -> list[str]:
+    text = unicodedata.normalize("NFD", (text or "").lower())
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+    return re.findall(r"\w+", text)
+
+
+def quotes(transcript: dict) -> dict:
+    """D82: does every wish's said come from the user's own messages? Accents, case and punctuation don't count.
+
+    Traced: the quote's words appear in that order in what the user wrote. Close: at least 80% of its words appear
+    somewhere in it (a light rewording). Anything else is a wish the chat can't back.
+    """
+    user = _plain_words(" ".join(t["text"] for t in transcript["log"] if t["role"] == "user"))
+    joined = " " + " ".join(user) + " "
+    out = {"traced": 0, "close": 0, "total": 0, "missing": []}
+    for preference in (transcript["final"] or {}).get("preferences") or []:
+        out["total"] += 1
+        words = _plain_words(preference.get("said") or "")
+        if words and f" {' '.join(words)} " in joined:
+            out["traced"] += 1
+        elif words and sum(w in set(user) for w in words) / len(words) >= 0.8:
+            out["close"] += 1
+        else:
+            out["missing"].append(preference["feature"])
+    return out
+
+
 def score_chat(chat: dict, transcript: dict) -> dict:
     # Scored as the search runs it: firm wishes on reliably stated fields are hard limits (D79), the margins aren't applied
     predicted = harden(transcript["final"] or {"intent": None, "areas": [], "hard_limits": {}, "preferences": []})
@@ -497,6 +525,7 @@ def score_chat(chat: dict, transcript: dict) -> dict:
         "wide": card_matches(replies) > interview.WIDE,
         "narrowing_asked": any("narrowing" in _asked(t) for t in replies),
         "easing": easing(transcript), "unasked_loosenings": unasked_loosenings(transcript["log"]),
+        "quotes": quotes(transcript) if transcript.get("log") else {"traced": 0, "close": 0, "total": 0, "missing": []},
         "cost_usd": transcript["cost_usd"],
     }
 
@@ -533,6 +562,7 @@ def summarise(scores: list[dict]) -> dict:
                    "suggested_with_numbers": sum(s["easing"]["suggested"] for s in scores),
                    "nothing_reaches_5": sum(s["easing"]["thin"] and not s["easing"].get("fixable", True) for s in scores)},
         "unasked_loosenings": sum(len(s["unasked_loosenings"]) for s in scores),
+        "quotes": {k: sum(s.get("quotes", {}).get(k, 0) for s in scores) for k in ("traced", "close", "total")},
         "cost_usd": round(sum(s["cost_usd"] for s in scores), 4),
         "mean_cost_per_chat_usd": round(sum(s["cost_usd"] for s in scores) / len(scores), 4),
     }
@@ -549,6 +579,8 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
              f"cards repaired {summary['card_repairs']}",
              f"  narrowing {summary['narrowing']}, easing {summary['easing']}, "
              f"unasked loosenings {summary['unasked_loosenings']} (target 0)",
+             f"  wishes traced to the user's words {summary['quotes']['traced']} of {summary['quotes']['total']}, "
+             f"close {summary['quotes']['close']} (D82)",
              f"  cost ${summary['cost_usd']:.3f} (${summary['mean_cost_per_chat_usd']:.4f} a chat)", "", "  misses:"]
     for s in scores:
         bad = [f"{k}={v}" for k, v in s["fields"].items() if v != "correct"]
@@ -558,6 +590,7 @@ def report(summary: dict, scores: list[dict], name: str) -> str:
         if not s["confirmed"] and not s.get("unsupported"):
             bad.append("not confirmed")
         bad += [f"loosened {name} unasked" for name in s.get("unasked_loosenings", [])]
+        bad += [f"wish {f} not in the user's words" for f in s.get("quotes", {}).get("missing", [])]
         if s.get("easing", {}).get("thin") and not s["easing"]["suggested"]:
             bad.append("thin, no easing suggested" if s["easing"].get("fixable", True) else "thin, nothing reaches 5, counts not given")
         if bad:

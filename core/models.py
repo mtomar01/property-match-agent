@@ -317,6 +317,8 @@ class Preference(_Strict):
     # D79: said outright, not "ideally". Code turns a firm wish into a hard limit where the listings reliably state
     # the field (core/card_rules.py); otherwise it stays a wish, and the assistant can offer it as a limit.
     firm: bool = False
+    # D82: the user's own words that set this wish, so the eval can check every wish traces back to the chat. Never shown.
+    said: str | None = Field(default=None, max_length=300)
 
     @model_validator(mode="after")
     def _has_target(self) -> "Preference":
