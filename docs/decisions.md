@@ -836,3 +836,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Changes that followed:** the assistant's bubbles are now neutral (raised with a hairline), so the signal is not spent on talk; the limits bar is a neutral strip with each limit a lime chip; the mark is two-tone (four ink tiles and the lifted tile in the signal), in three files for light, dark and print; `chip` is a new type style (13px, 600) for limits and reason chips. Every text colour was checked at 4.5:1 or better on its ground in both themes; the figures are in each token's note.
 - **Where it lives:** the Tispi design system artifact (version 2), `docs/brand-brief.md`, and this entry. The React app still runs the old teal until the UI build.
 - **Say:** "The chrome is graphite so the numbers are the colour; lime marks only a limit or a verdict; and neon lives as a fill, never as text, so it reads the same in light and dark."
+
+## D88. The deck's two icons, from Mike's sketch
+
+- **Context:** the deck had two text glyphs for the actions that are not words, ↶ for back and ↷ for skip. Mike sketched what he wanted instead (25 October).
+- **The icons:** *previous* is a circular arrow that turns back on itself, open at the upper left with the arrowhead pointing back the way it came; *skip* is a filled play triangle against a bar, "to the end of this one". Both drawn at 20px on a 24px box with 2px round strokes, one ink via `currentColor`, so they take the button's colour in both themes. They are the whole icon set; Reject and Like stay words.
+- **Where they sit:** between Reject and Like, as the design system's swipe-actions guideline already said; the screens were corrected to that order. On a phone the two word buttons share the width and the icons keep 44px.
+- **Where it lives:** `assets/Icons` in the design system (version 3), the Button and SwipeActions guidelines, and the screens canvas. The React app follows in the UI build.
+- **Say:** "Two icons in the whole product, both drawn from the owner's sketch; everything else is a word."
