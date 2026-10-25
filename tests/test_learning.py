@@ -203,3 +203,13 @@ def test_skipped_homes_come_back_last_and_patterns_ignore_them(listings):
     log = [swipe(l, "like" if (l.size_m2 or 0) >= 100 else "reject", i) for i, l in enumerate(ranked[:14])]
     skips = [Swipe(user_id="t", listing_id=l.listing_id, decision="skip", deck_position=20 + i, ts=log[0].ts) for i, l in enumerate(ranked[14:30])]
     assert patterns.observe(log + skips, listings, c, today=TODAY) == patterns.observe(log, listings, c, today=TODAY)
+
+
+def test_a_move_in_ready_wish_gets_its_own_reason_not_a_crash(listings):
+    # D79: the card's reasons once looked for a field called move_in_ready and crashed the deck
+    c = criteria(preferences=[{"feature": "move_in_ready", "equals": True, "weight": 0.9},
+                              {"feature": "price_per_m2", "max": 3000, "weight": 0.5}])
+    shown = [r for listing in deck.ranked_matches(listings, c) for r in why_this_one(listing, c, {}, TODAY)]
+    ready = [r for r in shown if r["feature"] == "move_in_ready"]
+    assert ready and all(r["text"].startswith("Ready to move in: ") and r["value"] in ("renovated", "new_build", "good") for r in ready)
+    assert all("/m², you asked for up to €3,000/m²" in r["text"] for r in shown if r["feature"] == "price_per_m2")

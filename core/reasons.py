@@ -29,6 +29,8 @@ FEATURE_WORDS = {
     "balcony": "Balcony", "lift": "Lift", "parking": "Parking", "storage": "Storage room",
     "dual_aspect": "Dual aspect", "corner": "Corner flat", "whole_floor": "Whole floor",
 }
+CONDITION_WORDS = {"renovated": "renovated", "new_build": "new build", "good": "in good condition",
+                   "needs_work": "needs work", "unfinished": "unfinished"}
 
 
 def typical_price_per_m2(listings: list[Listing]) -> dict[str, int]:
@@ -67,6 +69,15 @@ def _preference_reason(listing: Listing, preference: Preference) -> dict | None:
     if feature == "energy_class":
         return {"text": f"Energy class {listing.energy_class.value}, you asked for {_bound_text(preference)}",
                 "feature": "energy_class", "value": listing.energy_class.value}
+    if feature == "move_in_ready":  # worked out from the condition the listing states (D73), not a field of its own
+        words = CONDITION_WORDS.get(listing.condition, listing.condition)
+        if preference.equals is False:
+            return {"text": f"A project: {words}, as you asked", "feature": "move_in_ready", "value": listing.condition}
+        return {"text": f"Ready to move in: {words}, as you asked", "feature": "move_in_ready", "value": listing.condition}
+    if feature == "price_per_m2":
+        return {"text": f"€{listing.price_per_m2:,}/m², you asked for up to €{preference.max:,.0f}/m²" if preference.max is not None
+                else f"€{listing.price_per_m2:,}/m², you asked for {_bound_text(preference)} per m²",
+                "feature": "price_per_m2", "value": listing.price_per_m2}
     value = getattr(listing, feature)
     units = {"size_m2": " m²", "metro_walk_min": " min on foot", "price_eur": " €"}.get(feature, "")
     names = {"size_m2": "", "metro_walk_min": "Metro ", "price_eur": "", "year_built": "Built ", "renovated_year": "Renovated ",

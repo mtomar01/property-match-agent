@@ -37,6 +37,8 @@ PREFERENCES = [  # wishes the eval adds, so the preference reasons get exercised
     {"feature": "year_built", "min": 2000, "weight": 0.5},
     {"feature": "energy_class", "min": "C", "weight": 0.5},
     {"feature": "lift", "equals": True, "weight": 0.4},
+    {"feature": "move_in_ready", "equals": True, "weight": 0.65},  # the wish that crashed the cards before D79
+    {"feature": "price_per_m2", "max": 2500, "weight": 0.45},
 ]
 ENERGY = ["G", "F", "E", "D", "C", "B", "B+", "A", "A+"]
 FLOOR_LEVEL = {"basement": -1, "semi_basement": -0.5, "ground": 0, "raised_ground": 0.25, "mezzanine": 0.5}
@@ -58,6 +60,10 @@ def backed(reason: dict, home: dict, full: dict, typical: dict[str, int], criter
         if feature in ("balcony", "lift", "parking", "storage"):
             has = full.get(feature) if feature != "parking" else (None if full.get("parking") is None else full["parking"] != "none")
             return None if has is wish["equals"] else f"{feature} is {has}, the wish was {wish['equals']}"
+        if feature == "move_in_ready":
+            condition = home.get("condition")
+            ready = None if condition is None else condition in ("renovated", "new_build", "good")
+            return None if ready is wish["equals"] and value == condition else f"condition {condition} isn't move in ready {wish['equals']}"
         if feature == "floor":
             level = _level(home["floor"])
             return None if level is not None and level >= wish["min"] and home["floor"] == value else f"floor {home['floor']} doesn't meet {wish['min']}"
