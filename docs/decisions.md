@@ -808,3 +808,11 @@ One entry per decision: what we had to choose, the options, the choice and why. 
 - **Result on your labels:** precision 1.0 (40 of 40 merges right), recall 0.89 (40 of 45): both targets met. That's a development score, since the rule came from the same labels, and it's the number to quote with that caveat.
 - **On the data:** the frozen 20 October snapshot folds 216 of its 484 listings into 199 homes (mostly spiti24 copies of Spitogatos ads); your 23 October dataset (Spitogatos only) folds 53 of 1,000. The synthetic check is unchanged: 12 of 12 with photo hashes, nothing merged wrongly without.
 
+## D85. Your stress-set spot-check
+
+- **Eight of ten labels stood.** Three comments:
+  - **st_13, "no renovation projects, full stop":** only renovated homes and new builds, plus a move-in-ready wish on top. The limit already leaves only those two in the 23 October data ("good condition" never occurs), so the label gains the wish. v11 doesn't add it, so the rescore now counts one missed wish; the next prompt adds that rule.
+  - **st_15, parking a must only if it's a house:** this wants an "if" rule, which doesn't exist yet, so the label stays a strong wish plus a note, which is what v11 did. Your idea, a separate search for houses with parking as a must, is open.
+  - **st_23, "tria dwmatia":** 3 bedrooms, as labelled; τριάρι would be 2.
+- **Rescored for free:** fields 95.7% and the 41 of 41 quotes are unchanged; wishes 25 of 28.
+

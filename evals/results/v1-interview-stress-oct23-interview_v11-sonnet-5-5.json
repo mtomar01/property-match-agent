@@ -21,10 +21,10 @@
   },
   "invented_hard_limits": 1,
   "preferences": {
-   "expected": 27,
+   "expected": 28,
    "correct": 25,
    "wrong_bound": 0,
-   "missed": 1,
+   "missed": 2,
    "split": 1,
    "extra": 0
   },
@@ -749,6 +749,14 @@
      ],
      "result": "correct",
      "weight": "agrees"
+    },
+    {
+     "feature": "move_in_ready",
+     "expected": [
+      "equals",
+      true
+     ],
+     "result": "missed"
     }
    ],
    "behaviours": {
@@ -1626,5 +1634,6 @@
    "cost_usd": 0.1194
   }
  ],
- "data": "30 scripted chats; supply counts from the frozen snapshot_2026-10-23.jsonl, totals only"
+ "data": "30 scripted chats; supply counts from the frozen snapshot_2026-10-23.jsonl, totals only",
+ "rescored_at": "2026-10-25T10:45:15+00:00"
 }
