@@ -10,9 +10,11 @@ interface Props {
   onSend: (text: string) => void;
 }
 
+// Three starter prompts as quiet buttons, the first in the user's likely language (design system, ChatBubble).
 const STARTERS = [
   "Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.",
   "A two bedroom flat in Egaleo, around 200k, with a balcony.",
+  "Τριάρι στο Χαϊδάρι με ασανσέρ, γύρω στις 220.",
 ];
 
 export function Chat({ messages, busy, error, compact = false, intro, onSend }: Props) {
@@ -69,7 +71,7 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
             if (e.key === "Enter" && !e.shiftKey) submit(e);
           }}
         />
-        <button type="submit" className="primary" disabled={busy || !draft.trim()}>
+        <button type="submit" className={draft.trim() ? "primary" : ""} disabled={busy || !draft.trim()}>
           Send
         </button>
       </form>

@@ -61,9 +61,9 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
         <>
           <div className="dim on sheet-dim" onClick={() => setOpen(false)} aria-hidden="true" />
           <div className="bar-details" role="region" aria-label={UI.limits}>
-            {hidden.length > 0 && (
+            {(oneRow ? limits : hidden).length > 0 && (  // the fold-out lists every limit in full on a phone
               <ul className="bar-limits wrap">
-                {hidden.map((text) => <li key={text}>{text}</li>)}
+                {(oneRow ? limits : hidden).map((text) => <li key={text}>{text}</li>)}
               </ul>
             )}
             {wishes.length > 0 && (
