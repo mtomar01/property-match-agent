@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Property Match v1: chat, criteria card and results table (D20, D59)",
+  "description": "Tispi, the Property Match app: chat, limits bar, swipe deck and shortlist (D20, D59, D61, D87)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

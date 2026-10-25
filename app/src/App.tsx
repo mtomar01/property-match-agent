@@ -4,6 +4,7 @@ import { Bar } from "./Bar";
 import { Chat } from "./Chat";
 import { Deck } from "./Deck";
 import { Shortlist } from "./Shortlist";
+import { Logo } from "./Logo";
 
 // The flow from D61: the chat takes the width until the assistant is ready, then the deck comes up with
 // the card as a bar above it. Every change, including a yes to a check-in, goes through the chat.
@@ -182,7 +183,7 @@ export function App() {
     <>
       <header className="top">
         <div className="brand">
-          <h1>Property Match</h1>
+          <Logo heading />
           <span className="muted small">{areas.join(" · ")}{data ? ` · ${data}` : ""}</span>
         </div>
         <div className="top-right">
