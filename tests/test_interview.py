@@ -436,11 +436,11 @@ def test_every_wish_quote_is_traced_to_the_users_words():
 
 
 def test_an_order_asked_for_rides_on_the_card_and_the_schema_offers_it():
-    """D98: order_by is one of seven values or null, in the reply schema and the supply tool, and card() keeps it."""
-    from core.models import ORDER_BY
-    assert interview.schema()["properties"]["criteria"]["properties"]["order_by"] == {"enum": [*ORDER_BY, None]}
+    """D98: order_by is a plain string or null in the reply schema (an enum made the grammar too large), checked by
+    code against the seven values; the supply tool doesn't carry it, since supply doesn't depend on the order."""
+    assert interview.schema()["properties"]["criteria"]["properties"]["order_by"] == {"type": ["string", "null"]}
     assert "order_by" in interview.schema()["properties"]["criteria"]["required"]
-    assert "order_by" in interview.tool()["input_schema"]["required"]
+    assert "order_by" not in interview.tool()["input_schema"]["properties"]
     raw = {"intent": "invest", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 350000}, "preferences": [],
            "open_questions": [], "order_by": "price_per_m2_asc"}
     assert interview.card(raw).order_by == "price_per_m2_asc"

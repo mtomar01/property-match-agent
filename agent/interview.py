@@ -30,7 +30,7 @@ from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
 from core.card_rules import IDEALLY, harden, search_card  # Mike's rules, in code (D53, D56, D79)
 from core import greek
-from core.models import ORDER_BY, Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
+from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
@@ -115,8 +115,6 @@ def _criteria_core() -> dict:
         "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
         "ideally": {"type": "array", "items": {"type": "string", "enum": list(IDEALLY)}},  # code adds the margins (D56)
         "preferences": {"type": "array", "items": _preference_schema()},  # firm ones can be limits, so supply needs them (D79)
-        # D98: an order the user asked for outright; code sorts the deck strictly by it. Null: ranked as usual.
-        "order_by": {"enum": [*ORDER_BY, None]},
     }
 
 
@@ -125,7 +123,12 @@ def schema() -> dict:
     criteria = {
         "type": "object", "additionalProperties": False,
         "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "order_by", "open_questions"],
-        "properties": {**_criteria_core(), "open_questions": {"type": "array", "items": {"type": "string"}}},
+        "properties": {**_criteria_core(),
+                       # D98: an order the user asked for outright; code sorts the deck strictly by it, null means ranked as
+                       # usual. A plain string, not an enum, and not in the supply tool: the compiled grammar has a size
+                       # limit and the enum tipped it over (the lesson of D86 again). Code checks the value (core/models.py).
+                       "order_by": {"type": ["string", "null"]},
+                       "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
     properties = {
         "reasoning": {"type": "string"},
@@ -151,7 +154,7 @@ TOOL = {
                     "limit were dropped. Code does the counting. Use it before showing a card whose asks may be hard "
                     "to meet together."),
     "input_schema": {"type": "object", "additionalProperties": False,
-                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "order_by"],
+                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences"],
                      "properties": _criteria_core()},
 }
 
