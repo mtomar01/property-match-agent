@@ -78,7 +78,7 @@ export function Deck({ deck, card, checkin, busy, canUndo, onSwipe, onUndo, onAn
         />
       ) : (
         <SwipeActions
-          busy={busy} canUndo={canUndo} remaining={deck.remaining} swiped={deck.swipes.swipes} learning={deck.learning}
+          busy={busy} canUndo={canUndo} remaining={deck.remaining} swiped={deck.swipes.swipes}
           onReject={() => setAsking("reject")} onLike={() => onSwipe(card, "like", [])} onSkip={() => onSwipe(card, "skip", [])}
           onPrevious={onUndo} onCantJudge={() => setAsking("skip")}
         />

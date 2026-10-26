@@ -1,18 +1,20 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { Card, HardLimits, Preference } from "./api";
+import { Card, HardLimits, Learning, Preference } from "./api";
+import { LearningLine } from "./LearningLine";
 import { barText, preferenceText, useLabels, weightWord } from "./labels";
 
 interface Props {
   card: Card;
   searched: Partial<HardLimits>;
   wishes: Preference[];
-  oneRow: boolean;  // the phone: one row, the rest behind "+N ▾" (D89)
+  learning: Learning | null;
 }
 
 // The limits bar: every hard limit other than the areas and the price (those are the title), as chips on
-// lime-soft, with the wishes and the open questions behind a fold-out (D61, D89, D90). Hard limits are never
-// hidden by rule: on a phone code measures what fits on one row and folds the rest, so nothing is cut off.
-export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
+// lime-soft, with the wishes, the open questions and the learning line behind a fold-out (D61, D89, D90, D97).
+// One row on every device: code measures what fits and folds the rest, so nothing is hidden by rule and
+// nothing is cut off; the fold-out lists every limit in full.
+export function LimitsBar({ card, searched, wishes, learning }: Props) {
   const L = useLabels();
   const limits = barText(card, searched, L);  // firm wishes code made limits show here, not in the wishes (D79)
   const [open, setOpen] = useState(false);
@@ -20,7 +22,7 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
   const row = useRef<HTMLUListElement>(null);
 
   useLayoutEffect(() => {
-    if (!oneRow || !row.current) { setFit(limits.length); return; }
+    if (!row.current) { setFit(limits.length); return; }
     const measure = () => {
       const ul = row.current!;
       const chips = Array.from(ul.children) as HTMLElement[];
@@ -39,18 +41,18 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
     const watcher = new ResizeObserver(measure);
     watcher.observe(row.current);
     return () => watcher.disconnect();
-  }, [oneRow, limits.join("|")]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [limits.join("|")]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (limits.length === 0 && wishes.length === 0 && card.open_questions.length === 0) return null;  // the title says it all
+  if (limits.length === 0 && wishes.length === 0 && card.open_questions.length === 0 && !learning) return null;  // the title says it all
   const hidden = limits.slice(fit);
   const folded = hidden.length + wishes.length;
   // "+3" when limits are folded too (the button says how much is behind it, D89), "+1 wish" when only wishes are
   const label = !folded ? L.details : hidden.length ? `+${folded}` : `+${L.wish(wishes.length)}`;
 
   return (
-    <section className={`bar ${oneRow ? "one-row" : ""}`} aria-label={L.limits}>
+    <section className="bar" aria-label={L.limits}>
       <div className="bar-line">
-        {!oneRow && <span className="label bar-label">{L.limits}</span>}
+        <span className="label bar-label">{L.limits}</span>
         <ul className="bar-limits" ref={row}>
           {limits.map((text, i) => <li key={text} className={i >= fit ? "folded" : ""}>{text}</li>)}
         </ul>
@@ -62,9 +64,9 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
         <>
           <div className="dim on sheet-dim" onClick={() => setOpen(false)} aria-hidden="true" />
           <div className="bar-details" role="region" aria-label={L.limits}>
-            {(oneRow ? limits : hidden).length > 0 && (  // the fold-out lists every limit in full on a phone
+            {limits.length > 0 && (
               <ul className="bar-limits wrap">
-                {(oneRow ? limits : hidden).map((text) => <li key={text}>{text}</li>)}
+                {limits.map((text) => <li key={text}>{text}</li>)}
               </ul>
             )}
             {wishes.length > 0 && (
@@ -82,8 +84,9 @@ export function LimitsBar({ card, searched, wishes, oneRow }: Props) {
                 {card.open_questions.map((q) => <li key={q}>{q}</li>)}
               </ul>
             )}
+            <LearningLine learning={learning} />
             <p className="hint">{L.limitsHint}</p>
-            {oneRow && <button type="button" className="wide" onClick={() => setOpen(false)}>{L.close}</button>}
+            <button type="button" className="wide close-sheet" onClick={() => setOpen(false)}>{L.close}</button>
           </div>
         </>
       )}

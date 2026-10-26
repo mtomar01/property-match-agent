@@ -52,7 +52,6 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState("");
   const [areas, setAreas] = useState<string[]>([]);
-  const [phone, setPhone] = useState(() => !isDesktop());
   const [theme, setTheme] = useState<Theme>(() => stored("tispi.theme", ["system", "light", "dark"], "system"));
   const [langPref, setLangPref] = useState<LangPref>(() => stored("tispi.lang", ["auto", "en", "el"], "auto"));
 
@@ -75,13 +74,6 @@ export function App() {
     document.documentElement.lang = lang;
     store("tispi.lang", langPref);
   }, [lang, langPref]);
-
-  useEffect(() => {
-    const media = window.matchMedia(DESKTOP);
-    const onChange = () => setPhone(!media.matches);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
 
   const fail = (err: unknown) => setError(err instanceof Error ? err.message : String(err));
 
@@ -298,7 +290,7 @@ export function App() {
                   {L.shortlist}{shortlist.length ? ` (${shortlist.length})` : ""}
                 </button>
               </nav>
-              {rightView === "deck" && card && searchedAs && <LimitsBar card={card} searched={searchedAs} wishes={wishes} oneRow={phone} />}
+              {rightView === "deck" && card && searchedAs && <LimitsBar card={card} searched={searchedAs} wishes={wishes} learning={deck?.learning ?? null} />}
               {rightView === "deck" ? (
                 <Deck deck={deck} card={current} checkin={checkin} busy={busy !== null} canUndo={canUndo} onSwipe={swipe} onUndo={undo} onAnswer={send} onTap={tap} />
               ) : (

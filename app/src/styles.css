@@ -137,19 +137,23 @@ button.wide { width: 100%; }
 @media (prefers-reduced-motion: reduce) { .side { transition: none; } }
 
 /* The limits bar: every hard limit other than the title's as a chip on lime-soft; one row on the phone (D89) */
-.bar { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); display: grid; gap: var(--space-2); flex: none; }
-.bar-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.bar { background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); flex: none; }
+/* min-width: 0 on the line: a grid item's minimum is its content, and the nowrap chips would stretch it past the bar */
+.bar-line { display: flex; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
 .bar-label { margin-right: var(--space-1); }
 .bar-limits { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); flex: 1; min-width: 0; }
 .bar-limits li { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--lime-deep); background: var(--lime-soft); border-radius: var(--radius-pill); padding: var(--space-1) 10px; white-space: nowrap; }
-.bar .more { margin-left: auto; white-space: nowrap; flex: none; }
-.bar.one-row .bar-line { flex-wrap: nowrap; }
-.bar.one-row .bar-limits { flex-wrap: nowrap; overflow: hidden; }
-.bar.one-row .bar-limits li.folded { visibility: hidden; }
-.bar.one-row .more { min-width: 84px; text-align: right; }
+.bar .more { margin-left: auto; white-space: nowrap; flex: none; min-width: 84px; text-align: right; }
+.bar .bar-line { flex-wrap: nowrap; }
+.bar .bar-limits { flex-wrap: nowrap; overflow: hidden; }
+.bar .bar-limits li.folded { visibility: hidden; }
+.bar-details .close-sheet { display: none; }
+.bar-details .learning { margin: 0; }
 .bar-details { display: grid; gap: var(--space-2); border-top: 1px solid var(--line); padding-top: var(--space-2); }
 .bar-details .bar-limits.wrap { flex-wrap: wrap; overflow: visible; }
 @media (max-width: 899px) {
+  .bar-label { display: none; }
+  .bar-details .close-sheet { display: block; }
   .bar-details { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface-raised); border: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: var(--space-5) var(--space-4) max(var(--space-5), env(safe-area-inset-bottom, 0px)); box-shadow: var(--shadow-sheet); max-height: 70vh; overflow: auto; }
 }
 .tabs { display: flex; gap: var(--space-2); flex: none; }
