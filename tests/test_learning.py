@@ -64,6 +64,26 @@ def test_a_preference_the_home_fails_or_cannot_show_gives_no_reason(listings):
 # -- deck -------------------------------------------------------------------
 
 
+def test_an_order_the_user_asked_for_is_strict_and_uninterrupted(listings):
+    """D98: "cheapest per m² first" sorts the whole deck by that value; no explore card breaks the order, a home
+    without the value comes last, and the wishes only decide between equals."""
+    c = criteria(preferences=[{"feature": "balcony", "equals": True, "weight": 0.9}])
+    strict = Criteria(**{**c.model_dump(), "order_by": "price_per_m2_asc"})
+    ranked = deck.ranked_matches(listings, strict)
+    values = [l.price_per_m2 for l in ranked]
+    known = [v for v in values if v is not None]
+    assert known == sorted(known) and values[:len(known)] == known  # ascending, unknowns last
+    built = deck.build(listings, strict, set(), limit=10, seed=3)
+    assert built["order_by"] == "price_per_m2_asc"
+    assert not any(card["explore_card"] for card in built["cards"])
+    shown = [card["price_per_m2"] for card in built["cards"]]
+    assert shown == sorted(shown)
+    biggest = deck.ranked_matches(listings, Criteria(**{**c.model_dump(), "order_by": "size_m2_desc"}))
+    sizes = [l.size_m2 for l in biggest if l.size_m2 is not None]
+    assert sizes == sorted(sizes, reverse=True)
+    assert deck.build(listings, c, set(), limit=10, seed=3)["order_by"] is None  # no order asked: ranked as usual
+
+
 def test_the_deck_keeps_every_limit_skips_swiped_cards_and_explores_one_in_five(listings):
     c = Criteria(user_id="t", intent="buy", hard_limits=HardLimits(max_price_eur=300000, min_price_eur=100000))
     first = deck.build(listings, c, set(), limit=10, today=TODAY)

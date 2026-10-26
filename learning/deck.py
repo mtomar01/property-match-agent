@@ -16,21 +16,48 @@ from datetime import date
 from core.filters import apply_hard_limits
 from core.models import Criteria, DuplicateCluster, Listing
 from core.reasons import why_this_one
-from learning.area_stats import AreaStats, market_lines
+from learning.area_stats import AreaStats, days_on_market, market_lines
 from learning.learned import Learner
 from ranking.rules import score
 
 EXPLORE_EVERY = 5  # one card in five comes from outside the top (spec section 10)
 TOP_SHARE = 0.5  # "the top": the better half of what's left; explore cards come from the other half
 
+# D98: the orders a user can ask for outright. Each gives the sort key and whether bigger comes first; a home
+# without the value goes last, whichever way the order runs.
+ORDER_KEYS = {
+    "price_per_m2_asc": (lambda l: l.price_per_m2, False),
+    "price_eur_asc": (lambda l: l.price_eur, False),
+    "price_eur_desc": (lambda l: l.price_eur, True),
+    "size_m2_desc": (lambda l: l.size_m2, True),
+    "year_built_desc": (lambda l: l.year_built, True),
+    "days_on_market_desc": (lambda l: days_on_market(l), True),
+    "first_seen_desc": (lambda l: l.first_seen.toordinal(), True),
+}
+
+
+def _taste(listing: Listing, criteria: Criteria, learner: Learner | None, today: date | None) -> float:
+    """How well the home fits: the rule score, or the blend once the swipes teach (D76). Higher is better."""
+    return learner.blended(listing, today) if learner is not None else score(listing, criteria.preferences)
+
 
 def ranked_matches(listings: list[Listing], criteria: Criteria, learner: Learner | None = None,
                    today: date | None = None) -> list[Listing]:
-    """The homes that pass the hard limits, best first: by the rule score, or by the blend once swipes teach (D76)."""
+    """The homes that pass the hard limits, best first: by the rule score, or by the blend once swipes teach (D76).
+
+    With an order the user asked for (D98), that order is strict: the taste only breaks ties, and a home without
+    the value comes last.
+    """
     matches = apply_hard_limits(listings, criteria).matches
-    if learner is None:
-        return sorted(matches, key=lambda l: (-score(l, criteria.preferences), l.price_per_m2 or 10**9, l.listing_id))
-    return sorted(matches, key=lambda l: (-learner.blended(l, today), l.price_per_m2 or 10**9, l.listing_id))
+    if criteria.order_by:
+        value, desc = ORDER_KEYS[criteria.order_by]
+
+        def strict(l: Listing):
+            v = value(l)
+            missing = v is None
+            return (missing, 0 if missing else (-v if desc else v), -_taste(l, criteria, learner, today), l.listing_id)
+        return sorted(matches, key=strict)
+    return sorted(matches, key=lambda l: (-_taste(l, criteria, learner, today), l.price_per_m2 or 10**9, l.listing_id))
 
 
 def order(unswiped: list[Listing], seed: int) -> list[tuple[Listing, bool]]:
@@ -121,9 +148,12 @@ def build(listings: list[Listing], criteria: Criteria, swiped_ids: set[str], sta
     again = [l for l in matches if l.listing_id in skipped]
     stats = AreaStats.build(listings)
     by_id = {l.listing_id: l for l in listings} if duplicates else None
-    queue = [(l, explore, False) for l, explore in order(fresh, seed)] + [(l, False, True) for l in again]
+    # a strict order (D98) is never interrupted by an explore card: the user asked to see the homes in this order
+    ordered = [(l, False) for l in fresh] if criteria.order_by else order(fresh, seed)
+    queue = [(l, explore, False) for l, explore in ordered] + [(l, False, True) for l in again]
     cards = [card(l, criteria, stats, start_position + i, explore, was_skipped, today, learner, duplicates, by_id)
              for i, (l, explore, was_skipped) in enumerate(queue[:limit])]
     return {"cards": cards, "total_matches": len(matches), "remaining": len(fresh) + len(again),
             "skipped_waiting": len(again), "swiped_of_these": len(matches) - len(fresh) - len(again),
-            "listings_folded": len(ranked) - len(matches), "learning": learner.summary() if learner else None}
+            "listings_folded": len(ranked) - len(matches), "learning": learner.summary() if learner else None,
+            "order_by": criteria.order_by}

@@ -35,6 +35,9 @@ export interface Preference {
 }
 
 // The card as the user said it. Code adds the margins and the lowest price (core/card_rules.py).
+// D98: an order the user asked for outright; code sorts the deck strictly by it, with no explore cards.
+export type OrderBy = "price_per_m2_asc" | "price_eur_asc" | "price_eur_desc" | "size_m2_desc" | "year_built_desc" | "days_on_market_desc" | "first_seen_desc";
+
 export interface Card {
   intent: Intent | null;
   areas: string[];
@@ -43,6 +46,7 @@ export interface Card {
   ideally: string[];
   preferences: Preference[];
   open_questions: string[];
+  order_by?: OrderBy | null;
 }
 
 export interface SwipeStats {
@@ -184,6 +188,7 @@ export interface Deck {
   checkin_every: number;
   since_checkin: number;
   can_undo: boolean;
+  order_by?: OrderBy | null;
 }
 
 // The check-in after 10 likes or rejects (D66, D75): a pattern the assistant words, a reason the user tapped,

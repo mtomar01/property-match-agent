@@ -6,6 +6,7 @@ Everything in this folder is public, so it holds invented data only. Labels for 
 |---|---|---|
 | `search_safety.jsonl` | 20 criteria sets with their expected matches on the synthetic snapshot | Search safety eval (v0.1, live) |
 | `interview_chats.jsonl` | 40 scripted interview chats, 20 Greek and 20 English | Interview eval (v1) |
+| `interview_chats_v4.jsonl` | 4 chats on the order of the homes (D98): two strict orders asked for, one wish that is not an order, one order set and then dropped | Interview eval, `--chats` |
 | `templates/` | Empty templates for extraction labels, chats and duplicate pairs | Labelling |
 
 Extraction labels for the 100 real listings are made with the offline labelling tool (`evals/harness/build_label_tool.py`, rules in `docs/labelling-guide.md`) and stay in `data/private/labels/`. `evals/harness/labels.py` defines and checks the label format.

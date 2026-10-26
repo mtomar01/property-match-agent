@@ -350,6 +350,13 @@ class Preference(_Strict):
         return self
 
 
+# D98: an order the user asked for outright ("cheapest per m² first"). Code sorts the deck strictly by it; the
+# wishes and the learned taste only break ties, and no explore card interrupts it. None means ranked as usual.
+OrderBy = Literal["price_per_m2_asc", "price_eur_asc", "price_eur_desc", "size_m2_desc", "year_built_desc",
+                  "days_on_market_desc", "first_seen_desc"]
+ORDER_BY: tuple[str, ...] = OrderBy.__args__
+
+
 class Criteria(_Strict):
     user_id: str
     intent: Intent
@@ -357,6 +364,7 @@ class Criteria(_Strict):
     hard_limits: HardLimits = Field(default_factory=HardLimits)
     preferences: list[Preference] = Field(default_factory=list)
     open_questions: list[str] = Field(default_factory=list)
+    order_by: OrderBy | None = None
     version: int = Field(default=1, ge=1)
     confirmed_by_user: bool = False
 

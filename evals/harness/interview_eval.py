@@ -236,6 +236,9 @@ def field_outcomes(expected: dict, predicted: dict) -> dict[str, str]:
     said, caught = bool(expected.get("budget_around")), bool(predicted.get("budget_around"))
     if said or caught:  # "around" is scored on what the model caught; the 10% is code's (D53)
         out["budget_around"] = "correct" if said == caught else ("missed" if said else "invented")
+    result = _outcome(expected.get("order_by"), predicted.get("order_by"))  # an order asked for outright (D98)
+    if result:
+        out["order_by"] = result
     return out
 
 

@@ -16,7 +16,8 @@ interface Props {
 // nothing is cut off; the fold-out lists every limit in full.
 export function LimitsBar({ card, searched, wishes, learning }: Props) {
   const L = useLabels();
-  const limits = barText(card, searched, L);  // firm wishes code made limits show here, not in the wishes (D79)
+  // the order the user asked for leads the row (D98), then every limit; firm wishes code made limits show here (D79)
+  const limits = [...(card.order_by ? [L.orders[card.order_by] ?? card.order_by] : []), ...barText(card, searched, L)];
   const [open, setOpen] = useState(false);
   const [fit, setFit] = useState(limits.length);
   const row = useRef<HTMLUListElement>(null);
@@ -54,7 +55,7 @@ export function LimitsBar({ card, searched, wishes, learning }: Props) {
       <div className="bar-line">
         <span className="label bar-label">{L.limits}</span>
         <ul className="bar-limits" ref={row}>
-          {limits.map((text, i) => <li key={text} className={i >= fit ? "folded" : ""}>{text}</li>)}
+          {limits.map((text, i) => <li key={text} className={`${i >= fit ? "folded" : ""} ${card.order_by && i === 0 ? "order" : ""}`}>{text}</li>)}
         </ul>
         <button type="button" className="link more" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {label} {open ? "▴" : "▾"}
@@ -66,7 +67,7 @@ export function LimitsBar({ card, searched, wishes, learning }: Props) {
           <div className="bar-details" role="region" aria-label={L.limits}>
             {limits.length > 0 && (
               <ul className="bar-limits wrap">
-                {limits.map((text) => <li key={text}>{text}</li>)}
+                {limits.map((text, i) => <li key={text} className={card.order_by && i === 0 ? "order" : ""}>{text}</li>)}
               </ul>
             )}
             {wishes.length > 0 && (
@@ -84,7 +85,7 @@ export function LimitsBar({ card, searched, wishes, learning }: Props) {
                 {card.open_questions.map((q) => <li key={q}>{q}</li>)}
               </ul>
             )}
-            <LearningLine learning={learning} />
+            <LearningLine learning={learning} orderBy={card.order_by} />
             <p className="hint">{L.limitsHint}</p>
             <button type="button" className="wide close-sheet" onClick={() => setOpen(false)}>{L.close}</button>
           </div>

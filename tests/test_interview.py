@@ -433,3 +433,18 @@ def test_every_wish_quote_is_traced_to_the_users_words():
                              {"feature": "parking", "said": "με πάρκινγκ"}]}             # nowhere in the chat
     out = ev.quotes({"log": log, "final": final})
     assert (out["traced"], out["close"], out["total"], out["missing"]) == (1, 1, 3, ["parking"])
+
+
+def test_an_order_asked_for_rides_on_the_card_and_the_schema_offers_it():
+    """D98: order_by is one of seven values or null, in the reply schema and the supply tool, and card() keeps it."""
+    from core.models import ORDER_BY
+    assert interview.schema()["properties"]["criteria"]["properties"]["order_by"] == {"enum": [*ORDER_BY, None]}
+    assert "order_by" in interview.schema()["properties"]["criteria"]["required"]
+    assert "order_by" in interview.tool()["input_schema"]["required"]
+    raw = {"intent": "invest", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 350000}, "preferences": [],
+           "open_questions": [], "order_by": "price_per_m2_asc"}
+    assert interview.card(raw).order_by == "price_per_m2_asc"
+    assert interview.card({**raw, "order_by": None}).order_by is None
+    assert interview.card({k: v for k, v in raw.items() if k != "order_by"}).order_by is None  # an older card
+    assert interview.card_problem({**raw, "order_by": "biggest_first"}) is not None  # not one of the seven
+

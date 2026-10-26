@@ -144,6 +144,7 @@ button.wide { width: 100%; }
 .bar-limits { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); flex: 1; min-width: 0; }
 .bar-limits li { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--lime-deep); background: var(--lime-soft); border-radius: var(--radius-pill); padding: var(--space-1) 10px; white-space: nowrap; }
 .bar .more { margin-left: auto; white-space: nowrap; flex: none; min-width: 84px; text-align: right; }
+.bar-limits li.order { background: var(--lime); color: var(--on-lime); }  /* the order asked for: the user decided, so the signal itself */
 .bar .bar-line { flex-wrap: nowrap; }
 .bar .bar-limits { flex-wrap: nowrap; overflow: hidden; }
 .bar .bar-limits li.folded { visibility: hidden; }

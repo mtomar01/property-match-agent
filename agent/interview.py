@@ -30,11 +30,11 @@ from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
 from core.card_rules import IDEALLY, harden, search_card  # Mike's rules, in code (D53, D56, D79)
 from core import greek
-from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
+from core.models import ORDER_BY, Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v12"  # D86
+PROMPT_VERSION = "interview_v13"  # D98
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -115,6 +115,8 @@ def _criteria_core() -> dict:
         "budget_around": {"type": "boolean"},  # the user said "around" their top price; code adds the margin (D53)
         "ideally": {"type": "array", "items": {"type": "string", "enum": list(IDEALLY)}},  # code adds the margins (D56)
         "preferences": {"type": "array", "items": _preference_schema()},  # firm ones can be limits, so supply needs them (D79)
+        # D98: an order the user asked for outright; code sorts the deck strictly by it. Null: ranked as usual.
+        "order_by": {"enum": [*ORDER_BY, None]},
     }
 
 
@@ -122,7 +124,7 @@ def schema() -> dict:
     """The reply format. Reasoning first, then the reply, then the card (the model writes in this order)."""
     criteria = {
         "type": "object", "additionalProperties": False,
-        "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "open_questions"],
+        "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "order_by", "open_questions"],
         "properties": {**_criteria_core(), "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
     properties = {
@@ -149,7 +151,7 @@ TOOL = {
                     "limit were dropped. Code does the counting. Use it before showing a card whose asks may be hard "
                     "to meet together."),
     "input_schema": {"type": "object", "additionalProperties": False,
-                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences"],
+                     "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "order_by"],
                      "properties": _criteria_core()},
 }
 
@@ -215,7 +217,7 @@ def card(raw: dict) -> Criteria:
     preferences = [{k: v for k, v in p.items() if v is not None} for p in raw.get("preferences") or []]
     return Criteria(user_id="interview", intent=raw.get("intent") or "buy", areas=raw.get("areas") or [],
                     hard_limits=HardLimits(**limits), preferences=preferences,
-                    open_questions=raw.get("open_questions") or [])
+                    open_questions=raw.get("open_questions") or [], order_by=raw.get("order_by") or None)
 
 
 def check_supply(args: dict, listings: list) -> dict:
