@@ -12,6 +12,11 @@ data/private/state/, the swipes in data/private/swipes/, both ignored by git.
     uv run python -m api.server                       # synthetic listings, http://127.0.0.1:8765
     PM_SNAPSHOT=data/private/snapshot.jsonl uv run python -m api.server   # your private listings
 
+The beta at tispi.ai (D100) is the same server with TISPI_INVITE set: then every visitor gets a session of their
+own from a signed cookie, the door is an invite link (/?invite=TOKEN), a session is wiped 15 minutes after its
+last request (TISPI_IDLE_MINUTES), and the model calls are capped per visitor and per day
+(TISPI_TURNS_PER_VISITOR, TISPI_TURNS_PER_DAY). PM_HOST and PORT set where it listens.
+
 Routes:
     GET  /api/state                      -> the chat so far, the card, the swipe counts
     POST /api/chat     {"text": "..."}  -> the reply, the card as said and as searched, whether the deck is ready
@@ -34,12 +39,17 @@ Routes:
 from __future__ import annotations
 
 import csv
+import hashlib
+import hmac
 import io
 import json
 import mimetypes
 import os
+import secrets
 import threading
+import time
 from datetime import date, datetime, timezone
+from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -61,7 +71,14 @@ PRIVATE = ROOT / "data" / "private"
 CACHE = PRIVATE / "cache" / "app"
 STATE = PRIVATE / "state"
 SWIPES = PRIVATE / "swipes"
-HOST, PORT = "127.0.0.1", 8765
+HOST, PORT = os.environ.get("PM_HOST", "127.0.0.1"), int(os.environ.get("PORT", "8765"))
+# The beta (D100): off unless TISPI_INVITE is set, so a server on the Mac stays single-user and ungated.
+BETA_INVITE = os.environ.get("TISPI_INVITE", "").strip()
+BETA_IDLE_MINUTES = int(os.environ.get("TISPI_IDLE_MINUTES", "15"))
+BETA_TURNS_PER_VISITOR = int(os.environ.get("TISPI_TURNS_PER_VISITOR", "30"))
+BETA_TURNS_PER_DAY = int(os.environ.get("TISPI_TURNS_PER_DAY", "150"))
+BETA_METRICS = PRIVATE / "beta" / "metrics.jsonl"
+SESSION_COOKIE = "tispi_session"
 MAX_BODY = 64_000  # bytes; a chat message or a card is far smaller
 DECK_LIMIT = 10
 USER = os.environ.get("PM_USER", "me")
@@ -73,11 +90,15 @@ class App:
     """What the routes share: the listings, the model client, this user's chat and swipes."""
 
     def __init__(self, adapter: SnapshotAdapter | None = None, client=None, cache_dir: Path | None = CACHE,
-                 user_id: str = USER, state_dir: Path = STATE, swipes_dir: Path = SWIPES):
+                 user_id: str = USER, state_dir: Path = STATE, swipes_dir: Path = SWIPES, duplicates: dict | None = None):
         self.adapter = adapter or SnapshotAdapter()
         self.areas = set_covered_areas(data_areas(self.adapter.listings()))  # what this dataset covers (D69)
         self._learned: tuple | None = None  # (what it was fitted on, the model)
-        self.duplicates = finder.index(finder.clusters(self.adapter.listings()))  # one card per home (D78)
+        # one card per home (D78); the beta passes the index in, computed once for every visitor
+        self.duplicates = duplicates if duplicates is not None else finder.index(finder.clusters(self.adapter.listings()))
+        self.model_calls = 0  # every call to the assistant, for the beta's caps (D100)
+        self.started = time.time()
+        self.last_seen = time.time()
         self._client = client
         self.cache_dir = cache_dir
         self.user_id = user_id
@@ -157,6 +178,15 @@ class App:
         """"New search": a fresh entry, opened blank."""
         self._register_search()
         self._open(self.search_id)
+
+    def wipe(self) -> None:
+        """Delete everything this user has on disk: the index, every search's state and swipe log (the beta's purge, D100)."""
+        for folder in (self.state_dir, self.swipes_dir):
+            for path in folder.glob(f"{self.user_id}.*") if folder.exists() else []:
+                path.unlink(missing_ok=True)
+            archive = folder / "archive"
+            for path in archive.glob(f"{self.user_id}.*") if archive.exists() else []:
+                path.unlink(missing_ok=True)
 
     def _save(self) -> None:
         self._ensure_search()
@@ -255,6 +285,7 @@ class App:
 
     def _assistant(self, content: str) -> dict:
         """One turn of the interview on this user's history, saved. Returns the parsed answer and the card."""
+        self.model_calls += 1
         history = list(self.state["history"])
         history.append({"role": "user", "content": content})
         cache = self.cache_dir / interview.PROMPT_VERSION if self.cache_dir else None
@@ -474,10 +505,148 @@ class App:
         return record
 
 
-def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
+class Beta:
+    """Several visitors at one address (D100). Off unless an invite token is set.
+
+    A visitor's session is a signed cookie: a random id and its HMAC under the invite token, so a cookie can
+    only come from the invite link and cannot be forged. Each session has an App of its own, sharing the
+    listings, the duplicate index and the model client. Nothing personal is ever written: no names, no
+    emails, only the id. A session is wiped idle_minutes after its last request (chat, card, swipes, all of
+    it), leaving one anonymous line of counts in the metrics log. The model calls are capped per visitor and
+    per day, because every chat turn is paid for.
+    """
+
+    def __init__(self, make_app, invite: str, idle_minutes: int = BETA_IDLE_MINUTES,
+                 per_visitor: int = BETA_TURNS_PER_VISITOR, per_day: int = BETA_TURNS_PER_DAY,
+                 metrics_path: Path | None = BETA_METRICS, clock=time.time):
+        if not invite:
+            raise ValueError("the beta needs an invite token (TISPI_INVITE)")
+        self.make_app = make_app  # user_id -> App
+        self.invite = invite
+        self.idle = idle_minutes * 60
+        self.per_visitor, self.per_day = per_visitor, per_day
+        self.metrics_path = metrics_path
+        self.clock = clock
+        self.apps: dict[str, App] = {}
+        self.counted: dict[str, int] = {}  # model calls already added to the day's total, per session
+        self.day: tuple[str, int] = ("", 0)
+        self.lock = threading.Lock()
+
+    # -- sessions -------------------------------------------------------------
+
+    def _sign(self, user_id: str) -> str:
+        return hmac.new(self.invite.encode(), user_id.encode(), hashlib.sha256).hexdigest()[:32]
+
+    def new_cookie(self) -> str:
+        user_id = secrets.token_hex(16)
+        return f"{user_id}.{self._sign(user_id)}"
+
+    def session_from(self, cookie_header: str | None) -> str | None:
+        """The session id in a request's cookie, or None when there is none or it is not ours."""
+        if not cookie_header:
+            return None
+        jar = cookies.SimpleCookie()
+        try:
+            jar.load(cookie_header)
+        except cookies.CookieError:
+            return None
+        value = jar.get(SESSION_COOKIE)
+        if value is None or "." not in value.value:
+            return None
+        user_id, signature = value.value.split(".", 1)
+        if len(user_id) != 32 or not hmac.compare_digest(signature, self._sign(user_id)):
+            return None
+        return user_id
+
+    def invited(self, token: str | None) -> bool:
+        return bool(token) and hmac.compare_digest(token, self.invite)
+
+    def app_for(self, user_id: str) -> App:
+        with self.lock:
+            app = self.apps.get(user_id)
+            if app is None:
+                app = self.apps[user_id] = self.make_app(user_id)
+            app.last_seen = self.clock()
+            return app
+
+    # -- caps -------------------------------------------------------------------
+
+    def _today(self) -> int:
+        today = datetime.fromtimestamp(self.clock(), timezone.utc).date().isoformat()
+        if self.day[0] != today:
+            self.day = (today, 0)
+        return self.day[1]
+
+    def allow_turn(self, user_id: str) -> str | None:
+        """None if this visitor may make another model call, else the sentence to show instead."""
+        with self.lock:
+            app = self.apps.get(user_id)
+            if app is not None and app.model_calls >= self.per_visitor:
+                return "You've reached this beta's limit for one visitor. Thank you for testing; your notes are welcome."
+            if self._today() >= self.per_day:
+                return "The beta's budget for today is used up. Please come back tomorrow."
+        return None
+
+    def account(self, user_id: str) -> None:
+        """Add this session's new model calls to the day's total (called after every request that may have made some)."""
+        with self.lock:
+            app = self.apps.get(user_id)
+            if app is None:
+                return
+            before = self.counted.get(user_id, 0)
+            if app.model_calls > before:
+                self.day = (self.day[0], self._today() + app.model_calls - before)
+                self.counted[user_id] = app.model_calls
+
+    # -- the purge --------------------------------------------------------------
+
+    def purge(self, now: float | None = None) -> list[str]:
+        """Wipe every session idle for longer than the limit; one anonymous line of counts per session goes to the log."""
+        now = self.clock() if now is None else now
+        with self.lock:
+            idle = [uid for uid, app in self.apps.items() if now - app.last_seen >= self.idle]
+            for uid in idle:
+                app = self.apps.pop(uid)
+                self.counted.pop(uid, None)
+                stats = app.swipes.stats()
+                line = {"session": hashlib.sha256(uid.encode()).hexdigest()[:12], "turns": app.model_calls,
+                        "minutes": round((app.last_seen - app.started) / 60, 1), "searches": len(app.index["searches"]),
+                        "swipes": stats["swipes"], "likes": stats["likes"], "like_rate": stats["like_rate"],
+                        "ended": datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds")}
+                app.wipe()
+                print("beta session ended", json.dumps(line), flush=True)
+                if self.metrics_path:
+                    self.metrics_path.parent.mkdir(parents=True, exist_ok=True)
+                    with self.metrics_path.open("a", encoding="utf-8") as fh:
+                        fh.write(json.dumps(line) + "\n")
+        return idle
+
+    def start_purger(self, every: float = 60.0) -> threading.Thread:
+        def run():
+            while True:
+                time.sleep(every)
+                try:
+                    self.purge()
+                except Exception as err:  # noqa: BLE001 - the purge must keep running
+                    print("beta purge failed:", err, flush=True)
+        thread = threading.Thread(target=run, daemon=True)
+        thread.start()
+        return thread
+
+
+GATE_PAGE = DIST / "beta.html"
+ROBOTS = b"User-agent: *\nDisallow: /\n"
+
+
+def handler_for(app: App | None = None, beta: Beta | None = None) -> type[BaseHTTPRequestHandler]:
+    """The request handler: one App for the single user, or the beta's App per session (D100)."""
+    if (app is None) == (beta is None):
+        raise ValueError("give the handler one App, or a Beta")
+    first = app if app is not None else None
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "PropertyMatch/2"
-        app_areas = app.areas
+        app_areas = first.areas if first is not None else beta.make_app("areas").areas
 
         def log_message(self, format, *args):  # noqa: A002 - the base class's name
             pass  # quiet; errors still come back as JSON
@@ -501,9 +670,34 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                 raise ValueError("the request is too large")
             return json.loads(self.rfile.read(size) or b"{}")
 
+        def _session(self) -> str | None:
+            return beta.session_from(self.headers.get("Cookie")) if beta else None
+
+        def _app(self) -> App | None:
+            """The App for this request: the single user's, or the beta session's (None when the visitor has none)."""
+            if beta is None:
+                return first
+            user_id = self._session()
+            return beta.app_for(user_id) if user_id else None
+
+        def _gate(self) -> None:
+            """No session in a beta: the gate page, or a sentence for the API."""
+            if self.path.startswith("/api/"):
+                return self._json(401, {"error": "This is a private beta: open your invite link first."})
+            body = GATE_PAGE.read_bytes() if GATE_PAGE.exists() else b"<!doctype html><title>Tispi</title><p>Private beta. Open your invite link."
+            self._send(200, body, "text/html; charset=utf-8", {"Cache-Control": "no-store"})
+
         def do_POST(self):  # noqa: N802 - the base class's name
             route = urlparse(self.path).path
+            app = self._app()
+            if app is None:
+                return self._gate()
+            user_id = self._session()
             try:
+                if beta is not None and route == "/api/chat":  # the paid route; a check-in's call every 10 swipes is bounded anyway
+                    capped = beta.allow_turn(user_id)
+                    if capped:
+                        return self._json(429, {"error": capped})
                 body = self._body()
                 if route == "/api/chat":
                     return self._json(200, app.chat(body.get("text", "")))
@@ -530,9 +724,24 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
                 return self._json(400, {"error": str(err)})
             except Exception as err:  # noqa: BLE001 - the app shows the reason instead of hanging
                 return self._json(500, {"error": f"{type(err).__name__}: {err}"})
+            finally:
+                if beta is not None and user_id:
+                    beta.account(user_id)
 
         def do_GET(self):  # noqa: N802 - the base class's name
             url = urlparse(self.path)
+            if url.path == "/robots.txt":
+                return self._send(200, ROBOTS, "text/plain; charset=utf-8")
+            if beta is not None and url.path == "/" and self._session() is None:
+                token = parse_qs(url.query).get("invite", [None])[0]
+                if beta.invited(token):  # the invite link: a session of their own, then the app without the token in the URL
+                    cookie = f"{SESSION_COOKIE}={beta.new_cookie()}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=604800"
+                    return self._send(302, b"", "text/plain", {"Location": "/", "Set-Cookie": cookie, "Cache-Control": "no-store"})
+            if url.path.startswith("/assets/") or url.path == "/favicon.svg":
+                return self._static(url.path)  # the built app's files hold no data
+            app = self._app()
+            if app is None:
+                return self._gate()
             if url.path == "/api/state":
                 return self._json(200, app.snapshot())
             if url.path == "/api/areas":
@@ -566,13 +775,31 @@ def handler_for(app: App) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-def serve(app: App | None = None, host: str = HOST, port: int = PORT) -> ThreadingHTTPServer:
+def serve(app: App | None = None, host: str = HOST, port: int = PORT, beta: Beta | None = None) -> ThreadingHTTPServer:
+    if beta is not None:
+        return ThreadingHTTPServer((host, port), handler_for(beta=beta))
     return ThreadingHTTPServer((host, port), handler_for(app or App()))
+
+
+def beta_from_env(snapshot: str | None) -> Beta:
+    """The beta's shared pieces, built once: the listings, the duplicate index and the model client (D100)."""
+    adapter = SnapshotAdapter(snapshot) if snapshot else SnapshotAdapter()
+    duplicates = finder.index(finder.clusters(adapter.listings()))
+    client = llm.client()
+    return Beta(lambda user_id: App(adapter, client=client, user_id=user_id, duplicates=duplicates), BETA_INVITE)
 
 
 if __name__ == "__main__":
     snapshot = os.environ.get("PM_SNAPSHOT")
-    server = serve(App(SnapshotAdapter(snapshot) if snapshot else None))
-    print(f"Property Match on http://{HOST}:{PORT} ({'private snapshot' if snapshot else 'synthetic listings'}, user {USER}, "
-          f"areas {', '.join(server.RequestHandlerClass.app_areas)})")
+    if BETA_INVITE:
+        beta = beta_from_env(snapshot)
+        beta.start_purger()
+        server = serve(beta=beta)
+        print(f"Tispi beta on http://{HOST}:{PORT} ({'private snapshot' if snapshot else 'synthetic listings'}, "
+              f"sessions wiped after {BETA_IDLE_MINUTES} idle minutes, {BETA_TURNS_PER_VISITOR} turns a visitor, "
+              f"{BETA_TURNS_PER_DAY} a day, areas {', '.join(server.RequestHandlerClass.app_areas)})", flush=True)
+    else:
+        server = serve(App(SnapshotAdapter(snapshot) if snapshot else None))
+        print(f"Property Match on http://{HOST}:{PORT} ({'private snapshot' if snapshot else 'synthetic listings'}, user {USER}, "
+              f"areas {', '.join(server.RequestHandlerClass.app_areas)})", flush=True)
     server.serve_forever()

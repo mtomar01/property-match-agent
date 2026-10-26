@@ -1,0 +1,19 @@
+# What the beta image leaves out (D100). data/private/ stays out except the one snapshot copied for the deploy.
+.git
+.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+node_modules
+app/node_modules
+app/dist
+data/private/*
+!data/private/deploy
+data/snapshot
+evals/results
+tests
+docs
+.env
+.env.*
+Dockerfile
+fly.toml

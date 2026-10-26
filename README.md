@@ -21,6 +21,8 @@ Demo options: `--area Peristeri --max-price 250000 --min-bedrooms 3 --no-basemen
 
 To use the MCP server from the Claude desktop app, see `docs/connect-claude-desktop.md`.
 
+To put the beta on tispi.ai (Fly.io, an invite link, sessions wiped after 15 idle minutes), see `docs/deploy.md` (D100).
+
 ## The app: chat, swipe deck, shortlist
 
 You need Node 18 or newer, and the Anthropic API key for the chat (`ANTHROPIC_API_KEY`, or `~/.config/property-match/anthropic.env`).

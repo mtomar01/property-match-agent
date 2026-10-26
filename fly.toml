@@ -1,0 +1,26 @@
+# Tispi's beta on Fly.io (D100): one small always-on machine in Frankfurt, HTTPS forced, the app on port 8765.
+# Secrets, never here: fly secrets set ANTHROPIC_API_KEY=... TISPI_INVITE=...
+
+app = "tispi"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PM_HOST = "0.0.0.0"
+  PORT = "8765"
+  TISPI_IDLE_MINUTES = "15"
+  TISPI_TURNS_PER_VISITOR = "30"
+  TISPI_TURNS_PER_DAY = "150"
+
+[http_service]
+  internal_port = 8765
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
