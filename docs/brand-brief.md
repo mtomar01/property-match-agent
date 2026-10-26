@@ -14,6 +14,8 @@ People buying a home in Athens, first-time buyers most of all: often a couple, o
 
 **Tispi**, said TEE-spee. It's σπίτι with the letters shuffled: a home that hasn't fallen into place yet, which is what a search feels like. Greeks also hear "Τι σπίτι;", "what home?", the question the chat asks first. Tagline, plain and in both languages: **Tispi. Finds your home.** / **Βρίσκει το σπίτι σου.**
 
+The address is **tispi.ai** (registered 26 October 2026, D99): the word on its own, with the .ai saying what the product is so the name never has to. No suffix in the domain, because the mark is the word's own i's. tispi.gr may join it as the Greek pair; a trademark look-up (TMview, ΟΒΙ; classes 35, 36, 42) is still owed.
+
 ## How Tispi behaves
 
 Tispi is a scout: it goes ahead, looks, and reports back what it saw, with numbers. That is a behaviour, never a look.

@@ -1,6 +1,6 @@
 # Property Match Agent
 
-A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
+The product is called **Tispi** (tispi.ai). A property search assistant for Greece: a conversation becomes clear search criteria, listings from several portals are searched and deduplicated, and a swipe deck learns your taste.
 
 **Status:** v3, learning: the interview, a swipe deck that learns your taste from your likes and rejects, one card per home when a flat is listed more than once, market facts on every card, check-ins every 10 swipes, the shortlist and its CSV. Built, with its evals passing on development sets; the real-swipe and labelled-duplicate scores wait for your swipes and labels. The repo runs on synthetic listings only. See `docs/spec.md` for the full build spec and `docs/decisions.md` for every design choice and why.
 

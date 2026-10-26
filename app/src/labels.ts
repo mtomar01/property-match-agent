@@ -134,7 +134,7 @@ export const LABELS = {
     dataHint: "Photos are linked, never stored. Nothing is kept about agents or owners.",
     about: "About Tispi",
     aboutText: "Tispi is σπίτι with its letters shuffled: a home that hasn't settled into place yet. \"Τι σπίτι;\" is the first question it asks. Every number on a card is counted by code, and nothing loosens without your yes.",
-    tagline: "Tispi. Finds your home.",
+    tagline: "Tispi. Finds your home. · tispi.ai",
     // words for the codes
     floorUnknown: "floor unknown",
     topFloor: "top floor (ρετιρέ)",
@@ -304,7 +304,7 @@ export const LABELS = {
     dataHint: "Οι φωτογραφίες συνδέονται, δεν αποθηκεύονται. Δεν κρατιέται τίποτα για μεσίτες ή ιδιοκτήτες.",
     about: "Σχετικά με το Tispi",
     aboutText: "Το Tispi είναι το σπίτι με τα γράμματα ανακατεμένα: ένα σπίτι που δεν έχει βρει ακόμη τη θέση του. «Τι σπίτι;» είναι η πρώτη του ερώτηση. Κάθε αριθμός σε μια κάρτα μετριέται από κώδικα, και τίποτα δεν χαλαρώνει χωρίς το ναι σου.",
-    tagline: "Tispi. Βρίσκει το σπίτι σου.",
+    tagline: "Tispi. Βρίσκει το σπίτι σου. · tispi.ai",
     floorUnknown: "άγνωστος όροφος",
     topFloor: "ρετιρέ",
     nthFloor: (n: string) => `${n}ος`,
