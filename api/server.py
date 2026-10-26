@@ -659,7 +659,8 @@ def handler_for(app: App | None = None, beta: Beta | None = None) -> type[BaseHT
             for name, value in (extra or {}).items():
                 self.send_header(name, value)
             self.end_headers()
-            self.wfile.write(body)
+            if self.command != "HEAD":  # a HEAD gets GET's headers, Content-Length included, and no body (D101)
+                self.wfile.write(body)
 
         def _json(self, status: int, payload: dict) -> None:
             self._send(status, json.dumps(payload, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
@@ -760,6 +761,10 @@ def handler_for(app: App | None = None, beta: Beta | None = None) -> type[BaseHT
                 except KeyError:
                     return self._json(404, {"error": "no such listing"})
             return self._static(url.path)
+
+        def do_HEAD(self):  # noqa: N802 - the base class's name
+            """Uptime checks and link previews ask with HEAD: GET's answer without the body (D101; the base class said 501)."""
+            self.do_GET()
 
         def _static(self, path: str) -> None:
             target = (DIST / path.lstrip("/")).resolve()

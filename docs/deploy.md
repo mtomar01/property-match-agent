@@ -5,9 +5,17 @@ secret (D100). The private snapshot is copied into your private Fly image at bui
 else: not into git, not into the public repo. Nothing a visitor types is kept: a session is wiped 15 minutes
 after its last request, and only one line of counts per session goes to the log.
 
-You need `flyctl` (https://fly.io/docs/flyctl/install/) and a Fly account with a card on it. Fly builds the
-image on its own builders, so no Docker is needed on the Mac. Expected cost: about $3 to $7 a month for the
-machine; the chat turns are on the Anthropic key as before, capped at 30 a visitor and 150 a day.
+You need `flyctl` (https://fly.io/docs/flyctl/install/) and a Fly account with a card on it. On a Mac without
+Homebrew, Fly's own installer puts it in `~/.fly/bin`, which is not on the PATH:
+
+```bash
+curl -L https://fly.io/install.sh | sh
+export PATH="$HOME/.fly/bin:$PATH"
+```
+
+Fly builds the image on its own builders, so no Docker is needed on the Mac. Expected cost: Fly lists $3.69 a
+month for this machine (shared-cpu-1x, 512 MB; D101), the shared IPv4 and the IPv6 are free; the chat turns are
+on the Anthropic key as before, capped at 30 a visitor and 150 a day.
 
 ## 1. The snapshot
 
@@ -23,27 +31,40 @@ cp <your 23 October 1,000-listing file> data/private/deploy/snapshot.jsonl
 From the repo root:
 
 ```bash
-fly auth login
-fly launch --no-deploy --copy-config --name tispi --region fra   # takes fly.toml as it is; say no to Postgres and Redis
-fly secrets set ANTHROPIC_API_KEY="<the key>" TISPI_INVITE="$(openssl rand -hex 16)"
-fly secrets list                                                  # TISPI_INVITE is the token in your friends' link; keep it
-fly deploy --remote-only
-fly status && fly logs
+fly auth login                                                    # opens the browser; sign in there
+fly launch --no-deploy --copy-config --name tispi --region fra --org personal \
+    --no-db --no-redis --no-object-storage --ha=false --yes       # the app, no deploy, no add-ons, one machine
+git checkout -- fly.toml                                          # launch rewrites the file in its own style; the values are the same
+fly secrets set ANTHROPIC_API_KEY="$(sed -n 's/^ANTHROPIC_API_KEY=//p' ~/.config/property-match/anthropic.env)" \
+    TISPI_INVITE="$(openssl rand -hex 16)"                        # read from the file, never pasted; set before the first deploy
+fly secrets list                                                  # names and digests only; TISPI_INVITE is the token in your friends' link
+fly deploy --remote-only --ha=false                               # --ha=false every time, or flyctl adds a second machine
+fly status && fly logs --no-tail
 ```
 
-The first deploy takes a few minutes (the React build and the Python install). `fly logs` should show
+The secrets go in before the first deploy: without `TISPI_INVITE` the server would start ungated. The first
+deploy took 84 seconds on 26 October and the image is 78 MB (D101). `fly logs` should show
 "Tispi beta on http://0.0.0.0:8765 (private snapshot, …)". If it says "synthetic listings", the snapshot was not
 copied: check step 1.
 
-To read the invite token later: `fly ssh console -C 'printenv TISPI_INVITE'`.
+To read the invite token later: `fly ssh console -C 'printenv TISPI_INVITE'`. Then, from the Mac:
+
+```bash
+curl -sI https://tispi.fly.dev/                     # 200, the gate page (HEAD works since D101)
+curl -sI "https://tispi.fly.dev/?invite=$TOKEN"     # 302 to /, Set-Cookie tispi_session … HttpOnly; Secure
+curl -s https://tispi.fly.dev/robots.txt            # Disallow: /
+curl -s -o /dev/null -w '%{http_code}' https://tispi.fly.dev/api/state   # 401 without the cookie
+```
 
 ## 3. The domain
 
-Fly needs an IP for the apex and a certificate for the name:
+Fly needs an IP for the apex and a certificate for the name. The first deploy allocates a shared IPv4 and an
+IPv6 by itself (`fly ips list` shows them); the allocate commands are only for when one is missing:
 
 ```bash
-fly ips allocate-v4 --shared     # free; prints an IPv4
-fly ips allocate-v6              # prints an IPv6
+fly ips list
+fly ips allocate-v4 --shared     # only if no v4 is listed; free
+fly ips allocate-v6              # only if no v6 is listed
 fly certs add tispi.ai
 fly certs add www.tispi.ai
 ```

@@ -34,12 +34,12 @@ def beta_server(tmp_path):
 
     opener = urllib.request.build_opener(NoRedirect)
 
-    def ask(path, body=None, cookie=None):
+    def ask(path, body=None, cookie=None, method=None):
         data = json.dumps(body).encode() if body is not None else None
         headers = {"Content-Type": "application/json"}
         if cookie:
             headers["Cookie"] = f"{SESSION_COOKIE}={cookie}"
-        request = urllib.request.Request(base + path, data=data, headers=headers)
+        request = urllib.request.Request(base + path, data=data, headers=headers, method=method)
         try:
             with opener.open(request) as response:
                 raw = response.read()
@@ -127,3 +127,13 @@ def test_an_idle_session_is_wiped_and_leaves_one_anonymous_line(beta_server):
     assert user_id not in line["session"] and "Egaleo" not in metrics.read_text()  # counts only, nothing said
     _, state, _ = ask("/api/state", cookie=a)  # the same cookie starts clean
     assert state["messages"] == [] and state["searches"] == []
+
+
+def test_a_head_request_gets_the_answer_without_the_body(beta_server):
+    ask, _, _, _, _ = beta_server
+    status, body, headers = ask("/", method="HEAD")  # uptime checks and link previews ask this way (D101)
+    assert status == 200 and body == "" and int(headers["Content-Length"]) > 0 and "text/html" in headers["Content-Type"]
+    status, body, _ = ask("/robots.txt", method="HEAD")
+    assert status == 200 and body == ""
+    status, body, headers = ask("/?invite=friends-2026", method="HEAD")
+    assert status == 302 and body == "" and SESSION_COOKIE in headers["Set-Cookie"]
