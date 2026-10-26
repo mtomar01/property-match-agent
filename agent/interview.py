@@ -30,7 +30,7 @@ from core.filters import INTENT_TO_LISTING_TYPE, apply_hard_limits
 from core.greek import SPECIAL_FLOORS
 from core.card_rules import IDEALLY, harden, search_card  # Mike's rules, in code (D53, D56, D79)
 from core import greek
-from core.models import Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
+from core.models import ORDER_BY, Condition, Criteria, HardLimits, Intent, PreferenceFeature, PropertyType, covered_areas
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
@@ -125,16 +125,19 @@ def schema() -> dict:
         "required": ["intent", "areas", "hard_limits", "budget_around", "ideally", "preferences", "order_by", "open_questions"],
         "properties": {**_criteria_core(),
                        # D98: an order the user asked for outright; code sorts the deck strictly by it, null means ranked as
-                       # usual. A plain string, not an enum, and not in the supply tool: the compiled grammar has a size
-                       # limit and the enum tipped it over (the lesson of D86 again). Code checks the value (core/models.py).
-                       "order_by": {"type": ["string", "null"]},
+                       # usual. In the reply only, not in the supply tool, and measured against the API's grammar limit:
+                       # the enum fits once asking_about is a string; a {"type": ["string", "null"]} union did not.
+                       "order_by": {"enum": [*ORDER_BY, None]},
                        "open_questions": {"type": "array", "items": {"type": "string"}}},
     }
     properties = {
         "reasoning": {"type": "string"},
         "reply": {"type": "string"},
         "action": {"type": "string", "enum": ["ask", "confirm"]},
-        "asking_about": {"type": "array", "items": {"type": "string", "enum": list(TOPICS)}},
+        # D98: one comma-separated string, not an array of a 29-value enum, which was the largest piece of the reply
+        # grammar; code splits it and keeps the known tags (tags()). The array form tipped the compiled grammar over
+        # the API's size limit once order_by was added.
+        "asking_about": {"type": "string"},
         "not_covered_areas": {"type": "array", "items": {"type": "string"}},
         "declined_advice": {"type": "array", "items": {"type": "string", "enum": list(ADVICE)}},
         "unsupported": {"type": "array", "items": {"type": "string", "enum": list(UNSUPPORTED)}},
@@ -465,6 +468,7 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
         except json.JSONDecodeError:
             out["error"] = f"no JSON answer (stop reason {response['stop_reason']})"
             return out
+        out["output"]["asking_about"] = tags(out["output"].get("asking_about"))
         problem = card_problem(out["output"]["criteria"], out["output"].get("action"))
         if problem and len(repairs) < MAX_REPAIRS:
             repairs.append(problem)
@@ -473,6 +477,18 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
             continue
         return out
     raise RuntimeError("unreachable: the last round runs with tools switched off")
+
+
+def tags(value) -> list[str]:
+    """The asking_about tags as a list of known topics, from the model's comma-separated string (or an older list)."""
+    if isinstance(value, str):
+        value = [t for t in value.replace(",", " ").replace(";", " ").split() if t]
+    out = []
+    for tag in value or []:
+        tag = str(tag).strip().lower()
+        if tag in TOPICS and tag not in out:
+            out.append(tag)
+    return out
 
 
 def card_problem(raw: dict, action: str | None = None) -> str | None:

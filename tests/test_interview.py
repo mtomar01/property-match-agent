@@ -436,9 +436,10 @@ def test_every_wish_quote_is_traced_to_the_users_words():
 
 
 def test_an_order_asked_for_rides_on_the_card_and_the_schema_offers_it():
-    """D98: order_by is a plain string or null in the reply schema (an enum made the grammar too large), checked by
-    code against the seven values; the supply tool doesn't carry it, since supply doesn't depend on the order."""
-    assert interview.schema()["properties"]["criteria"]["properties"]["order_by"] == {"type": ["string", "null"]}
+    """D98: order_by is one of seven values or null in the reply schema, and not in the supply tool, since supply
+    doesn't depend on the order. The shape was measured against the API's grammar limit (see D98)."""
+    from core.models import ORDER_BY
+    assert interview.schema()["properties"]["criteria"]["properties"]["order_by"] == {"enum": [*ORDER_BY, None]}
     assert "order_by" in interview.schema()["properties"]["criteria"]["required"]
     assert "order_by" not in interview.tool()["input_schema"]["properties"]
     raw = {"intent": "invest", "areas": ["Egaleo"], "hard_limits": {"max_price_eur": 350000}, "preferences": [],
@@ -447,4 +448,13 @@ def test_an_order_asked_for_rides_on_the_card_and_the_schema_offers_it():
     assert interview.card({**raw, "order_by": None}).order_by is None
     assert interview.card({k: v for k, v in raw.items() if k != "order_by"}).order_by is None  # an older card
     assert interview.card_problem({**raw, "order_by": "biggest_first"}) is not None  # not one of the seven
+
+
+def test_asking_about_is_one_string_the_code_splits():
+    """D98: the tags come as one comma-separated string (the enum array was the grammar's biggest piece)."""
+    assert interview.schema()["properties"]["asking_about"] == {"type": "string"}
+    assert interview.tags("bedrooms, purpose") == ["bedrooms", "purpose"]
+    assert interview.tags("Bedrooms;purpose made_up bedrooms") == ["bedrooms", "purpose"]  # case, separators, unknown, repeats
+    assert interview.tags("") == [] and interview.tags(None) == []
+    assert interview.tags(["narrowing", "nope"]) == ["narrowing"]  # an older list still reads
 
