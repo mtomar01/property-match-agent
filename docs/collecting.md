@@ -98,7 +98,9 @@ uv run python -m adapters.page_snapshot --pages 'data/private/collect/pages_rent
   --check-cards 'data/private/collect/cards_rent_*.jsonl' --out data/private/snapshot_rent_pilot_<YYYY-MM-DD>.jsonl
 ```
 
-Check on each of the ten: the price is the month's rent and `monthly` is in the extras, the size, floor, bedrooms and area read right, and the page agrees with its card. Also note what a rental page says that a sale page does not (furnished, available from, deposit, pets, bills included, minimum term) and in which section, so the fields can be decided before the 1,000. Go on to the full run (7 result pages, 200 listings per area, as for sales) only on Mike's go after the ten are read.
+Check on each of the ten: the price is the month's rent and `listing_type` is `rent` (the details reader's `monthly` extra is not stored; the kind carries the meaning), the size, floor, bedrooms and area read right, and the page agrees with its card. Also note what a rental page says that a sale page does not (furnished, available from, deposit, pets, bills included, minimum term) and in which section, so the fields can be decided before the 1,000. Go on to the full run (7 result pages, 200 listings per area, as for sales) only on Mike's go after the ten are read.
+
+**The pilot ran on 28 October (D103):** ten pages, nothing refused, all ten agreeing with their cards. The rental page is the sale page template with a monthly price; the tenant-relevant rows ("Διαθέσιμο από", "Μηνιαία κοινόχρηστα", "Επιπλωμένο") exist on both kinds, and pets, deposit and term live only in the description. The field list is decided before the 1,000 run. Loading the collector through the Claude in Chrome tool: paste it base64-encoded and `eval` it, then compare the decoded length and sha256 with the repo file; the tool's reader trips on the script's regex literals when the source is pasted as is.
 
 ## Step 4: run the app on it
 
