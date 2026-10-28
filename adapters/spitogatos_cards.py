@@ -28,7 +28,7 @@ from core.models import Listing
 OUT = Path(__file__).resolve().parent.parent / "data" / "private" / "snapshot_spitogatos.jsonl"
 
 TITLE = re.compile(r"^(?P<type>.+?),\s*(?P<size>[\d.,]+)\s*τ\.μ\.$")
-PRICE = re.compile(r"^€\s*(?P<price>[\d.]+)$")
+PRICE = re.compile(r"^€\s*(?P<price>[\d.]+)(?:\s*/\s*μήνα)?$")  # a rental's price line ends "/ μήνα" (D102)
 TEMPLATE = {
     "year_built": re.compile(r"κατασκευαστεί το (\d{4})"),
     "renovated_year": re.compile(r"ανακαινίστηκε το (\d{4})"),
@@ -113,7 +113,7 @@ def parse_card(card: dict, seen: date) -> Listing:
         listing_id=f"spitogatos:{card['source_id']}",
         source="spitogatos",
         url=card["url"],
-        listing_type="sale",
+        listing_type=card.get("listing_type") or "sale",  # the collector marks a rental run (D102)
         first_seen=seen,
         last_seen=seen,
         price_eur=prices[0] if prices else None,

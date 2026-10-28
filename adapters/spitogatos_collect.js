@@ -3,6 +3,7 @@
 // with a Blob download (one cards_ and one pages_ file per area) and moved into data/private/collect/.
 //
 //   PM.area({slug: 'aigaleo', path: '/pwliseis-katoikies/aigaleo', seen: '2026-10-23', exclude: []})
+//   PM.area({slug: 'aigaleo', path: '/enoikiaseis-katoikies/aigaleo', seen: '2026-10-29'})   // rentals: the path decides (D102)
 //   PM.run({resultPages: 7, listings: 200, pages: 200})   // returns at once; the run goes on in the tab
 //   await PM.wait(45)                                      // counts and problems only, never page text
 //   PM.save()                                              // the two files for this area, into ~/Downloads
@@ -16,7 +17,7 @@
   const SECTIONS = ['Περιγραφή', 'Χαρακτηριστικά', 'Εσωτερικό', 'Εξωτερικά χαρακτηριστικά', 'Κατασκευή', 'Κατάλληλο για'];
   const FEATURE_LISTS = new Set(SECTIONS.slice(2));
   const TITLE = /^.+?,\s*[\d.,]+\s*τ\.μ\.$/;
-  const PRICE = /^€\s*[\d.]+$/;
+  const PRICE = /^€\s*[\d.]+(?:\s*\/\s*μήνα)?$/;  // a rental's price line ends "/ μήνα" (D102)
 
   // Contact details are replaced before anything is kept: the same three rules as core/pii.py.
   const W = '[\\p{L}\\p{N}_]';
@@ -85,7 +86,7 @@
   }
 
   // Step 1: one record per result card; promoted mini cards (no title, sub-area or price) are skipped.
-  function cardsOf(doc, slug, seen) {
+  function cardsOf(doc, slug, seen, kind = 'sale') {
     const cards = [];
     let skipped = 0;
     for (const art of doc.querySelectorAll('article.ordered-element')) {
@@ -99,7 +100,7 @@
         continue;
       }
       const src = art.querySelector('img')?.getAttribute('data-pm-src') || '';
-      cards.push({source: 'spitogatos', source_id: id, url: `${BASE}/aggelia/${id}`, area_query: slug,
+      cards.push({source: 'spitogatos', source_id: id, url: `${BASE}/aggelia/${id}`, area_query: slug, listing_type: kind,
                   card_text: scrub(text), photo_url: src.startsWith('https://') ? src : null, seen});
     }
     return {cards, skipped};
@@ -107,7 +108,7 @@
 
   // Step 2: one record per listing page: the six sections, ticked features in sections, crossed ones apart,
   // plus the title, the area line under it and the bedroom and bathroom badges (not the floor badge or street).
-  function pageOf(doc, id, seen, slug) {
+  function pageOf(doc, id, seen, slug, kind = 'sale') {
     const h1 = doc.querySelector('h1.property__title');
     if (!h1) return null;
     const sections = {};
@@ -145,7 +146,8 @@
       .filter(li => /#i-icon-(bedroom|bathroom)$/.test(li.querySelector('use')?.getAttribute('href') || li.querySelector('use')?.getAttribute('xlink:href') || ''))
       .map(li => li.innerText.replace(/\s+/g, ' ').trim());
     return {source_id: id, url: `${BASE}/aggelia/${id}`, seen, photo_url: photo, sections, crossed,
-            title: scrub(h1.innerText.trim()), location: scrub(location), rooms: rooms.length ? scrub(rooms.join('\n')) : null, area_query: slug};
+            title: scrub(h1.innerText.trim()), location: scrub(location), rooms: rooms.length ? scrub(rooms.join('\n')) : null, area_query: slug,
+            listing_type: kind};
   }
 
   function failed(why) {
@@ -167,7 +169,7 @@
         let got;
         try { got = await get(url); } catch (e) { if (e instanceof Stop) throw e; failed(`results page ${n}: ${e.message}`); continue; }
         if (got.res.status !== 200 || !new URL(got.res.url).pathname.startsWith(A.path)) { failed(`results page ${n}: HTTP ${got.res.status} at ${new URL(got.res.url).pathname}`); continue; }
-        const {cards, skipped} = cardsOf(await render(got.html), A.slug, A.seen);
+        const {cards, skipped} = cardsOf(await render(got.html), A.slug, A.seen, A.kind);
         A.skipped += skipped;
         if (!cards.length) { A.resultsEnded = true; failed(`results page ${n}: no cards`); continue; }
         A.streak = 0;
@@ -183,7 +185,7 @@
         A.pageIndex++;
         let got;
         try { got = await get(card.url); } catch (e) { if (e instanceof Stop) throw e; failed(`listing ${card.source_id}: ${e.message}`); continue; }
-        const record = got.res.status === 200 ? pageOf(await render(got.html), card.source_id, A.seen, A.slug) : null;
+        const record = got.res.status === 200 ? pageOf(await render(got.html), card.source_id, A.seen, A.slug, A.kind) : null;
         if (!record) { failed(`listing ${card.source_id}: ${got.res.status === 200 ? 'no title or details' : `HTTP ${got.res.status}`}`); continue; }
         A.streak = 0;
         A.pages.push(record);
@@ -227,7 +229,9 @@
 
   window.PM = {
     area({slug, path, seen, exclude = []}) {
-      S.area = {slug, path, seen, exclude: new Set(exclude.map(String)), ids: new Set(), cards: [], pages: [], failures: [],
+      // D102: the results path says what the run collects; rentals are /enoikiaseis-katoikies/<area>
+      const kind = /enoikiaseis/.test(path) ? 'rent' : 'sale';
+      S.area = {slug, path, seen, kind, exclude: new Set(exclude.map(String)), ids: new Set(), cards: [], pages: [], failures: [],
                 resultPagesDone: 0, resultsEnded: false, pageIndex: 0, skipped: 0, dupes: 0, streak: 0,
                 startedAt: new Date().toISOString(), startedMs: Date.now(), endedAt: null};
       S.stopped = null;
@@ -247,7 +251,7 @@
         const id = String(raw);
         if (A.ids.has(id)) continue;
         A.ids.add(id);
-        A.cards.push({source: 'spitogatos', source_id: id, url: `${BASE}/aggelia/${id}`, area_query: A.slug, card_text: '', photo_url: null, seen: A.seen, refetch: true});
+        A.cards.push({source: 'spitogatos', source_id: id, url: `${BASE}/aggelia/${id}`, area_query: A.slug, listing_type: A.kind, card_text: '', photo_url: null, seen: A.seen, refetch: true});
       }
       return status();
     },
@@ -259,9 +263,10 @@
     save({pagesOnly = false} = {}) {
       const A = S.area;
       if (status().contactLeftovers) return {error: 'contact details left after the scrub; nothing saved'};
-      if (!pagesOnly) download(`cards_${A.slug}_${A.seen}.jsonl`, A.cards);
-      download(`pages_${A.slug}_${A.seen}.jsonl`, A.pages);
-      return {saved: [`cards_${A.slug}_${A.seen}.jsonl`, `pages_${A.slug}_${A.seen}.jsonl`], cards: A.cards.length, pages: A.pages.length,
+      const stem = A.kind === 'rent' ? `rent_${A.slug}` : A.slug;  // rental files never collide with the sale files of the same day
+      if (!pagesOnly) download(`cards_${stem}_${A.seen}.jsonl`, A.cards);
+      download(`pages_${stem}_${A.seen}.jsonl`, A.pages);
+      return {saved: [`cards_${stem}_${A.seen}.jsonl`, `pages_${stem}_${A.seen}.jsonl`], cards: A.cards.length, pages: A.pages.length,
               startedAt: A.startedAt, endedAt: A.endedAt, failures: A.failures};
     },
     // Checks for the first page only: the same card read live and from fetched HTML, and a page's shape.

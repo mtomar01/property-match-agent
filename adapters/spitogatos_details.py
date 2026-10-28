@@ -130,6 +130,8 @@ def parse_details(record: dict) -> DetailFields:
         f["old_price_eur"] = prices[1]
     if any("Συζητήσιμη" in v for v in table.get("Τιμή", [])):
         x["negotiable"] = True
+    if any("μήνα" in v for v in table.get("Τιμή", [])):  # a rental's price is a month's rent (D102)
+        x["monthly"] = True
 
     size = first("Εμβαδόν")
     if size and AREA.match(size):

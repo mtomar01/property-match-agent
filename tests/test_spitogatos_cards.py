@@ -66,3 +66,12 @@ def test_ground_floor_badge_and_new_build():
 def test_greek_numbers():
     assert _number("1.760") == 1760
     assert _number("105,20") == 105.2
+
+
+def test_a_rental_card_reads_its_monthly_price_and_keeps_its_kind():
+    """D102: a rental card's price line ends "/ μήνα"; the collector's listing_type rides on the card."""
+    card = dict(CARD, listing_type="rent", card_text=CARD["card_text"].replace("€185.000\n\n€199.000", "€650 / μήνα"))
+    listing = parse_card(card, date(2026, 10, 29))
+    assert listing.listing_type == "rent" and listing.price_eur == 650 and listing.price_history == []
+    assert parse_card(CARD, date(2026, 10, 20)).listing_type == "sale"  # an older card without the field is a sale
+

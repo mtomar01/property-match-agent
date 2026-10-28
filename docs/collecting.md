@@ -78,6 +78,28 @@ Code reads each page's table and features, Haiku 5.5 reads each description (pro
 
 A page saved twice (a refetch with `PM.only()`) keeps one record: the copy with its title and badges, then the newest (D70).
 
+## Rentals (D102)
+
+The same method, the same five areas, the rental results instead of the sale results. The script reads the kind from the path: `/enoikiaseis-katoikies/<area>` is a rental run, and every card and page it saves carries `listing_type: "rent"`, which the build keeps. The files are named `cards_rent_<slug>_<date>.jsonl` and `pages_rent_<slug>_<date>.jsonl`, so they never collide with the sale files of the same day. A rental's price line ends "/ μήνα"; the card test and the page reader accept it, and the price is the month's rent (`price_per_m2` is then €/m² a month). The hard-limit filter already matches the listing type to the intent, so a sale search never sees a rental and the other way round.
+
+**The pilot first:** two rentals from each area, ten in all, read by hand before the full run.
+
+```js
+PM.area({slug: 'aigaleo', path: '/enoikiaseis-katoikies/aigaleo', seen: '<YYYY-MM-DD>'})
+PM.run({resultPages: 1, listings: 2, pages: 2})
+await PM.wait(45)
+PM.save()
+```
+
+Then the other four areas the same way (the site spells Kypseli `kipseli`; check each rental results URL through the site's own search first, as for sales, and note it in the run log). Build the ten into their own file, never into the sale snapshot:
+
+```bash
+uv run python -m adapters.page_snapshot --pages 'data/private/collect/pages_rent_*.jsonl' \
+  --check-cards 'data/private/collect/cards_rent_*.jsonl' --out data/private/snapshot_rent_pilot_<YYYY-MM-DD>.jsonl
+```
+
+Check on each of the ten: the price is the month's rent and `monthly` is in the extras, the size, floor, bedrooms and area read right, and the page agrees with its card. Also note what a rental page says that a sale page does not (furnished, available from, deposit, pets, bills included, minimum term) and in which section, so the fields can be decided before the 1,000. Go on to the full run (7 result pages, 200 listings per area, as for sales) only on Mike's go after the ten are read.
+
 ## Step 4: run the app on it
 
 ```bash

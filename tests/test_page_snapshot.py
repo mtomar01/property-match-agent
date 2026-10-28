@@ -125,3 +125,36 @@ def test_a_refetched_page_replaces_the_older_copy_without_badges(tmp_path, monke
     monkeypatch.setattr(page_snapshot, "read_one", lambda *a, **k: {"raw": None, "cached": True})
     summary = page_snapshot.build([pages], None, tmp_path / "out.jsonl")
     assert summary["listings"] == 1 and summary["page_only"] == 1 and summary["refused"] == []
+
+
+def test_a_rental_run_builds_rentals_that_a_sale_search_never_sees(tmp_path, monkeypatch):
+    """D102: the collector marks a rental run on every record; the build keeps it; the price line is a month's rent;
+    the hard-limit filter, which already matches the listing type to the intent, keeps rentals out of a sale search."""
+    import json
+
+    from adapters import page_snapshot
+    from core.filters import apply_hard_limits
+    from core.models import Criteria, HardLimits
+
+    page = {"source_id": "2000000001", "url": "https://www.spitogatos.gr/aggelia/2000000001", "seen": "2026-10-29", "area_query": "peristeri",
+            "listing_type": "rent", "title": "Διαμέρισμα, 70τ.μ.", "location": "Μπουρνάζι, Περιστέρι (Αθήνα - Δυτικά Προάστια)",
+            "rooms": "2 υ/δ\n1 μπ", "photo_url": None,
+            "sections": {"Περιγραφή": "Επιπλωμένο, διαθέσιμο από 1/12.",
+                         "Χαρακτηριστικά": "Τιμή\n€650 / μήνα\nΕμβαδόν\n70τ.μ.\nΌροφος\n1ος\nΈτος κατασκευής\n1985\n"
+                                           "Δημοσίευση αγγελίας\n20/10/2026"},
+            "crossed": {}}
+    pages = tmp_path / "pages_rent_peristeri.jsonl"
+    pages.write_text(json.dumps(page, ensure_ascii=False) + "\n", encoding="utf-8")
+    monkeypatch.setattr(page_snapshot, "read_one", lambda *a, **k: {"raw": None, "cached": True})
+    out = tmp_path / "snapshot_rent.jsonl"
+    summary = page_snapshot.build([pages], None, out)
+    assert summary["listings"] == 1 and summary["refused"] == []
+    row = json.loads(out.read_text(encoding="utf-8").splitlines()[0])
+    assert row["listing_type"] == "rent" and row["price_eur"] == 650 and row["size_m2"] == 70 and row["price_per_m2"] == 9  # €/m² a month
+    assert row["area"] == "Peristeri" and row["floor"]["class"] == "1" and row["year_built"] == 1985
+    listings = SnapshotAdapter(out).listings()
+    buying = Criteria(user_id="t", intent="buy", areas=["Peristeri"], hard_limits=HardLimits(max_price_eur=250000))
+    assert apply_hard_limits(listings, buying).matches == []  # a sale search never sees a rental, in code
+    renting = Criteria(user_id="t", intent="rent", areas=["Peristeri"], hard_limits=HardLimits(max_price_eur=700))
+    assert [l.listing_id for l in apply_hard_limits(listings, renting).matches] == ["spitogatos:2000000001"]
+

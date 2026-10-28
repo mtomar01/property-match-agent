@@ -155,7 +155,7 @@ def card_from_page(record: dict) -> dict:
     from adapters.spitogatos_details import parse_details
     table = parse_details(record).fields
     return {"listing_id": f"spitogatos:{record['source_id']}", "source": "spitogatos", "url": record["url"],
-            "listing_type": "sale", "first_seen": seen.isoformat(), "last_seen": seen.isoformat(),
+            "listing_type": record.get("listing_type") or "sale", "first_seen": seen.isoformat(), "last_seen": seen.isoformat(),
             "published": min(published, seen).isoformat() if published else None,
             "price_eur": table.get("price_eur"), "size_m2": table.get("size_m2") or spitogatos_cards._number(match.group("size")),
             "property_type": greek.normalise_property_type(match.group("type")), "bedrooms": bedrooms, "bathrooms": bathrooms,
