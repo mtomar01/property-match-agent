@@ -62,7 +62,7 @@ from core.models import Criteria, HardLimits, set_covered_areas
 from core.search import MAX_LIMIT, search
 from dedupe import finder
 from learning import deck, ladder, learned, patterns
-from learning.area_stats import AreaStats
+from learning.area_stats import AreaStats, for_search
 from learning.swipes import SwipeStore
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -227,7 +227,7 @@ class App:
             card = state.get("card")
             limits = (card or {}).get("hard_limits") or {}
             homes = None
-            if card and card.get("intent") != "rent":
+            if card:
                 try:
                     homes = len(deck.ranked_matches(self.adapter.listings(), interview.card(card)))
                 except (ValueError, TypeError, KeyError):  # a card the search rules can't read yet
@@ -299,7 +299,7 @@ class App:
         self.state.update(history=history, card=card, last=last)
         supply = out["tool_calls"][-1]["result"] if out["tool_calls"] else None
         return {**last, "card": card, **self._searched(card), "supply": supply,
-                "deck_ready": answer["action"] == "confirm" and card.get("intent") != "rent"}
+                "deck_ready": answer["action"] == "confirm"}  # rentals search too since D104
 
     def chat(self, text: str) -> dict:
         text = (text or "").strip()
@@ -321,8 +321,6 @@ class App:
     def criteria(self) -> Criteria:
         if not self.state["card"]:
             raise ValueError("tell the assistant what you're looking for first")
-        if self.state["card"].get("intent") == "rent":
-            raise ValueError("rentals aren't supported yet")
         return interview.card(self.state["card"])
 
     def learner(self, criteria: Criteria) -> learned.Learner | None:
@@ -332,7 +330,7 @@ class App:
         if self._learned and self._learned[0] == key:
             return self._learned[1]
         listings = self.adapter.listings()
-        model = learned.Learner.fit(verdicts, {l.listing_id: l for l in listings}, criteria, AreaStats.build(listings))
+        model = learned.Learner.fit(verdicts, {l.listing_id: l for l in listings}, criteria, for_search(listings, criteria))
         self._learned = (key, model)
         return model
 
@@ -386,7 +384,7 @@ class App:
         back = None
         if listing is not None:
             listings = self.adapter.listings()
-            back = deck.card(listing, self.criteria(), AreaStats.build(listings), last.deck_position, last.explore_card,
+            back = deck.card(listing, self.criteria(), for_search(listings, self.criteria()), last.deck_position, last.explore_card,
                              skipped=False, duplicates=self.duplicates, by_id={l.listing_id: l for l in listings})
         return {"card": back, "undone": last.decision, "swipes": self.swipes.stats(),
                 "since_checkin": len(self.swipes.verdicts()) - self.state["checkin_at"], "can_undo": bool(self.swipes.load())}
@@ -481,8 +479,6 @@ class App:
     # -- v1 routes ----------------------------------------------------------
 
     def search(self, card: dict, limit: int = 20) -> dict:
-        if card.get("intent") == "rent":
-            raise ValueError("rentals aren't supported yet")
         applied = search_card(card)
         limits = {k: v for k, v in applied["hard_limits"].items() if v not in (None, [])}
         preferences = [{k: v for k, v in p.items() if v is not None} for p in card.get("preferences") or []]

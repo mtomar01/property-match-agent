@@ -19,7 +19,10 @@ BEDROOM_MARGIN = 1  # ideally 1 bedroom searches 0 to 2
 # storage 93% and parking 91% state it; balcony and a recent renovation are rarely left unsaid when true (758 of the
 # 759 that mention a balcony have one). Move in ready (71%, the silent ones genuinely mixed) and metro minutes (19%)
 # stay wishes, and so does anything said with "ideally". One user's firm wish never loosens a stricter limit.
-MUST_HAVE = ("parking", "lift", "balcony", "storage")
+MUST_HAVE = ("parking", "lift", "balcony", "storage", "furnished")
+# D104: furnished is a must only in a rent search. 92% of pages tick or cross it, but the 23 October sale file was
+# built before the field existed, and a buyer's furniture is a separate deal anyway, so for a purchase it stays a wish.
+RENT_ONLY_MUSTS = ("furnished",)
 
 
 def hard_form(preference: dict) -> list[tuple[str, object]]:
@@ -46,6 +49,8 @@ def harden(raw: dict) -> dict:
     kept, moved = [], []
     for preference in raw.get("preferences") or []:
         targets = hard_form(preference) if preference.get("firm") else []
+        if preference.get("feature") in RENT_ONLY_MUSTS and raw.get("intent") != "rent":
+            targets = []
         types = preference.get("only_for_types") or []
         if isinstance(types, str):  # the interview writes them comma separated (D86)
             types = [t for t in types.replace(",", " ").split() if t]

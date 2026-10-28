@@ -70,12 +70,13 @@ class AreaStats:
     area: dict[str, list[int]] = field(default_factory=dict)
     days: dict[str, list[int]] = field(default_factory=dict)
     homes: dict[str, int] = field(default_factory=dict)
+    kind: str = "sale"  # sale or rent: a rent per m² is only ever compared with other rents (D104)
 
     @classmethod
-    def build(cls, listings: list[Listing]) -> "AreaStats":
-        stats = cls()
+    def build(cls, listings: list[Listing], kind: str = "sale") -> "AreaStats":
+        stats = cls(kind=kind)
         for l in listings:
-            if l.listing_type != "sale" or not l.area:
+            if l.listing_type != kind or not l.area:
                 continue
             stats.homes[l.area] = stats.homes.get(l.area, 0) + 1
             days = days_on_market(l)
@@ -93,6 +94,8 @@ class AreaStats:
 
     def typical(self, listing: Listing) -> Typical | None:
         """The most specific typical €/m² with enough homes behind it, or None."""
+        if listing.listing_type != self.kind:
+            return None
         key = similar_key(listing)
         if key and len(self.similar.get(key, [])) >= MIN_SIMILAR:
             values = self.similar[key]
@@ -157,3 +160,9 @@ def market_lines(listing: Listing, stats: AreaStats, today: date | None = None) 
         lines.append({"text": text, "feature": "days_on_market", "value": days,
                       **({"previous": previous} if cut else {})})
     return lines
+
+
+def for_search(listings: list[Listing], criteria) -> AreaStats:
+    """The stats a search compares against: rents with rents, sales with sales (D104)."""
+    from core.filters import INTENT_TO_LISTING_TYPE
+    return AreaStats.build(listings, INTENT_TO_LISTING_TYPE.get(getattr(criteria, "intent", None) or "buy", "sale"))

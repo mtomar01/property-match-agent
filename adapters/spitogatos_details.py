@@ -162,10 +162,11 @@ def parse_details(record: dict) -> DetailFields:
         x["under_construction"] = True
     # "Available from" a date after the page was read, on a home built this year
     # or later (or with no year), means it's still being built: that date is
-    # the expected completion (D31).
+    # the expected completion (D31). On a rental the same row is the day the tenancy can start, so the rule is
+    # skipped there (D104): a rental free from next month is not a flat still being built.
     available = DATE.search(first("Διαθέσιμο από") or "")
     seen = date.fromisoformat(record["seen"]) if record.get("seen") else None
-    if available and seen:
+    if available and seen and record.get("listing_type") != "rent":
         ready = date(int(available.group(3)), int(available.group(2)), int(available.group(1)))
         if ready > seen and (f.get("year_built") is None or f["year_built"] >= seen.year - 1):
             x["under_construction"] = True
@@ -237,6 +238,12 @@ def parse_details(record: dict) -> DetailFields:
             f["storage"] = False
         if "Parking" in crossed.get(EXTERIOR, []) and "parking" not in f:
             f["parking"] = "none"
+    # Furnished, ticked or crossed out in the interior list (D104). An extra, not a field the extraction eval scores:
+    # the description reading never fills it, so the page's own tick is the whole answer.
+    if "Επιπλωμένο" in interior:
+        x["furnished"] = True
+    elif "Επιπλωμένο" in crossed.get(INTERIOR, []):
+        x["furnished"] = False
 
     flags = []
     if "Οροφοδιαμέρισμα" in construction:

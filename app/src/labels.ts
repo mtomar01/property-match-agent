@@ -39,13 +39,16 @@ export const LABELS = {
     likeRate: (pct: number) => `${pct}% like rate`,
     checkinIn: (n: number) => `check-in in ${n}`,
     limitsHint: "Hard limits are checked in code and never broken. Wishes only rank. To change anything, tell Tispi in the chat.",
-    rentNotYet: "Rentals aren't supported yet; the deck is for buying.",
     covers: (areas: string[], data: string) => `Covers ${areas.join(", ")} · ${data}`,
     // the chat
     chatNew: "Tell Tispi what you're looking for",
     chatChange: "Change anything by chat",
     chatIntro: "Write the way you'd tell a friend, in Greek or English. It asks only what it needs, then the homes come up.",
-    starters: ["A two bedroom flat in Egaleo, around 200k, with a balcony.", "Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.", "Something in Chaidari with a lift, up to 220k."],
+    starters: ["A two bedroom flat in Egaleo, around 200k, with a balcony.", "Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.", "A furnished one bedroom in Kypseli, up to €700 a month."],
+    // D104: two chips that start a search, and two answers to "to live in or as an investment?". A tap sends the
+    // words below as the user's own message, so the assistant still decides everything from the chat.
+    buyChip: "Buy", rentChip: "Rent", buySays: "I want to buy", rentSays: "I want to rent",
+    liveChip: "To live in", investChip: "As an investment",
     thinking: "Thinking…",
     yourMessage: "Your message",
     writeHere: "Write here…",
@@ -145,14 +148,17 @@ export const LABELS = {
     energy: (c: string) => `energy ${c}`,
     m2: "m²",
     perM2: "/m²",
+    perMonth: " / month",
+    furnished: "furnished",
+    unfurnished: "unfurnished",
     rent: "rent ",
     priceRange: (lo: string, hi: string) => `${lo} to ${hi}`,
     upTo: (x: string) => `up to ${x}`,
     from: (x: string) => `from ${x}`,
     types: { apartment: "apartment", maisonette: "maisonette", studio: "studio", detached_house: "house", loft: "loft", building: "whole building", apartment_complex: "apartment complex" } as Record<string, string>,
-    musts: { parking: "parking", lift: "a lift", balcony: "a balcony", storage: "a storage room" } as Record<string, string>,
+    musts: { parking: "parking", lift: "a lift", balcony: "a balcony", storage: "a storage room", furnished: "furnished" } as Record<string, string>,
     features: { price_eur: "Price", size_m2: "Size", bedrooms: "Bedrooms", bathrooms: "Bathrooms", floor_level: "Floor", year_built: "Built", renovated_year: "Renovated",
-      energy_class: "Energy class", metro_walk_min: "Metro on foot", balcony: "Balcony", lift: "Lift", parking: "Parking", storage: "Storage room", dual_aspect: "Dual aspect",
+      energy_class: "Energy class", metro_walk_min: "Metro on foot", balcony: "Balcony", lift: "Lift", parking: "Parking", storage: "Storage room", furnished: "Furnished", dual_aspect: "Dual aspect",
       corner: "Corner", whole_floor: "Whole floor", move_in_ready: "Ready to move in", price_per_m2: "€/m²" } as Record<string, string>,
     weights: ["a must", "strong wish", "would like", "a bonus"],
     renovationProject: "A renovation project",
@@ -214,12 +220,13 @@ export const LABELS = {
     likeRate: (pct: number) => `${pct}% ναι`,
     checkinIn: (n: number) => `ερώτηση σε ${n}`,
     limitsHint: "Τα όρια ελέγχονται από κώδικα και δεν παραβιάζονται ποτέ. Οι επιθυμίες μόνο κατατάσσουν. Για να αλλάξεις κάτι, πες το στο Tispi στο chat.",
-    rentNotYet: "Οι ενοικιάσεις δεν υποστηρίζονται ακόμη· η τράπουλα είναι για αγορά.",
     covers: (areas: string[], data: string) => `Καλύπτει ${areas.join(", ")} · ${data}`,
     chatNew: "Πες στο Tispi τι ψάχνεις",
     chatChange: "Άλλαξε ό,τι θέλεις από το chat",
     chatIntro: "Γράψε όπως θα το έλεγες σε φίλο, ελληνικά ή αγγλικά. Ρωτάει μόνο ό,τι χρειάζεται και μετά έρχονται τα σπίτια.",
-    starters: ["Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.", "Τριάρι στο Χαϊδάρι με ασανσέρ, γύρω στις 220.", "A two bedroom flat in Egaleo, around 200k, with a balcony."],
+    starters: ["Ψάχνω δυάρι στο Περιστέρι, μέχρι 160.000.", "Τριάρι στο Χαϊδάρι με ασανσέρ, γύρω στις 220.", "Επιπλωμένο δυάρι για ενοικίαση στην Κυψέλη, έως 700 τον μήνα."],
+    buyChip: "Αγορά", rentChip: "Ενοικίαση", buySays: "Θέλω να αγοράσω", rentSays: "Θέλω να νοικιάσω",
+    liveChip: "Για να μείνω", investChip: "Ως επένδυση",
     thinking: "Σκέφτεται…",
     yourMessage: "Το μήνυμά σου",
     writeHere: "Γράψε εδώ…",
@@ -314,14 +321,17 @@ export const LABELS = {
     energy: (c: string) => `ενεργ. ${c}`,
     m2: "τ.μ.",
     perM2: "/τ.μ.",
+    perMonth: " / μήνα",
+    furnished: "επιπλωμένο",
+    unfurnished: "χωρίς έπιπλα",
     rent: "ενοικίαση ",
     priceRange: (lo: string, hi: string) => `${lo} έως ${hi}`,
     upTo: (x: string) => `έως ${x}`,
     from: (x: string) => `από ${x}`,
     types: { apartment: "διαμέρισμα", maisonette: "μεζονέτα", studio: "γκαρσονιέρα", detached_house: "μονοκατοικία", loft: "loft", building: "ολόκληρο κτίριο", apartment_complex: "συγκρότημα" } as Record<string, string>,
-    musts: { parking: "πάρκινγκ", lift: "ασανσέρ", balcony: "μπαλκόνι", storage: "αποθήκη" } as Record<string, string>,
+    musts: { parking: "πάρκινγκ", lift: "ασανσέρ", balcony: "μπαλκόνι", storage: "αποθήκη", furnished: "επιπλωμένο" } as Record<string, string>,
     features: { price_eur: "Τιμή", size_m2: "Εμβαδόν", bedrooms: "Υπνοδωμάτια", bathrooms: "Μπάνια", floor_level: "Όροφος", year_built: "Κατασκευή", renovated_year: "Ανακαίνιση",
-      energy_class: "Ενεργειακή κλάση", metro_walk_min: "Μετρό με τα πόδια", balcony: "Μπαλκόνι", lift: "Ασανσέρ", parking: "Πάρκινγκ", storage: "Αποθήκη", dual_aspect: "Διαμπερές",
+      energy_class: "Ενεργειακή κλάση", metro_walk_min: "Μετρό με τα πόδια", balcony: "Μπαλκόνι", lift: "Ασανσέρ", parking: "Πάρκινγκ", storage: "Αποθήκη", furnished: "Επιπλωμένο", dual_aspect: "Διαμπερές",
       corner: "Γωνιακό", whole_floor: "Ολόκληρος όροφος", move_in_ready: "Έτοιμο για να μπεις", price_per_m2: "€/τ.μ." } as Record<string, string>,
     weights: ["απαραίτητο", "ισχυρή επιθυμία", "θα ήθελα", "μπόνους"],
     renovationProject: "Για ανακαίνιση",
@@ -421,10 +431,16 @@ const floorWord = (level: number, L: Labels) => (level <= 0 ? L.ground : level <
 // "€90,000 to €220,000", "up to €250,000", "from €90,000": the price as a phrase, or nothing when none is set.
 export function priceText(min: number | null | undefined, max: number | null | undefined, intent?: string | null, L: Labels = LABELS.en): string {
   const rent = intent === "rent" ? L.rent : "";
-  if (min != null && max != null) return `${rent}${L.priceRange(money(min, L), money(max, L))}`;
-  if (max != null) return `${rent}${L.upTo(money(max, L))}`;
-  if (min != null) return `${rent}${L.from(money(min, L))}`;
+  const month = intent === "rent" ? L.perMonth : "";  // a rent is a month's price (D104)
+  if (min != null && max != null) return `${rent}${L.priceRange(money(min, L), money(max, L))}${month}`;
+  if (max != null) return `${rent}${L.upTo(money(max, L))}${month}`;
+  if (min != null) return `${rent}${L.from(money(min, L))}${month}`;
   return "";
+}
+
+// A home's own price: "€800 / month" for a rental, "€185,000" for a sale.
+export function homePrice(value: number | null | undefined, listingType: string | null | undefined, L: Labels = LABELS.en): string {
+  return `${money(value, L)}${listingType === "rent" && value != null ? L.perMonth : ""}`;
 }
 
 // The search is the title (D90, D91): the areas on one line, the price under them, in place of a logo.
@@ -444,7 +460,11 @@ export function searchTitle(s: SearchSummary, L: Labels = LABELS.en): string {
   const rent = s.intent === "rent" ? L.rent : "";
   const lo = s.min_price_eur, hi = s.max_price_eur;
   let price = "";
-  if (L.lang === "el") {
+  if (s.intent === "rent") {  // a monthly rent in full, "€350–700 / month": thousands would read 0.7k (D104)
+    const n = (v: number) => v.toLocaleString(L.locale);
+    if (lo != null && hi != null) price = L.lang === "el" ? `${n(lo)}–${n(hi)} €${L.perMonth}` : `€${n(lo)}–${n(hi)}${L.perMonth}`;
+    else if (hi != null) price = L.upTo(money(hi, L)) + L.perMonth;
+  } else if (L.lang === "el") {
     if (lo != null && hi != null) price = `${shortK(lo)}–${shortK(hi)} χιλ. €`;
     else if (hi != null) price = `έως ${shortK(hi)} χιλ. €`;
     else if (lo != null) price = `από ${shortK(lo)} χιλ. €`;
@@ -486,7 +506,8 @@ export function barText(card: Card, searched: Partial<HardLimits>, L: Labels = L
     parts.push(searched.max_floor_without_lift === 0 ? L.groundOrLift : L.liftAbove(searched.max_floor_without_lift));
   }
   if (searched.exclude_conditions?.length) parts.push(L.noConditions(searched.exclude_conditions.map((c) => c.replace("_", " ")).join(L.or)));
-  for (const f of searched.must_have ?? []) parts.push(L.withMust(L.musts[f] ?? f));
+  // "with parking", but plain "furnished": the word is already the limit (D104)
+  for (const f of searched.must_have ?? []) parts.push(f === "furnished" ? L.musts[f] : L.withMust(L.musts[f] ?? f));
   if (searched.min_bathrooms != null) parts.push(L.bathroomsMin(searched.min_bathrooms));
   if (searched.min_renovated_year != null) parts.push(L.renovatedFrom(searched.min_renovated_year));
   const fl = searched.min_floor_level, fh = searched.max_floor_level;

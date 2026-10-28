@@ -19,7 +19,7 @@ COPY . .
 COPY --from=app /build/app/dist ./app/dist
 ENV PM_HOST=0.0.0.0 \
     PORT=8765 \
-    PM_SNAPSHOT=/srv/data/private/deploy/snapshot.jsonl \
+    PM_SNAPSHOT=/srv/data/private/deploy/snapshot.jsonl:/srv/data/private/deploy/rentals.jsonl \
     TISPI_IDLE_MINUTES=15 \
     TISPI_TURNS_PER_VISITOR=30 \
     TISPI_TURNS_PER_DAY=150

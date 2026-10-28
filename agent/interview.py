@@ -34,7 +34,7 @@ from core.models import ORDER_BY, Condition, Criteria, HardLimits, Intent, Prefe
 
 ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = ROOT / "prompts"
-PROMPT_VERSION = "interview_v13"  # D98
+PROMPT_VERSION = "interview_v14"  # D104: rentals open, furnished
 MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 2000
 MAX_TOOL_CALLS = 3  # per reply; then the model has to answer (spec section 7)
@@ -47,7 +47,7 @@ TOPICS = ("intent", "budget", "budget_ceiling", "total_budget", "budget_includes
           "confirm_area", "bedrooms", "rooms_meaning", "size", "property_type", "floor", "stairs_requirement",
           "year_built", "renovation", "metro_minutes", "energy_class", "parking", "balcony", "confirm_investor_mode",
           "priorities", "narrowing", "ease_limit", "purpose", "suggest_change", "bathrooms", "make_limit", "other")
-UNSUPPORTED = ("rent",)  # rentals come later (Mike, D54)
+UNSUPPORTED = ("rent",)  # rentals were refused until D104; the field stays in the reply format so older prompts still render
 WIDE = 50  # more matches than this: one optional narrowing question (Mike, D49)
 THIN = 5  # fewer matches than this: suggest easing one limit a little, and ask (Mike, D50)
 EASE = 0.10  # "a little": price up or size down by 10%, one bedroom fewer, one more covered area
@@ -469,7 +469,7 @@ def reply(client, messages: list[dict], listings: list, today: str, model: str =
             out["error"] = f"no JSON answer (stop reason {response['stop_reason']})"
             return out
         out["output"]["asking_about"] = tags(out["output"].get("asking_about"))
-        problem = card_problem(out["output"]["criteria"], out["output"].get("action"))
+        problem = card_problem(out["output"]["criteria"], out["output"].get("action"), version)
         if problem and len(repairs) < MAX_REPAIRS:
             repairs.append(problem)
             history.append({"role": "user", "content": repair_message(problem)})
@@ -491,9 +491,13 @@ def tags(value) -> list[str]:
     return out
 
 
-def card_problem(raw: dict, action: str | None = None) -> str | None:
+def _number(version: str) -> int:
+    return int(version.rsplit("_v", 1)[1])
+
+
+def card_problem(raw: dict, action: str | None = None, version: str = PROMPT_VERSION) -> str | None:
     """Why the search couldn't run on this card, or None if it can."""
-    if action == "confirm" and raw.get("intent") in UNSUPPORTED:
+    if action == "confirm" and raw.get("intent") in UNSUPPORTED and _number(version) < 14:  # rentals open from v14 (D104)
         return "rentals aren't supported yet: say so and don't confirm a rental card (D54)"
     if action == "confirm" and not (raw.get("hard_limits") or {}).get("max_price_eur"):
         return "a card shown for confirmation needs a top price (max_price_eur): use the user's, or ask for it"  # D53

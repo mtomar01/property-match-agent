@@ -16,7 +16,7 @@ from datetime import date
 from core.filters import apply_hard_limits
 from core.models import Criteria, DuplicateCluster, Listing
 from core.reasons import why_this_one
-from learning.area_stats import AreaStats, days_on_market, market_lines
+from learning.area_stats import AreaStats, days_on_market, for_search, market_lines
 from learning.learned import Learner
 from ranking.rules import score
 
@@ -146,7 +146,7 @@ def build(listings: list[Listing], criteria: Criteria, swiped_ids: set[str], sta
     swiped, skipped = group(swiped_ids), group(skipped_ids) - group(swiped_ids)
     fresh = [l for l in matches if l.listing_id not in swiped and l.listing_id not in skipped]
     again = [l for l in matches if l.listing_id in skipped]
-    stats = AreaStats.build(listings)
+    stats = for_search(listings, criteria)
     by_id = {l.listing_id: l for l in listings} if duplicates else None
     # a strict order (D98) is never interrupted by an explore card: the user asked to see the homes in this order
     ordered = [(l, False) for l in fresh] if criteria.order_by else order(fresh, seed)

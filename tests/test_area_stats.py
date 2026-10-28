@@ -102,3 +102,15 @@ def test_a_floor_reason_offers_a_limit_on_the_floor_the_user_turned_down():
 def test_the_narrowing_line_is_counted_by_code():
     homes = [home(i, size_m2=60, lift=True) for i in range(3)] + [home(9, parking="garage")]
     assert ladder.narrowing_line(homes, "en").startswith("Of the 4 homes in your search, 3 are under 70 m², 1 has parking and 3 have a lift")
+
+
+def test_a_rent_is_compared_with_rents_never_with_sale_prices():
+    # D104: a €9/m² rent next to a €2,000/m² sale median would read "100% under the typical"
+    from learning.area_stats import for_search
+    sales = [home(i) for i in range(8)]
+    rents = [home(200 + i, listing_type="rent", price_eur=700 + 10 * i) for i in range(8)]
+    rental = home(300, listing_type="rent", price_eur=600)
+    assert AreaStats.build(sales + rents).typical(rental) is None  # sale stats say nothing about a rent
+    renting = Criteria(user_id="t", intent="rent", areas=["Egaleo"], hard_limits=HardLimits(max_price_eur=800))
+    typical = for_search(sales + rents, renting).typical(rental)
+    assert typical is not None and typical.homes == 8 and typical.per_m2 < 20

@@ -30,7 +30,7 @@ PropertyType = Literal[
     "apartment", "studio", "maisonette", "detached_house", "loft", "building", "apartment_complex"
 ]
 Condition = Literal["needs_work", "unfinished", "new_build", "renovated", "good"]
-MustHave = Literal["parking", "lift", "balcony", "storage"]  # D79: yes/no features listings reliably state
+MustHave = Literal["parking", "lift", "balcony", "storage", "furnished"]  # D79: yes/no features listings reliably state; furnished for rentals (D104)
 EnergyClass = Literal["A+", "A", "B+", "B", "C", "D", "E", "F", "G", "pending", "exempt"]
 ENERGY_LETTERS = ("A+", "A", "B+", "B", "C", "D", "E", "F", "G")
 HeatingType = Literal["independent", "central", "none"]
@@ -149,6 +149,7 @@ class Listing(_Strict):
     lift: bool | None = None
     balcony: bool | None = None
     storage: bool | None = None
+    furnished: bool | None = None  # Επιπλωμένο ticked or crossed out on the page (D104)
     flags: list[Flag] = Field(default_factory=list)
 
     area: Area | None = None
@@ -230,6 +231,8 @@ class Listing(_Strict):
             "parking": self.parking,  # the hard limits a user's outright wishes become are checked on these (D79)
             "balcony": self.balcony,
             "storage": self.storage,
+            "furnished": self.furnished,
+            "listing_type": self.listing_type,  # a rent is a month's price (D104)
             "bathrooms": self.bathrooms,
             "metro_walk_min": self.metro_walk_min,
             "synthetic": self.synthetic,
@@ -296,13 +299,13 @@ class HardLimits(_Strict):
 
 PreferenceFeature = Literal[
     "price_eur", "size_m2", "bedrooms", "bathrooms", "floor_level", "year_built", "renovated_year",
-    "energy_class", "metro_walk_min", "balcony", "lift", "parking", "storage",
+    "energy_class", "metro_walk_min", "balcony", "lift", "parking", "storage", "furnished",
     "dual_aspect", "corner", "whole_floor", "move_in_ready", "price_per_m2",
 ]
 
 
 # D53; move_in_ready (D73) is renovated, new build or good condition, against needs work or unfinished
-YES_NO_FEATURES = ("balcony", "lift", "parking", "storage", "dual_aspect", "corner", "whole_floor", "move_in_ready")
+YES_NO_FEATURES = ("balcony", "lift", "parking", "storage", "furnished", "dual_aspect", "corner", "whole_floor", "move_in_ready")
 MOVE_IN_READY = ("renovated", "new_build", "good")
 
 

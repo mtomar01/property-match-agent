@@ -135,6 +135,8 @@ export interface Summary {
   first_seen: string;
   previous_price_eur: number | null;
   synthetic: boolean;
+  listing_type?: "sale" | "rent";  // a rent's price is a month's (D104)
+  furnished?: boolean | null;  // the page's tick or cross (D104)
 }
 
 export interface MarketLine {

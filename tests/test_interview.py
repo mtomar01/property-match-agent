@@ -345,7 +345,9 @@ def test_around_is_scored_as_what_the_model_caught_and_a_silent_switch_is_loosen
 
 
 def test_rentals_are_refused_in_code_and_the_eval_checks_it_was_said():
-    assert "rentals" in interview.card_problem(card(intent="rent", max_price_eur=800), "confirm")
+    # up to v13 a rental card was refused (D54); from v14 it is searched like any other (D104)
+    assert "rentals" in interview.card_problem(card(intent="rent", max_price_eur=800), "confirm", "interview_v13")
+    assert interview.card_problem(card(intent="rent", max_price_eur=800), "confirm", "interview_v14") is None
     chat = {"must_ask": [], "must_say": ["rent_not_supported"], "must_not_invent": [], "expected_criteria": card(intent="rent")}
     said = dict(answer("Δεν υποστηρίζουμε ακόμα ενοικιάσεις. Θέλετε να δούμε αγορά;", criteria=card(intent="rent")), unsupported=["rent"])
     log = [{"role": "user", "text": "Ενοικίαση στο Χαϊδάρι, 700-800.", "source": "script", "language": "el"},

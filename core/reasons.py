@@ -26,7 +26,7 @@ TYPICAL_MARGIN = 0.05  # "under the typical price": at least 5% under the area's
 TYPICAL_MIN = 5  # a typical price needs at least five listings behind it
 
 FEATURE_WORDS = {
-    "balcony": "Balcony", "lift": "Lift", "parking": "Parking", "storage": "Storage room",
+    "balcony": "Balcony", "lift": "Lift", "parking": "Parking", "storage": "Storage room", "furnished": "Furnished",
     "dual_aspect": "Dual aspect", "corner": "Corner flat", "whole_floor": "Whole floor",
 }
 CONDITION_WORDS = {"renovated": "renovated", "new_build": "new build", "good": "in good condition",

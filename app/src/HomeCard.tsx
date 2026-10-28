@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { DeckCard, Listed } from "./api";
-import { Labels, floorText, money, useLabels } from "./labels";
+import { Labels, floorText, homePrice, money, useLabels } from "./labels";
 
 // One home, in reading order (design system, HomeCard): the photo, the price with €/m² beside it, the facts line,
 // up to two reasons, the market list with its marks, then the portal link. Every line is computed by code
@@ -13,7 +13,7 @@ export function HomeCard({ card }: { card: DeckCard }) {
       <div className="home-body">
         {card.skipped_before && <p className="hint">{L.skippedBefore}</p>}
         <div className="home-head">
-          <strong className="price">{money(card.price_eur, L)}</strong>
+          <strong className="price">{homePrice(card.price_eur, card.listing_type, L)}</strong>
           <span className="per-m2">{card.price_per_m2 ? `${card.price_per_m2.toLocaleString(L.locale)} €${L.perM2}` : ""}</span>
         </div>
         <p className="facts">
@@ -25,6 +25,7 @@ export function HomeCard({ card }: { card: DeckCard }) {
             card.year_built ? L.built(card.year_built) : null,
             card.renovated_year ? L.renovated(card.renovated_year) : null,
             card.energy_class ? L.energy(card.energy_class) : null,
+            card.listing_type === "rent" && card.furnished != null ? (card.furnished ? L.furnished : L.unfurnished) : null,
           ].filter(Boolean).join(" · ")}
         </p>
         <ul className="reasons">

@@ -36,7 +36,7 @@ from core.models import Criteria, HardLimits, Intent, Preference, set_covered_ar
 from core.search import MAX_LIMIT, search
 from dedupe import finder
 from learning import deck, learned, patterns
-from learning.area_stats import AreaStats
+from learning.area_stats import AreaStats, for_search
 from learning.swipes import SwipeStore
 
 CACHE = Path(__file__).resolve().parents[1] / "data" / "private" / "cache"
@@ -178,7 +178,7 @@ def next_cards(criteria: SearchCriteria, user_id: str = "me", limit: int = 10) -
     store = SwipeStore(user_id)
     swiped = store.load()
     listings, card = adapter().listings(), _criteria(criteria)
-    learner = learned.Learner.fit(store.verdicts(), {l.listing_id: l for l in listings}, card, AreaStats.build(listings))
+    learner = learned.Learner.fit(store.verdicts(), {l.listing_id: l for l in listings}, card, for_search(listings, card))
     return deck.build(listings, card, store.swiped_ids(), start_position=len(swiped),
                       limit=max(1, min(limit, MAX_LIMIT)), seed=len(store.verdicts()) // deck.EXPLORE_EVERY,
                       skipped_ids=store.skipped_ids(), learner=learner, duplicates=finder.index(duplicates()))

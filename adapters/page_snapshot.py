@@ -81,6 +81,7 @@ def to_listing(card: dict, record: dict, fields: dict, evidence: dict, details_e
     data = {k: v for k, v in card.items() if k in Listing.model_fields}
     data.update({name: fields.get(name) for name in SAME_FIELDS})
     data["flags"] = sorted(set(fields.get("flags") or []))
+    data["furnished"] = details_extra.get("furnished")  # the page's tick or cross, never a guess (D104)
     details = record["sections"]
     data["floor"] = Floor(raw=details_extra.get("floor_raw") or (card.get("floor") or {}).get("raw"),
                           floor_class=fields.get("floor_class")).model_dump(by_alias=True)

@@ -37,7 +37,7 @@ export function App() {
   const [searchedAs, setSearchedAs] = useState<Partial<HardLimits> | null>(null);
   const [wishes, setWishes] = useState<Preference[]>([]);
   const [ready, setReady] = useState(false);
-  const [unsupported, setUnsupported] = useState(false);
+  const [askingAbout, setAskingAbout] = useState<string[]>([]);  // the last reply's questions, for tap answers (D104)
   const [deck, setDeck] = useState<DeckData | null>(null);
   const [queue, setQueue] = useState<DeckCard[]>([]);
   const [checkin, setCheckin] = useState<Checkin | null>(null);
@@ -107,12 +107,12 @@ export function App() {
     setData(state.data);
     setAreas(state.areas);
     setSearches(state.searches);
-    setUnsupported(state.unsupported.includes("rent") || state.card?.intent === "rent");
+    setAskingAbout(state.asking_about ?? []);
     setDeck(null);
     setQueue([]);
     setCheckin(null);
     setError(null);
-    const deckReady = !!state.card && state.card.intent !== "rent" && (!!state.checkin || state.action === "confirm");
+    const deckReady = !!state.card && (!!state.checkin || state.action === "confirm");  // rentals too, since D104
     setReady(deckReady);
     setView(deckReady ? "deck" : "chat");
     if (deckReady) {
@@ -139,7 +139,7 @@ export function App() {
       setSearchedAs(reply.searched_as);
       setWishes(reply.wishes ?? []);
       setStats(reply.swipes);
-      setUnsupported(reply.unsupported.includes("rent") || reply.card.intent === "rent");
+      setAskingAbout(reply.asking_about ?? []);
       setCheckin(null);
       if (reply.deck_ready) {
         setReady(true);
@@ -278,8 +278,7 @@ export function App() {
 
         <main className="panes">
           <section className={`pane chat-pane ${view === "chat" ? "on" : ""}`} aria-label={L.chat}>
-            <Chat messages={messages} busy={busy === "chat"} error={error} compact={ready} intro={L.covers(areas, data)} onSend={send} />
-            {unsupported && <p className="hint center">{L.rentNotYet}</p>}
+            <Chat messages={messages} busy={busy === "chat"} error={error} compact={ready} intro={L.covers(areas, data)} askingAbout={askingAbout} onSend={send} />
           </section>
 
           {ready && (

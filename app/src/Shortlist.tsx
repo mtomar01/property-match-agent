@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Summary } from "./api";
-import { floorText, money, useLabels } from "./labels";
+import { floorText, homePrice, money, useLabels } from "./labels";
 
 type SortKey = "price_eur" | "price_per_m2" | "first_seen";
 
@@ -61,7 +61,7 @@ export function Shortlist({ homes }: { homes: Summary[] }) {
             {rows.map((h) => (
               <tr key={h.listing_id}>
                 <td className="num">
-                  {money(h.price_eur, L)}
+                  {homePrice(h.price_eur, h.listing_type, L)}
                   {h.previous_price_eur != null && h.price_eur != null && (
                     <span className={`change ${h.previous_price_eur > h.price_eur ? "down" : "up"}`}>{L.was(money(h.previous_price_eur, L))}</span>
                   )}

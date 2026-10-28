@@ -5,6 +5,9 @@ results can be repeated exactly. By default it serves the synthetic listings
 in data/synthetic/. Point PM_SNAPSHOT at a private file (data/private/...) to
 use real listings on your own machine.
 
+PM_SNAPSHOT can name several files separated by ":" (the sales and the rentals,
+D104); each is read in turn and an id that appears twice is refused.
+
 Every line is validated through the Listing model when loaded, so a snapshot
 with a phone number or an unknown field fails at start-up, not in front of a user.
 """
@@ -41,11 +44,16 @@ class SnapshotAdapter:
     name = "snapshot"
 
     def __init__(self, path: str | Path | None = None):
-        self.path = Path(path or os.environ.get("PM_SNAPSHOT") or DEFAULT_SNAPSHOT)
+        given = str(path or os.environ.get("PM_SNAPSHOT") or DEFAULT_SNAPSHOT)
+        self.paths = [Path(p) for p in given.split(os.pathsep) if p]
+        self.path = self.paths[0]
         self._listings: dict[str, Listing] = {}
-        self._load()
+        for one in self.paths:
+            self._load(one)
+        self.path = self.paths[0]
 
-    def _load(self) -> None:
+    def _load(self, path: Path) -> None:
+        self.path = path
         if not self.path.exists():
             raise SnapshotError(f"snapshot not found: {self.path}")
         with self.path.open(encoding="utf-8") as fh:

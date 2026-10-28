@@ -206,13 +206,16 @@ def test_an_old_single_search_state_becomes_the_first_search(tmp_path):
     assert again.snapshot()["swipes"]["likes"] == 1
 
 
-def test_search_never_breaks_a_limit_and_refuses_rentals(api):
+def test_search_never_breaks_a_limit_and_keeps_sale_and_rent_apart(api):
     ask, _, _ = api
     status, out = ask("/api/search", {"card": card(max_price_eur=200000)})
     assert status == 200 and out["searched_as"]["max_price_eur"] == 200000
     assert all(100000 <= r["price_eur"] <= 200000 and r["area"] == "Egaleo" for r in out["results"])
+    assert all(r["listing_type"] == "sale" for r in out["results"])
+    # D104: a rent search runs, on rentals only, with the monthly rent as the price
     status, out = ask("/api/search", {"card": dict(card(max_price_eur=900), intent="rent")})
-    assert status == 400 and "rentals" in out["error"]
+    assert status == 200 and out["results"]
+    assert all(r["listing_type"] == "rent" and r["price_eur"] <= 900 and r["area"] == "Egaleo" for r in out["results"])
 
 
 def test_a_thin_search_comes_back_with_ways_to_widen_it(api):

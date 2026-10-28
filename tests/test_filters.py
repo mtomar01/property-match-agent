@@ -197,3 +197,27 @@ def test_the_interview_writes_the_types_as_one_string():
     applied = search_card(raw)
     assert applied["hard_limits"]["must_have_if_type"] == {"detached_house": ["parking"]}
     assert [p["feature"] for p in applied["preferences"]] == ["balcony"]
+
+
+def test_furnished_is_a_must_in_a_rent_search_only():
+    # D104: said outright by a renter, furnished hides the unfurnished and the silent; for a buyer it stays a wish
+    from core.card_rules import search_card
+    wish = {"feature": "furnished", "equals": True, "weight": 0.8, "firm": True}
+    rent = search_card({"intent": "rent", "hard_limits": {"max_price_eur": 800}, "preferences": [wish]})
+    assert rent["hard_limits"]["must_have"] == ["furnished"] and rent["preferences"] == []
+    buy = search_card({"intent": "buy", "hard_limits": {"max_price_eur": 200000}, "preferences": [wish]})
+    assert "must_have" not in buy["hard_limits"] and [p["feature"] for p in buy["preferences"]] == ["furnished"]
+    soft = search_card({"intent": "rent", "hard_limits": {"max_price_eur": 800}, "preferences": [dict(wish, firm=False)]})
+    assert "must_have" not in soft["hard_limits"]
+    c = criteria(intent="rent", max_price_eur=800, must_have=["furnished"])
+    flat = dict(listing_type="rent", price_eur=700)
+    assert check(listing(1, furnished=True, **flat), c) is None
+    assert check(listing(2, furnished=False, **flat), c) == ("no_furnished", "furnished")
+    assert check(listing(3, **flat), c) == ("unknown", "furnished")  # a page that says neither fails closed
+    assert check(listing(4, furnished=True), c) is not None  # a sale never reaches a rent search
+
+
+def test_a_furnished_wish_ranks_furnished_homes_first():
+    from core.models import Preference
+    wish = Preference(feature="furnished", equals=True, weight=1)
+    assert score(listing(1, furnished=True), [wish]) > score(listing(2), [wish]) > score(listing(3, furnished=False), [wish])

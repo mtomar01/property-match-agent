@@ -158,3 +158,31 @@ def test_a_rental_run_builds_rentals_that_a_sale_search_never_sees(tmp_path, mon
     renting = Criteria(user_id="t", intent="rent", areas=["Peristeri"], hard_limits=HardLimits(max_price_eur=700))
     assert [l.listing_id for l in apply_hard_limits(listings, renting).matches] == ["spitogatos:2000000001"]
 
+
+
+def test_a_rental_keeps_its_furnished_tick_and_its_start_date_is_not_a_build_date(tmp_path, monkeypatch):
+    """D104: furnished comes from the page's tick or cross; a rental free from a later date is not being built."""
+    import json
+
+    from adapters import page_snapshot
+
+    def page(n, interior, crossed, available):
+        return {"source_id": f"200000000{n}", "url": f"https://www.spitogatos.gr/aggelia/200000000{n}", "seen": "2026-10-28",
+                "area_query": "pagkrati", "listing_type": "rent", "title": "Διαμέρισμα, 78τ.μ.",
+                "location": "Παγκράτι, Παγκράτι (Αθήνα - Κέντρο)", "rooms": "2 υ/δ\n1 μπ", "photo_url": None,
+                "sections": {"Περιγραφή": "Διαμέρισμα.", "Εσωτερικό": interior,
+                             "Χαρακτηριστικά": f"Τιμή\n€1.030 / μήνα\nΕμβαδόν\n78τ.μ.\nΈτος κατασκευής\n2026\nΔιαθέσιμο από\n{available}"},
+                "crossed": crossed}
+    pages = tmp_path / "pages_rent_pagkrati.jsonl"
+    rows_in = [page(1, "Επιπλωμένο\nΑσανσέρ", {}, "30/11/2026"), page(2, "Ασανσέρ", {"Εσωτερικό": ["Επιπλωμένο"]}, "Άμεσα διαθέσιμο"),
+               page(3, "Ασανσέρ", {}, "Άμεσα διαθέσιμο")]
+    pages.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows_in), encoding="utf-8")
+    monkeypatch.setattr(page_snapshot, "read_one", lambda *a, **k: {"raw": None, "cached": True})
+    out = tmp_path / "out.jsonl"
+    page_snapshot.build([pages], None, out)
+    rows = {json.loads(l)["listing_id"][-1]: json.loads(l) for l in out.read_text(encoding="utf-8").splitlines()}
+    assert (rows["1"]["furnished"], rows["2"]["furnished"], rows["3"]["furnished"]) == (True, False, None)
+    assert rows["1"]["year_built"] == 2026  # the table's own year, not the start date of the tenancy
+    from adapters.spitogatos_details import parse_details
+    assert "under_construction" not in parse_details(rows_in[0]).extras
+    assert parse_details(dict(rows_in[0], listing_type="sale")).extras.get("under_construction")  # a sale with that date still is

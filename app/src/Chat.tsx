@@ -8,11 +8,23 @@ interface Props {
   error: string | null;
   compact?: boolean;
   intro?: string;  // what the data covers, under the opening line
+  askingAbout?: string[];  // what the assistant's last reply asks: "purpose" and "intent" get tap answers (D104)
   onSend: (text: string) => void;
 }
 
+// Tap answers send their words as the user's own message, so the assistant still decides from the chat (D104).
+function Choices({ options, onPick, disabled }: { options: [string, string][]; onPick: (text: string) => void; disabled: boolean }) {
+  return (
+    <div className="choices">
+      {options.map(([label, says]) => (
+        <button key={label} type="button" className="choice" disabled={disabled} onClick={() => onPick(says)}>{label}</button>
+      ))}
+    </div>
+  );
+}
 
-export function Chat({ messages, busy, error, compact = false, intro, onSend }: Props) {
+
+export function Chat({ messages, busy, error, compact = false, intro, askingAbout = [], onSend }: Props) {
   const L = useLabels();
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
@@ -21,6 +33,13 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
   }, [messages, busy]);
+
+  const intents: [string, string][] = [[L.buyChip, L.buySays], [L.rentChip, L.rentSays]];
+  const purposes: [string, string][] = [[L.liveChip, L.liveChip], [L.investChip, L.investChip]];
+  const lastIsAssistant = messages.length > 0 && messages[messages.length - 1].role === "assistant";
+  const quick = !busy && lastIsAssistant
+    ? askingAbout.includes("purpose") ? purposes : askingAbout.includes("intent") ? intents : null
+    : null;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -37,6 +56,7 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
           <div className="empty">
             <p>{L.chatIntro}</p>
             {intro && <p className="hint">{intro}</p>}
+            <Choices options={intents} onPick={onSend} disabled={busy} />
             <div className="starters">
               {L.starters.map((text) => (
                 <button key={text} type="button" className="starter" onClick={() => setDraft(text)}>
@@ -51,6 +71,7 @@ export function Chat({ messages, busy, error, compact = false, intro, onSend }: 
             {m.text}
           </p>
         ))}
+        {quick && <Choices options={quick} onPick={onSend} disabled={busy} />}
         {busy && <p className="bubble assistant thinking">{L.thinking}</p>}
         <div ref={end} />
       </div>
