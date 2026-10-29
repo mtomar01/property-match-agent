@@ -48,7 +48,8 @@ fly status && fly logs --no-tail
 ```
 
 The secrets go in before the first deploy: without `TISPI_INVITE` the server would start ungated. The first
-deploy took 84 seconds on 26 October and the image is 78 MB (D101). `fly logs` should show
+deploy took 84 seconds on 26 October and the image is 78 MB (D101); the 29 October redeploy with both listing
+files took 73 seconds, the image still 78 MB (D106). `fly logs` should show
 "Tispi beta on http://0.0.0.0:8765 (private snapshot, …)". If it says "synthetic listings", the snapshot was not
 copied: check step 1.
 
@@ -59,6 +60,19 @@ curl -sI https://tispi.fly.dev/                     # 200, the gate page (HEAD w
 curl -sI "https://tispi.fly.dev/?invite=$TOKEN"     # 302 to /, Set-Cookie tispi_session … HttpOnly; Secure
 curl -s https://tispi.fly.dev/robots.txt            # Disallow: /
 curl -s -o /dev/null -w '%{http_code}' https://tispi.fly.dev/api/state   # 401 without the cookie
+```
+
+And one search of each kind with the cookie, no model call (D106): the invite link into a cookie jar, then a
+rent card and a buy card. Expect `listing_type` "rent" only for the first and "sale" only for the second, over
+1,931 searched (85 and 89 matches for Kypseli up to €700 a month and up to €200,000 on the 29 October files):
+
+```bash
+curl -s -o /dev/null -c jar "https://tispi.fly.dev/?invite=$TOKEN"
+curl -s -b jar -X POST -H 'Content-Type: application/json' https://tispi.fly.dev/api/search \
+    -d '{"card":{"intent":"rent","areas":["Kypseli"],"hard_limits":{"max_price_eur":700},"budget_around":false,"ideally":[],"preferences":[],"open_questions":[]}}'
+curl -s -b jar -X POST -H 'Content-Type: application/json' https://tispi.fly.dev/api/search \
+    -d '{"card":{"intent":"buy","areas":["Kypseli"],"hard_limits":{"max_price_eur":200000},"budget_around":false,"ideally":[],"preferences":[],"open_questions":[]}}'
+rm jar; unset TOKEN
 ```
 
 ## 3. The domain
@@ -99,6 +113,8 @@ without it sees the gate page. To end the beta or cut off a leaked link, rotate 
 
 - `fly logs` shows each session's end as one line: `beta session ended {"session": "…", "turns": 4, "minutes": 12.5, "searches": 1, "swipes": 18, "likes": 7, "like_rate": 0.39, …}`. No text anyone wrote is in it.
 - The caps answer with a plain sentence in the chat ("The beta's budget for today is used up …"). Change them with `fly secrets set TISPI_TURNS_PER_DAY=300` or in `fly.toml`.
+- A line with 0 turns is the link opened and left: a tester peeking, or a messaging app fetching a preview. It costs nothing.
+- A browser check is a session like any other: pause it for 15 minutes and the purge ends it, the same cookie starts clean, and the next message is told there is no search yet. Run a scripted check in one go (D106).
 - `fly machine list` and `fly scale show` for the machine; `fly apps destroy tispi` when the beta is over.
 
 ## What is not in this setup, on purpose
