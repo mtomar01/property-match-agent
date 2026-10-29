@@ -22,12 +22,12 @@ on the Anthropic key as before, capped at 30 a visitor and 150 a day.
 ```bash
 mkdir -p data/private/deploy
 cp <your 23 October 1,000-listing file> data/private/deploy/snapshot.jsonl
-cp <the rental snapshot> data/private/deploy/rentals.jsonl      # D104: the 10 pilot rentals now, the 1,000 later
+cp data/private/snapshot_rent_2026-10-28.jsonl data/private/deploy/rentals.jsonl   # the 931 rentals (D105)
 ```
 
 The image loads both files (`PM_SNAPSHOT` takes several paths separated by ":"), so the server refuses to start if
 `rentals.jsonl` is missing. Run the same pair locally with
-`PM_SNAPSHOT=data/private/snapshot_2026-10-23.jsonl:data/private/snapshot_rent_pilot_2026-10-28.jsonl uv run python -m api.server`.
+`PM_SNAPSHOT=data/private/snapshot_2026-10-23.jsonl:data/private/snapshot_rent_2026-10-28.jsonl uv run python -m api.server`.
 
 `data/private/` is ignored by git; `.dockerignore` lets only `data/private/deploy/` into the image.
 
